@@ -14,6 +14,8 @@ import AssetAllocation from "./pages/AssetAllocation";
 import Reports from "./pages/Reports";
 import Backup from "./pages/Backup";
 import Settings from "./pages/Settings";
+import Repasse from "./pages/Repasse";
+import Seguro from "./pages/Seguro";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -39,6 +41,8 @@ function AppRoutes() {
         <Route path="clients/:id" element={<ClientDetail />} />
         <Route path="meetings" element={<Meetings />} />
         <Route path="allocation" element={<AssetAllocation />} />
+        <Route path="repasse" element={<Repasse />} />
+        <Route path="seguro" element={<Seguro />} />
         <Route path="reports" element={<Reports />} />
         <Route path="backup" element={<Backup />} />
         <Route path="settings" element={<Settings />} />
