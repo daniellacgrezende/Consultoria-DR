@@ -126,6 +126,9 @@ const CLIENT_DB_COLS = new Set([
   "corretoras", "origem_cliente",
 ]);
 
+// Converte valor para número, retornando 0 se vazio/inválido
+const toNum = (v) => { const n = Number(v); return (v === "" || v == null || isNaN(n)) ? 0 : n; };
+
 // Mapeia do frontend (camelCase) para o banco (snake_case)
 export const mapClientToDB = (c) => {
   // Garante que os campos snake_case existem
@@ -142,18 +145,18 @@ export const mapClientToDB = (c) => {
     hobbies: c.hobbies ?? "",
     status: c.status ?? "ativo",
     perfil: c.perfil ?? "moderado",
-    pl_inicial: c.plInicial ?? c.pl_inicial ?? 0,
-    aporte_mensal: c.aporteMensal ?? c.aporte_mensal ?? 0,
-    meta_patrimonio: c.metaPatrimonio ?? c.meta_patrimonio ?? 0,
-    liquidez_desejada: c.liquidezDesejada ?? c.liquidez_desejada ?? 0,
+    pl_inicial: toNum(c.plInicial ?? c.pl_inicial),
+    aporte_mensal: toNum(c.aporteMensal ?? c.aporte_mensal),
+    meta_patrimonio: toNum(c.metaPatrimonio ?? c.meta_patrimonio),
+    liquidez_desejada: toNum(c.liquidezDesejada ?? c.liquidez_desejada),
     taxa_contratada: c.taxaContratada ?? c.taxa_contratada ?? "",
-    valor_minimo_contrato: c.valorMinimoContrato ?? c.valor_minimo_contrato ?? 0,
-    receita_mensal: c.receitaMensal ?? c.receita_mensal ?? 0,
+    valor_minimo_contrato: toNum(c.valorMinimoContrato ?? c.valor_minimo_contrato),
+    receita_mensal: toNum(c.receitaMensal ?? c.receita_mensal),
     forma_pagamento: c.formaPagamento ?? c.forma_pagamento ?? "XP",
     declaracao_ir: c.declaracaoIR ?? c.declaracao_ir ?? "Simplificada",
     planejamento: c.planejamento ?? "",
     seguro_vida: c.seguroVida ?? c.seguro_vida ?? false,
-    valor_seguro: c.valorSeguro ?? c.valor_seguro ?? 0,
+    valor_seguro: toNum(c.valorSeguro ?? c.valor_seguro),
     seguro_observacao: c.seguroObservacao ?? c.seguro_observacao ?? "",
     sucessao: c.sucessao ?? false,
     cliente_desbalanceado: c.clienteDesbalanceado ?? c.cliente_desbalanceado ?? false,
@@ -171,9 +174,9 @@ export const mapClientToDB = (c) => {
     periodicidade_relatorio: c.periodicidadeRelatorio ?? c.periodicidade_relatorio ?? "",
     pgbl: c.pgbl ?? false,
     vgbl: c.vgbl ?? false,
-    renda_bruta_tributavel: c.rendaBrutaTributavel ?? c.renda_bruta_tributavel ?? 0,
-    reserva_emergencia_valor: c.reservaEmergenciaValor ?? c.reserva_emergencia_valor ?? 0,
-    reserva_emergencia_meta: c.reservaEmergenciaMeta ?? c.reserva_emergencia_meta ?? 0,
+    renda_bruta_tributavel: toNum(c.rendaBrutaTributavel ?? c.renda_bruta_tributavel),
+    reserva_emergencia_valor: toNum(c.reservaEmergenciaValor ?? c.reserva_emergencia_valor),
+    reserva_emergencia_meta: toNum(c.reservaEmergenciaMeta ?? c.reserva_emergencia_meta),
     reserva_emergencia_produto: c.reservaEmergenciaProduto ?? c.reserva_emergencia_produto ?? "",
     grupo_nome: c.grupoNome ?? c.grupo_nome ?? "",
     grupo_id: c.grupoId ?? c.grupo_id ?? "",
@@ -191,11 +194,14 @@ const LEAD_DB_COLS = new Set([
   "notas", "convertido_em", "tipo_reuniao", "valor_estimado", "temperatura", "responsavel",
 ]);
 
+// Campos numéricos da tabela leads
+const LEAD_NUMERIC_COLS = new Set(["patrimonio_estimado", "valor_estimado"]);
+
 // Mapeia lead para o banco (remove campos desconhecidos)
 export const mapLeadToDB = (l) => {
   const db = {};
   for (const [k, v] of Object.entries(l)) {
-    if (LEAD_DB_COLS.has(k)) db[k] = v;
+    if (LEAD_DB_COLS.has(k)) db[k] = LEAD_NUMERIC_COLS.has(k) ? toNum(v) : v;
   }
   return db;
 };

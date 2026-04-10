@@ -1,3 +1,87 @@
+:root {
+  --brand: #D30000;
+  --brand-dark: #9D0207;
+  --bg-page: #FAFAF9;
+  --bg-card: rgba(255, 255, 255, 0.78);
+  --bg-card-solid: #FFFFFF;
+  --text-primary: #0A0809;
+  --text-secondary: #5A585A;
+  --text-muted: #9E9C9E;
+  --glass-border: rgba(10, 8, 9, 0.06);
+  --glass-hover: rgba(10, 8, 9, 0.025);
+  --glass-shadow: 0 1px 3px rgba(10,8,9,0.03), 0 6px 20px rgba(10,8,9,0.05);
+  --glass-shadow-hover: 0 2px 6px rgba(10,8,9,0.05), 0 10px 28px rgba(10,8,9,0.07);
+  --success: #1AAF1A;
+  --warning: #E89B00;
+  --danger: #D30000;
+  --info: #2A7DE1;
+  --sidebar-bg: #1D3557;
+  --sidebar-menu-bg: #264773;
+  --sidebar-border: rgba(255, 255, 255, 0.10);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 16px;
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { margin: 0; font-family: "Helvetica Neue", Arial, sans-serif; }
+
+body {
+  margin: 0;
+  font-family: 'Poppins', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 12.5px;
+  line-height: 1.5;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 #root { min-height: 100vh; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(10, 8, 9, 0.15); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(10, 8, 9, 0.3); }
+
+/* Animations */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus visible */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Font mono helper */
+.font-mono {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* Selection */
+::selection {
+  background: rgba(211, 0, 0, 0.15);
+  color: var(--text-primary);
+}

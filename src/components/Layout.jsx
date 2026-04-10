@@ -9,22 +9,27 @@ export default function Layout() {
   const { toast, setToast, loaded } = useData();
 
   if (!loaded) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: `linear-gradient(${B.navy},${B.navy2})`, color: "rgba(255,255,255,0.5)", fontFamily: "sans-serif", fontSize: 13 }}>Carregando…</div>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: B.offwhite, color: B.muted, fontFamily: "'Poppins', sans-serif", fontSize: 13 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+        <div style={{ width: 40, height: 40, borderRadius: "50%", border: `3px solid ${B.border}`, borderTopColor: B.brand, animation: "spin 0.8s linear infinite" }} />
+        <span>Carregando...</span>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    </div>
   );
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: `linear-gradient(180deg, ${B.navy} 0%, ${B.navy2} 100%)`, fontFamily: "Helvetica Neue, Arial, sans-serif" }}>
+    <div style={{ minHeight: "100vh", display: "flex", background: B.offwhite, fontFamily: "'Poppins', 'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
       <Toast toast={toast} onClose={() => setToast(null)} />
-      <Header />
-      <div style={{ display: "flex", flex: 1, margin: "14px 24px 24px", gap: 14, overflow: "hidden", minHeight: 0 }}>
-        <Sidebar />
-        <main style={{ flex: 1, background: "#f0f4ff", borderRadius: 12, overflow: "auto", padding: "22px 26px" }}>
-          <Outlet />
+      <Sidebar />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: "100vh", marginLeft: 200 }}>
+        <Header />
+        <main style={{ flex: 1, padding: 24, overflowY: "auto" }}>
+          <div style={{ animation: "fadeUp 0.4s ease" }}>
+            <Outlet />
+          </div>
         </main>
       </div>
-      <footer style={{ flexShrink: 0, borderTop: "1px solid rgba(255,255,255,0.07)", padding: "10px 24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", letterSpacing: "0.12em" }}>CRM 360 — Consultoria DR</span>
-      </footer>
     </div>
   );
 }

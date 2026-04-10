@@ -87,7 +87,7 @@ export default function Tasks() {
           ) : (
             <>
               <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") addTodo(); }} placeholder="Nova tarefa… (Enter)" style={{ flex: 1, background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 7, padding: "9px 12px", fontSize: 13, color: B.navy, outline: "none", fontFamily: "inherit" }} />
-              <button onClick={addTodo} style={{ background: B.navy, color: "white", border: "none", borderRadius: 7, padding: "9px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>+</button>
+              <button onClick={addTodo} style={{ background: B.brand, color: "white", border: "none", borderRadius: 7, padding: "9px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>+</button>
             </>
           )}
         </div>

@@ -76,13 +76,13 @@ export default function Clients() {
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
         <SecH eyebrow="Carteira" title="Clientes 👥" desc="Gestão completa da sua carteira." />
-        <button onClick={openNew} style={{ padding: "8px 18px", background: B.navy, color: "white", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Novo Cliente</button>
+        <button onClick={openNew} style={{ padding: "8px 18px", background: B.brand, color: "white", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Novo Cliente</button>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 18 }}>
         <MiniStat icon="👥" label="Clientes Ativos" value={active.length} sub={`${rows.length} exibidos`} />
         <div onClick={() => setShowAUM((v) => !v)} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${B.navy}`, cursor: "pointer", userSelect: "none" }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 5 }}>💼 AUM {showAUM ? "🔓" : "🔒"}</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 5 }}>💼 AUM {showAUM ? "🔓" : "🔒"}</div>
           <div style={{ fontSize: 20, fontWeight: 700, color: B.navy }}>{showAUM ? money(totalAUM) : "• • • • •"}</div>
           <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>{showAUM ? "patrimônio total" : "clique para revelar"}</div>
         </div>
@@ -92,9 +92,9 @@ export default function Clients() {
       {/* Filters */}
       <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="🔍 Buscar..." style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "7px 14px", fontSize: 13, color: B.navy, outline: "none", minWidth: 220 }} />
-        <span style={{ fontSize: 11, color: "#8899bb", fontWeight: 700 }}>UF:</span>
+        <span style={{ fontSize: 11, color: B.muted, fontWeight: 700 }}>UF:</span>
         <input value={ufFilter} onChange={(e) => setUfFilter(e.target.value.toUpperCase())} placeholder="SP" style={{ width: 60, background: "white", border: `1px solid ${B.border}`, borderRadius: 7, padding: "5px 9px", fontSize: 12, color: B.navy, outline: "none" }} />
-        <span style={{ fontSize: 11, color: "#8899bb", fontWeight: 700 }}>Curva:</span>
+        <span style={{ fontSize: 11, color: B.muted, fontWeight: 700 }}>Curva:</span>
         {["all", "A", "B", "C", "D"].map((k) => (
           <button key={k} onClick={() => setFilterCurva(k)} style={{ padding: "5px 12px", borderRadius: 999, border: "1px solid", fontSize: 11, fontWeight: 700, cursor: "pointer", background: filterCurva === k ? "#e8eeff" : "white", color: filterCurva === k ? B.navy : "#8899bb", borderColor: filterCurva === k ? B.navy + "66" : "#dde4f5" }}>{k === "all" ? "Todos" : `Curva ${k}`}</button>
         ))}
@@ -106,13 +106,13 @@ export default function Clients() {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr>
-                <th onClick={() => toggleSort("nome")} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer" }}>Nome <SortIcon col="nome" /></th>
-                <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff" }}>Cidade/UF</th>
-                <th onClick={() => toggleSort("pl")} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer" }}>PL <SortIcon col="pl" /></th>
-                <th onClick={() => toggleSort("perfil")} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer" }}>Perfil <SortIcon col="perfil" /></th>
-                <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff" }}>Últ. Reunião</th>
-                <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff" }}>Seguro</th>
-                <th onClick={() => toggleSort("curva")} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer" }}>Curva <SortIcon col="curva" /></th>
+                <th onClick={() => toggleSort("nome")} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer" }}>Nome <SortIcon col="nome" /></th>
+                <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff" }}>Cidade/UF</th>
+                <th onClick={() => toggleSort("pl")} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer" }}>PL <SortIcon col="pl" /></th>
+                <th onClick={() => toggleSort("perfil")} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer" }}>Perfil <SortIcon col="perfil" /></th>
+                <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff" }}>Últ. Reunião</th>
+                <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff" }}>Seguro</th>
+                <th onClick={() => toggleSort("curva")} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer" }}>Curva <SortIcon col="curva" /></th>
                 <th style={{ padding: "10px 12px", background: "#f5f7ff", borderBottom: `1px solid ${B.border}` }}></th>
               </tr>
             </thead>
@@ -159,7 +159,7 @@ export default function Clients() {
             <button onClick={() => setModal(false)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: B.gray }}>×</button>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
-            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: "#8899bb", textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}` }}>👤 Dados Pessoais</div>
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}` }}>👤 Dados Pessoais</div>
             <div style={{ gridColumn: "1/-1" }}><Inp label="Nome completo *" value={form.nome} onChange={F("nome")} placeholder="Nome" /></div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 70px", gap: 8 }}><Inp label="Cidade" value={form.cidade} onChange={F("cidade")} /><Inp label="UF" value={form.uf} onChange={F("uf")} /></div>
             <Inp label="Profissão" value={form.profissao} onChange={F("profissao")} />
@@ -169,11 +169,11 @@ export default function Clients() {
             <Inp label="Data Nascimento" value={form.data_nascimento || form.dataNascimento || ""} onChange={F("data_nascimento")} type="date" />
             <div style={{ gridColumn: "1/-1" }}><Inp label="Hobbies" value={form.hobbies} onChange={F("hobbies")} /></div>
 
-            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: "#8899bb", textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>⚙️ Status e Perfil</div>
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>⚙️ Status e Perfil</div>
             <Sel label="Status" value={form.status} onChange={F("status")} opts={[{ v: "ativo", l: "Ativo" }, { v: "inativo", l: "Inativo" }]} />
             <Sel label="Perfil" value={form.perfil} onChange={F("perfil")} opts={Object.entries(PERFIL_MAP).map(([k, v]) => ({ v: k, l: v.label }))} />
 
-            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: "#8899bb", textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>💰 Financeiro</div>
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>💰 Financeiro</div>
             <Inp label="PL Inicial (R$)" value={form.pl_inicial ?? form.plInicial ?? ""} onChange={F("pl_inicial")} type="number" />
             <Inp label="Aporte Mensal (R$)" value={form.aporte_mensal ?? form.aporteMensal ?? ""} onChange={F("aporte_mensal")} type="number" />
             <Inp label="Meta Patrimonial (R$)" value={form.meta_patrimonio ?? form.metaPatrimonio ?? ""} onChange={F("meta_patrimonio")} type="number" />
@@ -184,7 +184,7 @@ export default function Clients() {
             <Sel label="Declaração IR" value={form.declaracao_ir ?? form.declaracaoIR ?? "Simplificada"} onChange={F("declaracao_ir")} opts={["Simplificada", "Completa"].map((v) => ({ v, l: v }))} />
             <div style={{ gridColumn: "1/-1" }}><Inp label="Corretoras" value={form.corretoras || ""} onChange={F("corretoras")} placeholder="XP, BTG, Avenue…" /></div>
 
-            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: "#8899bb", textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>📍 Origem</div>
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>📍 Origem</div>
             <div style={{ gridColumn: "1/-1" }}>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
                 {LEAD_ORIGENS.map((o) => (
@@ -193,27 +193,27 @@ export default function Clients() {
               </div>
             </div>
 
-            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: "#8899bb", textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>📅 Datas</div>
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>📅 Datas</div>
             <Inp label="Início Carteira" value={form.inicio_carteira ?? form.inicioCarteira ?? ""} onChange={F("inicio_carteira")} type="date" />
             <Inp label="Última Reunião" value={form.ultima_reuniao ?? form.ultimaReuniao ?? ""} onChange={F("ultima_reuniao")} type="date" />
             <Inp label="Próxima Reunião" value={form.proxima_reuniao ?? form.proximaReuniao ?? ""} onChange={F("proxima_reuniao")} type="date" />
             <Inp label="Último Relatório" value={form.ultimo_relatorio ?? form.ultimoRelatorio ?? ""} onChange={F("ultimo_relatorio")} type="date" />
 
-            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: "#8899bb", textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>📅 Reuniões e Relatórios</div>
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>📅 Reuniões e Relatórios</div>
             <div>
-              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Periodicidade Reunião</label>
+              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 4 }}>Periodicidade Reunião</label>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
                 {PERIOD_OPTIONS.map((o) => <button key={o} type="button" onClick={() => setForm((f) => ({ ...f, periodicidade_reuniao: o }))} style={{ padding: "5px 12px", borderRadius: 999, border: "1px solid", fontSize: 11, fontWeight: 700, cursor: "pointer", background: (form.periodicidade_reuniao || form.periodicidadeReuniao) === o ? B.navy : "white", color: (form.periodicidade_reuniao || form.periodicidadeReuniao) === o ? "white" : "#8899bb", borderColor: (form.periodicidade_reuniao || form.periodicidadeReuniao) === o ? B.navy : "#dde4f5" }}>{o}</button>)}
               </div>
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Periodicidade Relatório</label>
+              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 4 }}>Periodicidade Relatório</label>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
                 {PERIOD_OPTIONS.map((o) => <button key={o} type="button" onClick={() => setForm((f) => ({ ...f, periodicidade_relatorio: o }))} style={{ padding: "5px 12px", borderRadius: 999, border: "1px solid", fontSize: 11, fontWeight: 700, cursor: "pointer", background: (form.periodicidade_relatorio || form.periodicidadeRelatorio) === o ? B.navy : "white", color: (form.periodicidade_relatorio || form.periodicidadeRelatorio) === o ? "white" : "#8899bb", borderColor: (form.periodicidade_relatorio || form.periodicidadeRelatorio) === o ? B.navy : "#dde4f5" }}>{o}</button>)}
               </div>
             </div>
 
-            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: "#8899bb", textTransform: "uppercase", marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>✅ Atributos</div>
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>✅ Atributos</div>
             <div style={{ gridColumn: "1/-1", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0 16px" }}>
               <Chk label="IPS Enviada" checked={form.envio_ips ?? form.envioIps} onChange={F("envio_ips")} />
               <Chk label="Seguro de Vida" checked={form.seguro_vida ?? form.seguroVida} onChange={F("seguro_vida")} />
@@ -231,7 +231,7 @@ export default function Clients() {
           </div>
           <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
             <button onClick={() => setModal(false)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
-            <button onClick={save} style={{ flex: 2, padding: "10px", background: B.navy, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>{editId ? "SALVAR" : "CADASTRAR"}</button>
+            <button onClick={save} style={{ flex: 2, padding: "10px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>{editId ? "SALVAR" : "CADASTRAR"}</button>
           </div>
         </div>
       </Modal>

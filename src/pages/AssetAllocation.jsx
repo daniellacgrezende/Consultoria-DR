@@ -145,7 +145,7 @@ export default function AssetAllocation() {
             <Card>
               <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between" }}>
                 <span>💼 Carteira Real</span>
-                {!editing && <button onClick={startEdit} style={{ background: B.navy, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{selAllocation ? "✏ Editar" : "+ Cadastrar"}</button>}
+                {!editing && <button onClick={startEdit} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{selAllocation ? "✏ Editar" : "+ Cadastrar"}</button>}
               </div>
               {editing ? (
                 <div>
@@ -163,7 +163,7 @@ export default function AssetAllocation() {
                   </div>
                   <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                     <button onClick={() => setEditing(false)} style={{ flex: 1, padding: "8px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>
-                    <button onClick={saveAllocation} style={{ flex: 2, padding: "8px", background: B.navy, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700 }}>Salvar</button>
+                    <button onClick={saveAllocation} style={{ flex: 2, padding: "8px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700 }}>Salvar</button>
                   </div>
                 </div>
               ) : selAllocation ? (

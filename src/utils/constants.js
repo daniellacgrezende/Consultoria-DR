@@ -1,23 +1,32 @@
-export const B = { navy: "#061841", navy2: "#061e49", gray: "#6e6e6e", soft: "#f0f4ff", border: "#d5ddf5" };
+export const B = {
+  brand: "#D30000", brandDark: "#9D0207",
+  navy: "#1D3557", navy2: "#264773",
+  black: "#0A0809", offwhite: "#FAFAF9",
+  gray: "#5A585A", muted: "#9E9C9E",
+  soft: "#FAFAF9", border: "rgba(10,8,9,0.06)",
+  success: "#1AAF1A", warning: "#E89B00", danger: "#D30000", info: "#2A7DE1",
+  shadow: "0 1px 3px rgba(10,8,9,0.03), 0 6px 20px rgba(10,8,9,0.05)",
+  shadowHover: "0 2px 6px rgba(10,8,9,0.05), 0 10px 28px rgba(10,8,9,0.07)",
+};
 
 export const STATUS_MAP = {
-  ativo: { label: "Ativo", bg: "#dcfce7", color: "#16a34a" },
-  inativo: { label: "Inativo", bg: "#f3f4f6", color: "#6b7280" },
+  ativo: { label: "Ativo", bg: "#E5FBE5", color: "#1AAF1A" },
+  inativo: { label: "Inativo", bg: "#f3f4f6", color: "#9E9C9E" },
 };
 
 export const PERFIL_MAP = {
-  conservador: { label: "Conservador", color: "#2563eb" },
-  moderado: { label: "Moderado", color: "#7c3aed" },
-  equilibrado: { label: "Equilibrado", color: "#0891b2" },
-  arrojado: { label: "Arrojado", color: "#dc2626" },
-  agressivo: { label: "Agressivo", color: "#9f1239" },
+  conservador: { label: "Conservador", color: "#2A7DE1" },
+  moderado: { label: "Moderado", color: "#8200C2" },
+  equilibrado: { label: "Equilibrado", color: "#1AAF1A" },
+  arrojado: { label: "Arrojado", color: "#FF5400" },
+  agressivo: { label: "Agressivo", color: "#D30000" },
 };
 
 export const CURVA_MAP = {
-  A: { label: "Curva A", color: "#b45309", bg: "#fef3c7" },
-  B: { label: "Curva B", color: "#1d4ed8", bg: "#dbeafe" },
-  C: { label: "Curva C", color: "#6d28d9", bg: "#ede9fe" },
-  D: { label: "Curva D", color: "#4b5563", bg: "#f3f4f6" },
+  A: { label: "Curva A", color: "#D30000", bg: "#FDE8E8" },
+  B: { label: "Curva B", color: "#2A7DE1", bg: "#E8F0FE" },
+  C: { label: "Curva C", color: "#8200C2", bg: "#F3E5FF" },
+  D: { label: "Curva D", color: "#9E9C9E", bg: "#f3f4f6" },
 };
 
 export const LEAD_ETAPAS = ["Prospect", "1ª Reunião", "2ª Reunião", "Follow Up", "Convertido", "Perdido"];

@@ -76,7 +76,7 @@ export default function Repasse() {
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
         <SecH eyebrow="Financeiro Pessoal" title="Repasse 💸" desc="Controle de receita bruta, impostos e líquido mês a mês." />
-        <button onClick={openNew} style={{ background: B.navy, color: "white", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 700, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, marginTop: 4 }}>+ Novo Lançamento</button>
+        <button onClick={openNew} style={{ background: B.brand, color: "white", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 700, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, marginTop: 4 }}>+ Novo Lançamento</button>
       </div>
 
       {/* Filtro */}
@@ -184,7 +184,7 @@ export default function Repasse() {
           </div>
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => setModal(false)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>
-            <button onClick={save} style={{ flex: 2, padding: "10px", background: B.navy, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>{editId ? "SALVAR" : "ADICIONAR"}</button>
+            <button onClick={save} style={{ flex: 2, padding: "10px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>{editId ? "SALVAR" : "ADICIONAR"}</button>
           </div>
         </div>
       </Modal>

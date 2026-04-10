@@ -20,7 +20,7 @@ export default function Login() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(135deg, ${B.navy}, ${B.navy2})`, fontFamily: "Helvetica Neue, Arial, sans-serif" }}>
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(135deg, #1D3557, #264773)`, fontFamily: "Helvetica Neue, Arial, sans-serif" }}>
       <div style={{ background: "white", borderRadius: 16, padding: "40px 36px", width: "100%", maxWidth: 400, boxShadow: "0 32px 80px rgba(6,24,65,0.3)" }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 8 }}>
@@ -46,7 +46,7 @@ export default function Login() {
 
           {error && <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "#dc2626" }}>{error}</div>}
 
-          <button type="submit" disabled={loading} style={{ width: "100%", padding: "12px", background: B.navy, color: "white", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: loading ? "wait" : "pointer", opacity: loading ? 0.7 : 1 }}>
+          <button type="submit" disabled={loading} style={{ width: "100%", padding: "12px", background: "#D30000", color: "white", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: loading ? "wait" : "pointer", opacity: loading ? 0.7 : 1 }}>
             {loading ? "Aguarde..." : isSignUp ? "CRIAR CONTA" : "ENTRAR"}
           </button>
         </form>
