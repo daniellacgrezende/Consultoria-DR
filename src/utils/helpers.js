@@ -112,56 +112,90 @@ export const mapClientFromDB = (c) => ({
   origemCliente: c.origem_cliente,
 });
 
+// Colunas válidas da tabela clients no Supabase
+const CLIENT_DB_COLS = new Set([
+  "id", "nome", "data_nascimento", "cidade", "uf", "estado_civil", "filhos", "conjuge",
+  "profissao", "hobbies", "status", "perfil", "pl_inicial", "aporte_mensal", "meta_patrimonio",
+  "liquidez_desejada", "taxa_contratada", "valor_minimo_contrato", "receita_mensal",
+  "forma_pagamento", "declaracao_ir", "planejamento", "seguro_vida", "valor_seguro",
+  "seguro_observacao", "sucessao", "cliente_desbalanceado", "inicio_carteira", "ultima_reuniao",
+  "proxima_reuniao", "avisado_em", "ultimo_relatorio", "envio_ips", "observacoes",
+  "observacao_rapida", "notas_gerais", "link_rebalanceamento", "periodicidade_reuniao",
+  "periodicidade_relatorio", "pgbl", "vgbl", "renda_bruta_tributavel", "reserva_emergencia_valor",
+  "reserva_emergencia_meta", "reserva_emergencia_produto", "grupo_id", "grupo_nome",
+  "corretoras", "origem_cliente",
+]);
+
 // Mapeia do frontend (camelCase) para o banco (snake_case)
 export const mapClientToDB = (c) => {
-  const db = { ...c };
-  // Remove aliases camelCase (o banco usa snake_case)
-  const camelKeys = [
-    "dataNascimento", "estadoCivil", "plInicial", "aporteMensal", "metaPatrimonio",
-    "liquidezDesejada", "taxaContratada", "valorMinimoContrato", "receitaMensal",
-    "formaPagamento", "declaracaoIR", "seguroVida", "valorSeguro", "seguroObservacao",
-    "clienteDesbalanceado", "inicioCarteira", "ultimaReuniao", "proximaReuniao",
-    "avisadoEm", "ultimoRelatorio", "envioIps", "observacaoRapida", "notasGerais",
-    "linkRebalanceamento", "periodicidadeReuniao", "periodicidadeRelatorio",
-    "rendaBrutaTributavel", "reservaEmergenciaValor", "reservaEmergenciaMeta",
-    "reservaEmergenciaProduto", "grupoNome", "grupoId", "origemCliente",
-  ];
-  camelKeys.forEach((k) => delete db[k]);
-
   // Garante que os campos snake_case existem
-  db.data_nascimento = c.dataNascimento ?? c.data_nascimento ?? "";
-  db.estado_civil = c.estadoCivil ?? c.estado_civil ?? "";
-  db.pl_inicial = c.plInicial ?? c.pl_inicial ?? 0;
-  db.aporte_mensal = c.aporteMensal ?? c.aporte_mensal ?? 0;
-  db.meta_patrimonio = c.metaPatrimonio ?? c.meta_patrimonio ?? 0;
-  db.liquidez_desejada = c.liquidezDesejada ?? c.liquidez_desejada ?? 0;
-  db.taxa_contratada = c.taxaContratada ?? c.taxa_contratada ?? "";
-  db.valor_minimo_contrato = c.valorMinimoContrato ?? c.valor_minimo_contrato ?? 0;
-  db.receita_mensal = c.receitaMensal ?? c.receita_mensal ?? 0;
-  db.forma_pagamento = c.formaPagamento ?? c.forma_pagamento ?? "XP";
-  db.declaracao_ir = c.declaracaoIR ?? c.declaracao_ir ?? "Simplificada";
-  db.seguro_vida = c.seguroVida ?? c.seguro_vida ?? false;
-  db.valor_seguro = c.valorSeguro ?? c.valor_seguro ?? 0;
-  db.seguro_observacao = c.seguroObservacao ?? c.seguro_observacao ?? "";
-  db.cliente_desbalanceado = c.clienteDesbalanceado ?? c.cliente_desbalanceado ?? false;
-  db.inicio_carteira = c.inicioCarteira ?? c.inicio_carteira ?? "";
-  db.ultima_reuniao = c.ultimaReuniao ?? c.ultima_reuniao ?? "";
-  db.proxima_reuniao = c.proximaReuniao ?? c.proxima_reuniao ?? "";
-  db.avisado_em = c.avisadoEm ?? c.avisado_em ?? "";
-  db.ultimo_relatorio = c.ultimoRelatorio ?? c.ultimo_relatorio ?? "";
-  db.envio_ips = c.envioIps ?? c.envio_ips ?? false;
-  db.observacao_rapida = c.observacaoRapida ?? c.observacao_rapida ?? "";
-  db.notas_gerais = c.notasGerais ?? c.notas_gerais ?? "";
-  db.link_rebalanceamento = c.linkRebalanceamento ?? c.link_rebalanceamento ?? "";
-  db.periodicidade_reuniao = c.periodicidadeReuniao ?? c.periodicidade_reuniao ?? "Trimestral";
-  db.periodicidade_relatorio = c.periodicidadeRelatorio ?? c.periodicidade_relatorio ?? "";
-  db.renda_bruta_tributavel = c.rendaBrutaTributavel ?? c.renda_bruta_tributavel ?? 0;
-  db.reserva_emergencia_valor = c.reservaEmergenciaValor ?? c.reserva_emergencia_valor ?? 0;
-  db.reserva_emergencia_meta = c.reservaEmergenciaMeta ?? c.reserva_emergencia_meta ?? 0;
-  db.reserva_emergencia_produto = c.reservaEmergenciaProduto ?? c.reserva_emergencia_produto ?? "";
-  db.grupo_nome = c.grupoNome ?? c.grupo_nome ?? "";
-  db.grupo_id = c.grupoId ?? c.grupo_id ?? "";
-  db.origem_cliente = c.origemCliente ?? c.origem_cliente ?? "";
+  const db = {
+    id: c.id,
+    nome: c.nome ?? "",
+    data_nascimento: c.dataNascimento ?? c.data_nascimento ?? "",
+    cidade: c.cidade ?? "",
+    uf: c.uf ?? "",
+    estado_civil: c.estadoCivil ?? c.estado_civil ?? "",
+    filhos: c.filhos ?? "",
+    conjuge: c.conjuge ?? "",
+    profissao: c.profissao ?? "",
+    hobbies: c.hobbies ?? "",
+    status: c.status ?? "ativo",
+    perfil: c.perfil ?? "moderado",
+    pl_inicial: c.plInicial ?? c.pl_inicial ?? 0,
+    aporte_mensal: c.aporteMensal ?? c.aporte_mensal ?? 0,
+    meta_patrimonio: c.metaPatrimonio ?? c.meta_patrimonio ?? 0,
+    liquidez_desejada: c.liquidezDesejada ?? c.liquidez_desejada ?? 0,
+    taxa_contratada: c.taxaContratada ?? c.taxa_contratada ?? "",
+    valor_minimo_contrato: c.valorMinimoContrato ?? c.valor_minimo_contrato ?? 0,
+    receita_mensal: c.receitaMensal ?? c.receita_mensal ?? 0,
+    forma_pagamento: c.formaPagamento ?? c.forma_pagamento ?? "XP",
+    declaracao_ir: c.declaracaoIR ?? c.declaracao_ir ?? "Simplificada",
+    planejamento: c.planejamento ?? "",
+    seguro_vida: c.seguroVida ?? c.seguro_vida ?? false,
+    valor_seguro: c.valorSeguro ?? c.valor_seguro ?? 0,
+    seguro_observacao: c.seguroObservacao ?? c.seguro_observacao ?? "",
+    sucessao: c.sucessao ?? false,
+    cliente_desbalanceado: c.clienteDesbalanceado ?? c.cliente_desbalanceado ?? false,
+    inicio_carteira: c.inicioCarteira ?? c.inicio_carteira ?? "",
+    ultima_reuniao: c.ultimaReuniao ?? c.ultima_reuniao ?? "",
+    proxima_reuniao: c.proximaReuniao ?? c.proxima_reuniao ?? "",
+    avisado_em: c.avisadoEm ?? c.avisado_em ?? "",
+    ultimo_relatorio: c.ultimoRelatorio ?? c.ultimo_relatorio ?? "",
+    envio_ips: c.envioIps ?? c.envio_ips ?? false,
+    observacoes: c.observacoes ?? "",
+    observacao_rapida: c.observacaoRapida ?? c.observacao_rapida ?? "",
+    notas_gerais: c.notasGerais ?? c.notas_gerais ?? "",
+    link_rebalanceamento: c.linkRebalanceamento ?? c.link_rebalanceamento ?? "",
+    periodicidade_reuniao: c.periodicidadeReuniao ?? c.periodicidade_reuniao ?? "Trimestral",
+    periodicidade_relatorio: c.periodicidadeRelatorio ?? c.periodicidade_relatorio ?? "",
+    pgbl: c.pgbl ?? false,
+    vgbl: c.vgbl ?? false,
+    renda_bruta_tributavel: c.rendaBrutaTributavel ?? c.renda_bruta_tributavel ?? 0,
+    reserva_emergencia_valor: c.reservaEmergenciaValor ?? c.reserva_emergencia_valor ?? 0,
+    reserva_emergencia_meta: c.reservaEmergenciaMeta ?? c.reserva_emergencia_meta ?? 0,
+    reserva_emergencia_produto: c.reservaEmergenciaProduto ?? c.reserva_emergencia_produto ?? "",
+    grupo_nome: c.grupoNome ?? c.grupo_nome ?? "",
+    grupo_id: c.grupoId ?? c.grupo_id ?? "",
+    corretoras: c.corretoras ?? "",
+    origem_cliente: c.origemCliente ?? c.origem_cliente ?? "",
+  };
 
+  return db;
+};
+
+// Colunas válidas da tabela leads no Supabase
+const LEAD_DB_COLS = new Set([
+  "id", "nome", "telefone", "email", "origem", "suborigem", "patrimonio_estimado",
+  "etapa", "data_primeira_reuniao", "data_ultima_interacao", "motivo_negativa",
+  "notas", "convertido_em", "tipo_reuniao", "valor_estimado", "temperatura", "responsavel",
+]);
+
+// Mapeia lead para o banco (remove campos desconhecidos)
+export const mapLeadToDB = (l) => {
+  const db = {};
+  for (const [k, v] of Object.entries(l)) {
+    if (LEAD_DB_COLS.has(k)) db[k] = v;
+  }
   return db;
 };

@@ -97,8 +97,8 @@ export const EMPTY_CLIENT = {
 };
 
 export const EMPTY_LEAD = {
-  nome: "", telefone: "", email: "", origem: "Indicação", suborigem: "", patrimonioEstimado: "",
-  etapa: "Prospect", dataPrimeiraReuniao: "", dataUltimaInteracao: "", motivoNegativa: "",
-  notas: "", convertidoEm: "", tipoReuniao: "", valorEstimado: "", temperatura: "morna",
+  nome: "", telefone: "", email: "", origem: "Indicação", suborigem: "", patrimonio_estimado: "",
+  etapa: "Prospect", data_primeira_reuniao: "", data_ultima_interacao: "", motivo_negativa: "",
+  notas: "", convertido_em: "", tipo_reuniao: "", valor_estimado: "", temperatura: "morna",
   responsavel: "",
 };

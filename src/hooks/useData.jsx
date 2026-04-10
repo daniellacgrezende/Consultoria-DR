@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, createContext, useContext } from "react";
 import { supabase } from "../lib/supabase";
-import { mapClientFromDB, mapClientToDB, huid, cuid } from "../utils/helpers";
+import { mapClientFromDB, mapClientToDB, mapLeadToDB, huid, cuid } from "../utils/helpers";
 
 const DataContext = createContext({});
 
@@ -39,6 +39,8 @@ export function DataProvider({ children }) {
         supabase.from("rel_envios").select("*"),
       ]);
 
+      if (c.error) console.error("Load clients error:", c.error);
+      if (ld.error) console.error("Load leads error:", ld.error);
       setClientsRaw((c.data || []).map(mapClientFromDB));
       setHistoryRaw(h.data || []);
       setRepasseRaw(r.data || []);
@@ -67,13 +69,15 @@ export function DataProvider({ children }) {
     const dbData = mapClientToDB(clientData);
     if (isNew) {
       dbData.id = dbData.id || cuid();
-      const { data } = await supabase.from("clients").insert(dbData).select();
+      const { data, error } = await supabase.from("clients").insert(dbData).select();
+      if (error) { console.error("saveClient insert error:", error); return; }
       if (data) {
         setClientsRaw((p) => [mapClientFromDB(data[0]), ...p]);
         return data[0].id;
       }
     } else {
-      const { data } = await supabase.from("clients").update(dbData).eq("id", clientData.id).select();
+      const { data, error } = await supabase.from("clients").update(dbData).eq("id", clientData.id).select();
+      if (error) { console.error("saveClient update error:", error); return; }
       if (data) setClientsRaw((p) => p.map((c) => (c.id === clientData.id ? mapClientFromDB(data[0]) : c)));
     }
     return clientData.id;
@@ -203,13 +207,16 @@ export function DataProvider({ children }) {
   }, []);
 
   const saveLead = useCallback(async (entry, isNew = false) => {
+    const dbData = mapLeadToDB(entry);
     if (isNew) {
-      entry.id = entry.id || huid();
-      const { data } = await supabase.from("leads").insert(entry).select();
+      dbData.id = dbData.id || huid();
+      const { data, error } = await supabase.from("leads").insert(dbData).select();
+      if (error) { console.error("saveLead insert error:", error); return; }
       if (data) setLeadsRaw((p) => [data[0], ...p]);
     } else {
-      await supabase.from("leads").update(entry).eq("id", entry.id);
-      setLeadsRaw((p) => p.map((l) => (l.id === entry.id ? { ...l, ...entry } : l)));
+      const { error } = await supabase.from("leads").update(dbData).eq("id", entry.id);
+      if (error) { console.error("saveLead update error:", error); return; }
+      setLeadsRaw((p) => p.map((l) => (l.id === entry.id ? { ...l, ...dbData } : l)));
     }
   }, []);
 
