@@ -146,11 +146,11 @@ export default function ClientDetail() {
             {idade !== null && <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Idade</div><span style={{ fontSize: 12, fontWeight: 600 }}>{idade} anos</span></div>}
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Início Carteira</div><InlineDate value={client.inicio_carteira} onSave={(v) => updateField("inicio_carteira", v)} /></div>
           </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", paddingTop: 8, borderTop: `1px solid ${B.border}` }}>
-            {[["envio_ips", "IPS"], ["seguro_vida", "Seguro"], ["pgbl", "PGBL"], ["vgbl", "VGBL"], ["sucessao", "Sucessão"]].map(([field, lbl]) => (
-              <div key={field} onClick={() => updateField(field, !client[field])} style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 999, border: `1px solid ${client[field] ? "#bbf7d0" : "#e5e7eb"}`, background: client[field] ? "#f0fdf4" : "#f9fafb", cursor: "pointer" }}>
-                <span style={{ fontSize: 11, fontWeight: 700 }}>{client[field] ? "✓" : "○"}</span>
-                <span style={{ fontSize: 11, fontWeight: 600, color: client[field] ? "#16a34a" : "#6b7280" }}>{lbl}</span>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, paddingTop: 10, borderTop: `1px solid ${B.border}` }}>
+            {[["envio_ips", "IPS"], ["seguro_vida", "Seguro de Vida"], ["pgbl", "PGBL"], ["vgbl", "VGBL"], ["sucessao", "Sucessão"]].map(([field, lbl]) => (
+              <div key={field} onClick={() => updateField(field, !client[field])} style={{ cursor: "pointer" }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>{lbl}</div>
+                <span style={{ fontSize: 12, fontWeight: 700, color: client[field] ? "#16a34a" : "#9ca3af" }}>{client[field] ? "Sim" : "Não"}</span>
               </div>
             ))}
           </div>
