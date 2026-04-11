@@ -20,6 +20,10 @@ export default function Clients() {
   const [form, setForm] = useState(EMPTY_CLIENT);
   const [query, setQuery] = useState("");
   const [filterCurva, setFilterCurva] = useState("all");
+  const [filterPerfil, setFilterPerfil] = useState("all");
+  const [filterSeguro, setFilterSeguro] = useState("all");
+  const [plMin, setPlMin] = useState("");
+  const [plMax, setPlMax] = useState("");
   const [showAUM, setShowAUM] = useState(false);
   const [sortCol, setSortCol] = useState("nome");
   const [sortDir, setSortDir] = useState("asc");
@@ -35,10 +39,17 @@ export default function Clients() {
     return d !== null && d > Math.round(days * 0.83);
   }).length, [active]);
 
+  const ufs = useMemo(() => [...new Set(active.map((c) => (c.uf || "").toUpperCase()).filter(Boolean))].sort(), [active]);
+
   const rows = useMemo(() => {
     let r = active.map((c) => ({ ...c, _pl: getPL(c), _curva: getCurva(getPL(c)) }));
     if (filterCurva !== "all") r = r.filter((c) => c._curva === filterCurva);
-    if (ufFilter) r = r.filter((c) => (c.uf || "").toUpperCase().includes(ufFilter));
+    if (filterPerfil !== "all") r = r.filter((c) => (c.perfil || "") === filterPerfil);
+    if (filterSeguro === "sim") r = r.filter((c) => c.seguro_vida || c.seguroVida);
+    if (filterSeguro === "nao") r = r.filter((c) => !c.seguro_vida && !c.seguroVida);
+    if (ufFilter) r = r.filter((c) => (c.uf || "").toUpperCase() === ufFilter);
+    if (plMin !== "") r = r.filter((c) => c._pl >= Number(plMin));
+    if (plMax !== "") r = r.filter((c) => c._pl <= Number(plMax));
     if (query) r = r.filter((c) => `${c.nome} ${c.profissao} ${c.cidade} ${c.grupo_nome || c.grupoNome || ""}`.toLowerCase().includes(query.toLowerCase()));
     const d = sortDir === "asc" ? 1 : -1;
     r.sort((a, b) => {
@@ -49,7 +60,7 @@ export default function Clients() {
       return 0;
     });
     return r;
-  }, [active, history, filterCurva, ufFilter, query, sortCol, sortDir]);
+  }, [active, history, filterCurva, filterPerfil, filterSeguro, ufFilter, plMin, plMax, query, sortCol, sortDir]);
 
   const F = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
   const toggleSort = (col) => { if (sortCol === col) setSortDir((d) => (d === "asc" ? "desc" : "asc")); else { setSortCol(col); setSortDir("asc"); } };
@@ -149,6 +160,8 @@ export default function Clients() {
     e.target.value = "";
   };
 
+  const selStyle = { background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "7px 11px", fontSize: 12, color: B.navy, outline: "none", cursor: "pointer", fontFamily: "inherit" };
+
   const SortIcon = ({ col }) => {
     if (sortCol !== col) return null;
     return <span style={{ color: B.navy, fontSize: 10 }}>{sortDir === "asc" ? "▲" : "▼"}</span>;
@@ -178,14 +191,46 @@ export default function Clients() {
 
       {/* Filters */}
       <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar..." style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "7px 14px", fontSize: 13, color: B.navy, outline: "none", minWidth: 220 }} />
-        <span style={{ fontSize: 11, color: B.muted, fontWeight: 700 }}>UF:</span>
-        <input value={ufFilter} onChange={(e) => setUfFilter(e.target.value.toUpperCase())} placeholder="SP" style={{ width: 60, background: "white", border: `1px solid ${B.border}`, borderRadius: 7, padding: "5px 9px", fontSize: 12, color: B.navy, outline: "none" }} />
-        <span style={{ fontSize: 11, color: B.muted, fontWeight: 700 }}>Curva:</span>
-        <select value={filterCurva} onChange={(e) => setFilterCurva(e.target.value)} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 600, color: B.navy, outline: "none", cursor: "pointer" }}>
-          <option value="all">Todas</option>
+        <input
+          value={query} onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar por nome, profissão, cidade..."
+          style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "7px 14px", fontSize: 13, color: B.navy, outline: "none", minWidth: 240, flex: "1 1 200px" }}
+        />
+        <select value={ufFilter} onChange={(e) => setUfFilter(e.target.value)} style={selStyle}>
+          <option value="">UF (todas)</option>
+          {ufs.map((u) => <option key={u} value={u}>{u}</option>)}
+        </select>
+        <select value={filterCurva} onChange={(e) => setFilterCurva(e.target.value)} style={selStyle}>
+          <option value="all">Curva (todas)</option>
           {["A", "B", "C", "D"].map((k) => <option key={k} value={k}>Curva {k}</option>)}
         </select>
+        <select value={filterPerfil} onChange={(e) => setFilterPerfil(e.target.value)} style={selStyle}>
+          <option value="all">Perfil (todos)</option>
+          {Object.entries(PERFIL_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+        </select>
+        <select value={filterSeguro} onChange={(e) => setFilterSeguro(e.target.value)} style={selStyle}>
+          <option value="all">Seguro (todos)</option>
+          <option value="sim">Com seguro</option>
+          <option value="nao">Sem seguro</option>
+        </select>
+        <input
+          value={plMin} onChange={(e) => setPlMin(e.target.value)}
+          placeholder="PL mínimo (R$)"
+          type="number" min="0"
+          style={{ ...selStyle, minWidth: 130 }}
+        />
+        <input
+          value={plMax} onChange={(e) => setPlMax(e.target.value)}
+          placeholder="PL máximo (R$)"
+          type="number" min="0"
+          style={{ ...selStyle, minWidth: 130 }}
+        />
+        {(ufFilter || filterCurva !== "all" || filterPerfil !== "all" || filterSeguro !== "all" || plMin || plMax) && (
+          <button
+            onClick={() => { setUfFilter(""); setFilterCurva("all"); setFilterPerfil("all"); setFilterSeguro("all"); setPlMin(""); setPlMax(""); }}
+            style={{ fontSize: 11, padding: "7px 12px", borderRadius: 8, border: `1px solid ${B.border}`, background: "white", color: B.muted, cursor: "pointer", whiteSpace: "nowrap" }}
+          >Limpar filtros</button>
+        )}
       </div>
 
       {/* Table */}
