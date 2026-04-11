@@ -11,8 +11,8 @@ import Avatar from "../components/ui/Avatar";
 import { Inp, Sel, Tarea, SecH } from "../components/ui/FormFields";
 
 const EVENT_TYPES = [
-  { v: "reuniao", l: "📅 Reunião", color: "#2563eb" },
-  { v: "evento", l: "📌 Evento", color: "#7c3aed" },
+  { v: "reuniao", l: "Reunião", color: "#2563eb" },
+  { v: "evento", l: "Evento", color: "#7c3aed" },
 ];
 
 export default function Calendar() {
@@ -84,14 +84,29 @@ export default function Calendar() {
     if (!form.end_at) { if (setToast) setToast({ type: "error", text: "Informe o fim." }); return; }
 
     const typeColor = EVENT_TYPES.find((t) => t.v === form.type)?.color || "#2563eb";
-    const entry = { ...form, color: typeColor };
-    // Remove guests from DB entry (not a DB column), keep for Outlook
-    const guests = entry.guests || "";
-    delete entry.guests;
+    const guests = form.guests || "";
+
+    // Build clean DB entry with only valid columns
+    const entry = {
+      title: form.title,
+      description: form.description || "",
+      start_at: form.start_at,
+      end_at: form.end_at,
+      type: form.type || "reuniao",
+      client_id: form.client_id || null,
+      lead_id: form.lead_id || null,
+      location: form.location || "",
+      color: typeColor,
+      outlook_event_id: form.outlook_event_id || "",
+    };
 
     if (!editId) {
       entry.id = huid();
-      const { data } = await supabase.from("calendar_events").insert(entry).select();
+      const { data, error } = await supabase.from("calendar_events").insert(entry).select();
+      if (error) {
+        if (setToast) setToast({ type: "error", text: `Erro ao salvar: ${error.message}` });
+        return;
+      }
       if (data) setEvents((p) => [...p, data[0]]);
       // Open Outlook to create event and send invites
       const outlookUrl = buildOutlookUrl({ ...entry, guests });
@@ -99,7 +114,11 @@ export default function Calendar() {
       if (setToast) setToast({ type: "success", text: "Evento criado! Outlook aberto para enviar convites." });
     } else {
       entry.id = editId;
-      await supabase.from("calendar_events").update(entry).eq("id", editId);
+      const { error } = await supabase.from("calendar_events").update(entry).eq("id", editId);
+      if (error) {
+        if (setToast) setToast({ type: "error", text: `Erro ao atualizar: ${error.message}` });
+        return;
+      }
       setEvents((p) => p.map((e) => (e.id === editId ? { ...e, ...entry } : e)));
       if (setToast) setToast({ type: "success", text: "Evento atualizado." });
     }
@@ -192,7 +211,7 @@ export default function Calendar() {
 
   return (
     <>
-      <SecH eyebrow="Agenda" title="Calendário 📅" desc="Visualize e gerencie seus compromissos." />
+      <SecH eyebrow="Agenda" title="Calendário" desc="Visualize e gerencie seus compromissos." />
 
       {/* Navigation */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -371,7 +390,7 @@ export default function Calendar() {
 
       <Modal open={!!delConf} onClose={() => setDelConf(null)}>
         <div style={{ padding: "26px 30px" }}>
-          <h3 style={{ margin: "0 0 10px", color: "#dc2626", fontSize: 16, fontWeight: 700 }}>⚠️ Remover evento?</h3>
+          <h3 style={{ margin: "0 0 10px", color: "#dc2626", fontSize: 16, fontWeight: 700 }}>Remover evento?</h3>
           <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
             <button onClick={() => setDelConf(null)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>
             <button onClick={() => remove(delConf)} style={{ flex: 1, padding: "10px", background: "#fee2e2", border: "1px solid #fecaca", color: "#dc2626", borderRadius: 7, cursor: "pointer", fontWeight: 700 }}>Remover</button>
