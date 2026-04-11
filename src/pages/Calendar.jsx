@@ -228,28 +228,27 @@ export default function Calendar() {
       </div>
 
       {/* Calendar Grid */}
-      <Card style={{ padding: 0 }}>
+      <Card style={{ padding: 0, overflow: "hidden" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
           {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((d) => (
-            <div key={d} style={{ padding: "10px", textAlign: "center", fontSize: 11, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff" }}>{d}</div>
+            <div key={d} style={{ padding: "5px 2px", textAlign: "center", fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff" }}>{d}</div>
           ))}
           {days.map((day, i) => {
             const dayEvents = day ? getEventsForDay(day) : [];
             return (
-              <div key={i} onClick={() => day && openNew(day)} style={{ minHeight: 80, padding: 4, borderBottom: `1px solid ${B.border}`, borderRight: i % 7 !== 6 ? `1px solid ${B.border}` : "none", background: !day ? "#fafbff" : isToday(day) ? "#eff6ff" : "white", cursor: day ? "pointer" : "default" }}>
+              <div key={i} onClick={() => day && openNew(day)} style={{ minHeight: 56, maxHeight: 90, overflow: "hidden", padding: "2px 3px", borderBottom: `1px solid ${B.border}`, borderRight: i % 7 !== 6 ? `1px solid ${B.border}` : "none", background: !day ? "#fafbff" : isToday(day) ? "#eff6ff" : "white", cursor: day ? "pointer" : "default" }}>
                 {day && (
                   <>
-                    <div style={{ fontSize: 12, fontWeight: isToday(day) ? 800 : 400, color: isToday(day) ? "#2563eb" : B.navy, marginBottom: 4, textAlign: "right", padding: "2px 4px" }}>{day}</div>
-                    {dayEvents.slice(0, 3).map((ev) => {
+                    <div style={{ fontSize: 10, fontWeight: isToday(day) ? 800 : 400, color: isToday(day) ? "#2563eb" : B.navy, marginBottom: 1, textAlign: "right", lineHeight: 1.2 }}>{day}</div>
+                    {dayEvents.slice(0, 4).map((ev) => {
                       const t = EVENT_TYPES.find((t) => t.v === ev.type);
-                      const isOutlook = !!ev.outlook_event_id;
                       return (
-                        <div key={ev.id} onClick={(e) => { e.stopPropagation(); openEdit(ev); }} style={{ fontSize: 9, fontWeight: 600, color: "white", background: t?.color || ev.color || "#2563eb", borderRadius: 4, padding: "2px 4px", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer" }}>
-                          {isOutlook && "📧 "}{ev.title}
+                        <div key={ev.id} onClick={(e) => { e.stopPropagation(); openEdit(ev); }} style={{ fontSize: 8, fontWeight: 600, color: "white", background: t?.color || ev.color || "#2563eb", borderRadius: 3, padding: "1px 3px", marginBottom: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", lineHeight: 1.3 }}>
+                          {ev.title}
                         </div>
                       );
                     })}
-                    {dayEvents.length > 3 && <div style={{ fontSize: 9, color: "#8899bb", textAlign: "center" }}>+{dayEvents.length - 3}</div>}
+                    {dayEvents.length > 4 && <div style={{ fontSize: 8, color: "#8899bb", textAlign: "center", lineHeight: 1 }}>+{dayEvents.length - 4}</div>}
                   </>
                 )}
               </div>
