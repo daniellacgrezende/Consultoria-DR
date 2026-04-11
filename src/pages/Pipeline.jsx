@@ -139,6 +139,15 @@ export default function Pipeline() {
   const openEdit = (l) => { setEditId(l.id); setForm({ ...l }); setModal(true); };
   const F = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
+  const fmtPhone = (v) => {
+    const d = v.replace(/\D/g, "").slice(0, 11);
+    if (d.length <= 2) return d.length ? `(${d}` : "";
+    if (d.length <= 6) return `(${d.slice(0,2)})${d.slice(2)}`;
+    if (d.length <= 10) return `(${d.slice(0,2)})${d.slice(2,6)}-${d.slice(6)}`;
+    return `(${d.slice(0,2)})${d.slice(2,7)}-${d.slice(7)}`;
+  };
+  const FPhone = (k) => (e) => setForm((f) => ({ ...f, [k]: fmtPhone(e.target.value) }));
+
   // ─── Radar handlers ───
   const openRadarNew = () => { setRadarEditId(null); setRadarForm({ nome: "", origem: "", patrimonio_estimado: "", prioridade: "Média", observacoes: "", data_mapeamento: today(), email: "", telefone: "" }); setRadarModal(true); };
   const openRadarEdit = (r) => { setRadarEditId(r.id); setRadarForm({ ...r }); setRadarModal(true); };
@@ -335,7 +344,7 @@ export default function Pipeline() {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
             <div style={{ gridColumn: "1/-1" }}><Inp label="Nome *" value={form.nome} onChange={F("nome")} placeholder="Nome do lead" /></div>
-            <Inp label="Telefone" value={form.telefone || ""} onChange={F("telefone")} />
+            <Inp label="Telefone" value={form.telefone || ""} onChange={FPhone("telefone")} placeholder="(00)99999-9999" />
             <Inp label="E-mail" value={form.email || ""} onChange={F("email")} />
             <Sel label="Origem" value={form.origem || "Indicação"} onChange={F("origem")} opts={LEAD_ORIGENS.map((o) => ({ v: o, l: o }))} />
             <Inp label="Patrimônio Estimado (R$)" type="number" value={form.patrimonio_estimado || ""} onChange={F("patrimonio_estimado")} />
