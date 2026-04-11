@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { supabase } from "../lib/supabase";
 import { useData } from "../hooks/useData";
 import { B } from "../utils/constants";
+import { huid } from "../utils/helpers";
+import { parseICS } from "../utils/icsParser";
 import { SecH, Inp } from "../components/ui/FormFields";
 import Card from "../components/ui/Card";
 import Modal from "../components/ui/Modal";
@@ -9,6 +12,44 @@ const FIXED_STAGES = ["lead", "cliente", "perdido", "nutricao"];
 
 export default function Settings() {
   const { pipelineStages, savePipelineStage, deletePipelineStage, setToast } = useData();
+
+  // ─── Outlook sync state ───
+  const [syncUrl, setSyncUrl] = useState(localStorage.getItem("outlook_ics_url") || "");
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState(null);
+  const [outlookEvents, setOutlookEvents] = useState([]);
+
+  useEffect(() => {
+    supabase.from("calendar_events").select("id, outlook_event_id").then(({ data }) => {
+      setOutlookEvents((data || []).filter((e) => e.outlook_event_id));
+    });
+  }, []);
+
+  const handleUrlSync = async () => {
+    if (!syncUrl?.trim()) { setSyncResult({ type: "error", text: "Cole a URL do calendário." }); return; }
+    setSyncing(true);
+    setSyncResult(null);
+    localStorage.setItem("outlook_ics_url", syncUrl);
+    try {
+      const resp = await fetch(`/api/calendar-proxy?url=${encodeURIComponent(syncUrl)}`);
+      if (!resp.ok) { const err = await resp.json().catch(() => ({})); throw new Error(err.error || `Erro ${resp.status}`); }
+      const text = await resp.text();
+      const parsed = parseICS(text);
+      if (!parsed.length) { setSyncResult({ type: "error", text: "Nenhum evento encontrado no arquivo." }); setSyncing(false); return; }
+      const { data: existing } = await supabase.from("calendar_events").select("outlook_event_id");
+      const existingIds = new Set((existing || []).filter((e) => e.outlook_event_id).map((e) => e.outlook_event_id));
+      const newEvents = parsed.filter((e) => !existingIds.has(e.outlook_event_id) && e.start_at && e.end_at);
+      if (!newEvents.length) { setSyncResult({ type: "info", text: `${parsed.length} eventos encontrados, todos já sincronizados.` }); setSyncing(false); return; }
+      const toInsert = newEvents.map((e) => ({ id: huid(), title: e.title, description: e.description || "", start_at: e.start_at, end_at: e.end_at, type: e.type || "reuniao", color: e.color || "#2563eb", location: e.location || "", outlook_event_id: e.outlook_event_id || "", client_id: null, lead_id: null }));
+      const { error } = await supabase.from("calendar_events").insert(toInsert);
+      if (error) { setSyncResult({ type: "error", text: `Erro ao salvar: ${error.message}` }); setSyncing(false); return; }
+      setSyncResult({ type: "success", text: `${toInsert.length} evento(s) importado(s)! (${parsed.length - newEvents.length} duplicados ignorados)` });
+      if (setToast) setToast({ type: "success", text: `${toInsert.length} eventos importados do Outlook!` });
+    } catch (err) {
+      setSyncResult({ type: "error", text: `Erro na sincronização: ${err.message}` });
+    }
+    setSyncing(false);
+  };
 
   const [editId, setEditId] = useState(null);
   const [editForm, setEditForm] = useState({});
@@ -100,6 +141,56 @@ export default function Settings() {
         {pipelineStages.length === 0 && (
           <div style={{ padding: 32, textAlign: "center", color: B.muted, fontSize: 12 }}>Carregando etapas…</div>
         )}
+      </Card>
+
+      {/* ═══ OUTLOOK / TEAMS SYNC ═══ */}
+      <Card style={{ marginTop: 20 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${B.border}` }}>
+          <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 16 }}>📧</span> Sincronizar Outlook / Teams
+          </div>
+          {outlookEvents.length > 0 && (
+            <span style={{ fontSize: 10, background: "#e1effe", color: "#0078d4", padding: "2px 8px", borderRadius: 999, fontWeight: 600 }}>{outlookEvents.length} eventos importados</span>
+          )}
+        </div>
+
+        <p style={{ fontSize: 12, color: B.gray, marginBottom: 16, marginTop: 0 }}>Importe reuniões e eventos do Outlook e Teams para o seu calendário.</p>
+
+        {syncResult && (
+          <div style={{ padding: "10px 14px", borderRadius: 8, marginBottom: 16, fontSize: 12, fontWeight: 600, background: syncResult.type === "success" ? "#f0fdf4" : syncResult.type === "error" ? "#fef2f2" : "#eff6ff", color: syncResult.type === "success" ? "#16a34a" : syncResult.type === "error" ? "#dc2626" : "#2563eb", border: `1px solid ${syncResult.type === "success" ? "#bbf7d0" : syncResult.type === "error" ? "#fecaca" : "#bfdbfe"}` }}>
+            {syncResult.text}
+          </div>
+        )}
+
+        <div style={{ background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 12, padding: 20 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 10 }}>Sincronizar via URL do calendário</div>
+          <p style={{ fontSize: 11, color: B.gray, margin: "0 0 12px" }}>Cole a URL ICS do calendário publicado. A URL fica salva para sincronizações futuras.</p>
+          <div style={{ fontSize: 11, color: B.gray, background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: 12, marginBottom: 12 }}>
+            <strong style={{ color: B.navy }}>Como obter a URL:</strong>
+            <ol style={{ margin: "6px 0 0", paddingLeft: 18, lineHeight: 1.8 }}>
+              <li>No <strong>Outlook Web</strong>, vá em <strong>Configurações → Calendário → Calendários compartilhados</strong></li>
+              <li>Em <strong>"Publicar um calendário"</strong>, selecione seu calendário</li>
+              <li>Escolha <strong>"Pode ver todos os detalhes"</strong> e clique <strong>"Publicar"</strong></li>
+              <li>Copie o <strong>link ICS</strong> (começa com https://outlook.office365.com/...)</li>
+            </ol>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input type="url" value={syncUrl} onChange={(e) => setSyncUrl(e.target.value)} placeholder="https://outlook.office365.com/owa/calendar/..." style={{ flex: 1, background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "10px 12px", fontSize: 12, color: B.navy, outline: "none" }} />
+            <button onClick={handleUrlSync} disabled={syncing} style={{ padding: "10px 20px", background: syncing ? "#94a3b8" : "#16a34a", color: "white", border: "none", borderRadius: 8, cursor: syncing ? "wait" : "pointer", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" }}>
+              {syncing ? "⏳ Sincronizando..." : "🔄 Sincronizar"}
+            </button>
+          </div>
+          {localStorage.getItem("outlook_ics_url") && (
+            <div style={{ fontSize: 10, color: "#16a34a", marginTop: 6 }}>✓ URL salva — clique em Sincronizar para atualizar</div>
+          )}
+        </div>
+
+        <div style={{ marginTop: 16, fontSize: 11, color: B.gray, display: "flex", alignItems: "start", gap: 8, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, padding: 12 }}>
+          <span style={{ fontSize: 16 }}>💡</span>
+          <div>
+            <strong style={{ color: "#92400e" }}>Dica:</strong> Reuniões do <strong>Microsoft Teams</strong> aparecem automaticamente no calendário do Outlook. Ao sincronizar o Outlook, as reuniões do Teams serão importadas também!
+          </div>
+        </div>
       </Card>
 
       {/* Modal Nova Etapa */}

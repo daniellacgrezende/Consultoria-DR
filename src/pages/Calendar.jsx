@@ -1,10 +1,8 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { useData } from "../hooks/useData";
 import { B } from "../utils/constants";
-import { fmtDate } from "../utils/formatters";
 import { huid } from "../utils/helpers";
-import { parseICS } from "../utils/icsParser";
 import Card from "../components/ui/Card";
 import Modal from "../components/ui/Modal";
 import Avatar from "../components/ui/Avatar";
@@ -13,6 +11,11 @@ import { Inp, Sel, Tarea, SecH } from "../components/ui/FormFields";
 const EVENT_TYPES = [
   { v: "reuniao", l: "Reunião", color: "#2563eb" },
   { v: "evento", l: "Evento", color: "#7c3aed" },
+];
+
+const MONTHS = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 ];
 
 export default function Calendar() {
@@ -24,16 +27,20 @@ export default function Calendar() {
   const [form, setForm] = useState({ title: "", description: "", start_at: "", end_at: "", type: "reuniao", client_id: "", location: "", color: "#2563eb", guests: "" });
   const [viewDate, setViewDate] = useState(new Date());
   const [delConf, setDelConf] = useState(null);
+  const [monthDropdown, setMonthDropdown] = useState(false);
+  const dropdownRef = useRef(null);
 
-  // ─── Outlook sync state ───
-  const [syncModal, setSyncModal] = useState(false);
-  const [syncUrl, setSyncUrl] = useState(localStorage.getItem("outlook_ics_url") || "");
-  const [syncing, setSyncing] = useState(false);
-  const [syncResult, setSyncResult] = useState(null);
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => { if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setMonthDropdown(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   // Load events
   const loadEvents = useCallback(async () => {
-    const { data } = await supabase.from("calendar_events").select("*").order("start_at");
+    const { data, error } = await supabase.from("calendar_events").select("*").order("start_at");
+    if (error) console.error("[Calendar] Erro ao carregar:", error);
     setEvents(data || []);
     setLoaded(true);
   }, []);
@@ -50,7 +57,6 @@ export default function Calendar() {
   const month = viewDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDay = new Date(year, month, 1).getDay();
-  const monthName = viewDate.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 
   const monthEvents = useMemo(() => {
     const prefix = `${year}-${String(month + 1).padStart(2, "0")}`;
@@ -93,7 +99,6 @@ export default function Calendar() {
     const typeColor = EVENT_TYPES.find((t) => t.v === form.type)?.color || "#2563eb";
     const guests = form.guests || "";
 
-    // Build clean DB entry with only valid columns
     const entry = {
       title: form.title,
       description: form.description || "",
@@ -121,7 +126,6 @@ export default function Calendar() {
           setEvents((p) => [...p, data[0]]);
           setToast({ type: "success", text: "Evento criado com sucesso!" });
         }
-        // Open Outlook after successful save
         if (guests.trim()) {
           const outlookUrl = buildOutlookUrl({ ...entry, guests });
           window.open(outlookUrl, "_blank");
@@ -152,6 +156,7 @@ export default function Calendar() {
 
   const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
   const nextMonth = () => setViewDate(new Date(year, month + 1, 1));
+  const goToMonth = (m) => { setViewDate(new Date(year, m, 1)); setMonthDropdown(false); };
   const todayDate = new Date();
   const isToday = (day) => todayDate.getFullYear() === year && todayDate.getMonth() === month && todayDate.getDate() === day;
 
@@ -159,91 +164,45 @@ export default function Calendar() {
   for (let i = 0; i < firstDay; i++) days.push(null);
   for (let d = 1; d <= daysInMonth; d++) days.push(d);
 
-  // ─── Outlook/Teams Sync ───
-  const importEvents = async (parsed) => {
-    if (!parsed.length) {
-      setSyncResult({ type: "error", text: "Nenhum evento encontrado no arquivo." });
-      return;
-    }
-
-    // Get existing outlook_event_ids to avoid duplicates
-    const existingIds = new Set(events.filter((e) => e.outlook_event_id).map((e) => e.outlook_event_id));
-
-    const newEvents = parsed.filter((e) => !existingIds.has(e.outlook_event_id) && e.start_at && e.end_at);
-
-    if (newEvents.length === 0) {
-      setSyncResult({ type: "info", text: `${parsed.length} eventos encontrados, mas todos já estão sincronizados.` });
-      return;
-    }
-
-    // Prepare for insert
-    const toInsert = newEvents.map((e) => ({
-      id: huid(),
-      title: e.title,
-      description: e.description || "",
-      start_at: e.start_at,
-      end_at: e.end_at,
-      type: e.type || "reuniao",
-      color: e.color || "#2563eb",
-      location: e.location || "",
-      outlook_event_id: e.outlook_event_id || "",
-      client_id: null,
-      lead_id: null,
-    }));
-
-    const { data, error } = await supabase.from("calendar_events").insert(toInsert).select();
-    if (error) {
-      setSyncResult({ type: "error", text: `Erro ao salvar: ${error.message}` });
-      return;
-    }
-
-    setEvents((p) => [...p, ...(data || toInsert)]);
-    setSyncResult({ type: "success", text: `${toInsert.length} evento(s) importado(s) com sucesso! (${parsed.length - newEvents.length} duplicados ignorados)` });
-    if (setToast) setToast({ type: "success", text: `${toInsert.length} eventos importados do Outlook!` });
-  };
-
-  const handleUrlSync = async () => {
-    if (!syncUrl?.trim()) {
-      setSyncResult({ type: "error", text: "Cole a URL do calendário." });
-      return;
-    }
-    setSyncing(true);
-    setSyncResult(null);
-    localStorage.setItem("outlook_ics_url", syncUrl);
-    try {
-      const resp = await fetch(`/api/calendar-proxy?url=${encodeURIComponent(syncUrl)}`);
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error(err.error || `Erro ${resp.status}`);
-      }
-      const text = await resp.text();
-      const parsed = parseICS(text);
-      await importEvents(parsed);
-    } catch (err) {
-      setSyncResult({ type: "error", text: `Erro na sincronização: ${err.message}` });
-    }
-    setSyncing(false);
-  };
-
-  // Count outlook events
-  const outlookCount = events.filter((e) => e.outlook_event_id).length;
-
   return (
     <>
       <SecH eyebrow="Agenda" title="Calendário" desc="Visualize e gerencie seus compromissos." />
 
       {/* Navigation */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <button onClick={prevMonth} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontSize: 13, fontWeight: 600, color: B.navy }}>← Anterior</button>
-        <span style={{ fontSize: 18, fontWeight: 700, color: B.navy, textTransform: "capitalize" }}>{monthName}</span>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={refresh} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "8px 12px", cursor: "pointer", fontSize: 13, color: B.navy }} title="Atualizar calendário">🔄</button>
-          <button onClick={() => setSyncModal(true)} style={{ background: "#0078d4", color: "white", border: "none", borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 14 }}>📧</span> Outlook / Teams
-            {outlookCount > 0 && <span style={{ background: "rgba(255,255,255,0.3)", borderRadius: 999, padding: "1px 6px", fontSize: 10 }}>{outlookCount}</span>}
+        {/* Month selector with dropdown */}
+        <div ref={dropdownRef} style={{ position: "relative", display: "flex", alignItems: "center", gap: 4 }}>
+          <button onClick={prevMonth} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: "8px 0 0 8px", padding: "8px 10px", cursor: "pointer", fontSize: 14, fontWeight: 600, color: B.navy, lineHeight: 1 }}>‹</button>
+          <button onClick={() => setMonthDropdown((v) => !v)} style={{ background: "white", border: `1px solid ${B.border}`, borderLeft: "none", borderRight: "none", padding: "8px 18px", cursor: "pointer", fontSize: 14, fontWeight: 700, color: B.navy, textTransform: "capitalize", minWidth: 170, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            {MONTHS[month]} {year}
+            <span style={{ fontSize: 10, color: B.gray }}>▾</span>
           </button>
+          <button onClick={nextMonth} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: "0 8px 8px 0", padding: "8px 10px", cursor: "pointer", fontSize: 14, fontWeight: 600, color: B.navy, lineHeight: 1 }}>›</button>
+
+          {/* Dropdown */}
+          {monthDropdown && (
+            <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "white", border: `1px solid ${B.border}`, borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", zIndex: 100, padding: 8, width: 220 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
+                {MONTHS.map((m, i) => (
+                  <button key={m} onClick={() => goToMonth(i)} style={{ padding: "7px 4px", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 11, fontWeight: i === month ? 700 : 400, background: i === month ? B.brand : "transparent", color: i === month ? "white" : B.navy, transition: "all 0.1s" }}
+                    onMouseEnter={(e) => { if (i !== month) e.currentTarget.style.background = "#f0f4ff"; }}
+                    onMouseLeave={(e) => { if (i !== month) e.currentTarget.style.background = "transparent"; }}
+                  >{m.slice(0, 3)}</button>
+                ))}
+              </div>
+              {/* Year navigation */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${B.border}`, marginTop: 8, paddingTop: 8 }}>
+                <button onClick={() => setViewDate(new Date(year - 1, month, 1))} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: B.gray, fontWeight: 600 }}>‹ {year - 1}</button>
+                <span style={{ fontSize: 12, fontWeight: 700, color: B.navy }}>{year}</span>
+                <button onClick={() => setViewDate(new Date(year + 1, month, 1))} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: B.gray, fontWeight: 600 }}>{year + 1} ›</button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={refresh} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "8px 12px", cursor: "pointer", fontSize: 13, color: B.navy, display: "flex", alignItems: "center", gap: 5 }} title="Atualizar calendário">🔄 Atualizar</button>
           <button onClick={() => openNew(null)} style={{ background: B.brand, color: "white", border: "none", borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>+ Novo Evento</button>
-          <button onClick={nextMonth} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontSize: 13, fontWeight: 600, color: B.navy }}>Próximo →</button>
         </div>
       </div>
 
@@ -313,67 +272,6 @@ export default function Calendar() {
           </Card>
         );
       })()}
-
-      {/* ═══ MODAL SYNC OUTLOOK ═══ */}
-      <Modal open={syncModal} onClose={() => { setSyncModal(false); setSyncResult(null); }} wide>
-        <div style={{ padding: "26px 30px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-            <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: B.navy }}>📧 Sincronizar com Outlook / Teams</h3>
-            <button onClick={() => { setSyncModal(false); setSyncResult(null); }} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: B.gray }}>×</button>
-          </div>
-          <p style={{ fontSize: 12, color: B.gray, marginBottom: 20, marginTop: 4 }}>Importe reuniões e eventos do Outlook e Teams para o seu calendário.</p>
-
-          {/* Resultado do sync */}
-          {syncResult && (
-            <div style={{ padding: "10px 14px", borderRadius: 8, marginBottom: 16, fontSize: 12, fontWeight: 600, background: syncResult.type === "success" ? "#f0fdf4" : syncResult.type === "error" ? "#fef2f2" : "#eff6ff", color: syncResult.type === "success" ? "#16a34a" : syncResult.type === "error" ? "#dc2626" : "#2563eb", border: `1px solid ${syncResult.type === "success" ? "#bbf7d0" : syncResult.type === "error" ? "#fecaca" : "#bfdbfe"}` }}>
-              {syncResult.text}
-            </div>
-          )}
-
-          {/* Sync via URL */}
-          <div style={{ background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 12, padding: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-              <span style={{ fontWeight: 700, fontSize: 13, color: B.navy }}>Sincronizar via URL do calendário</span>
-            </div>
-            <p style={{ fontSize: 11, color: B.gray, margin: "0 0 12px" }}>
-              Cole a URL ICS do calendário publicado. A URL fica salva para sincronizações futuras.
-            </p>
-            <div style={{ fontSize: 11, color: B.gray, background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: 12, marginBottom: 12 }}>
-              <strong style={{ color: B.navy }}>Como obter a URL:</strong>
-              <ol style={{ margin: "6px 0 0", paddingLeft: 18, lineHeight: 1.8 }}>
-                <li>No <strong>Outlook Web</strong>, vá em <strong>Configurações → Calendário → Calendários compartilhados</strong></li>
-                <li>Em <strong>"Publicar um calendário"</strong>, selecione seu calendário</li>
-                <li>Escolha <strong>"Pode ver todos os detalhes"</strong> e clique <strong>"Publicar"</strong></li>
-                <li>Copie o <strong>link ICS</strong> (começa com https://outlook.office365.com/...)</li>
-              </ol>
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <input
-                type="url"
-                value={syncUrl}
-                onChange={(e) => setSyncUrl(e.target.value)}
-                placeholder="https://outlook.office365.com/owa/calendar/..."
-                style={{ flex: 1, background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "10px 12px", fontSize: 12, color: B.navy, outline: "none" }}
-              />
-              <button onClick={handleUrlSync} disabled={syncing} style={{ padding: "10px 20px", background: syncing ? "#94a3b8" : "#16a34a", color: "white", border: "none", borderRadius: 8, cursor: syncing ? "wait" : "pointer", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" }}>
-                {syncing ? "⏳ Sincronizando..." : "🔄 Sincronizar"}
-              </button>
-            </div>
-            {localStorage.getItem("outlook_ics_url") && (
-              <div style={{ fontSize: 10, color: "#16a34a", marginTop: 6 }}>✓ URL salva — clique em Sincronizar para atualizar</div>
-            )}
-          </div>
-
-          {/* Info */}
-          <div style={{ marginTop: 16, fontSize: 11, color: B.gray, display: "flex", alignItems: "start", gap: 8, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, padding: 12 }}>
-            <span style={{ fontSize: 16 }}>💡</span>
-            <div>
-              <strong style={{ color: "#92400e" }}>Dica:</strong> Reuniões do <strong>Microsoft Teams</strong> aparecem automaticamente no calendário do Outlook. Ao sincronizar o Outlook, as reuniões do Teams serão importadas também!
-              <br />Eventos duplicados são detectados automaticamente e ignorados.
-            </div>
-          </div>
-        </div>
-      </Modal>
 
       {/* Modal Evento */}
       <Modal open={modal} onClose={() => setModal(false)}>
