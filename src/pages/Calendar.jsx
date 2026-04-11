@@ -12,9 +12,7 @@ import { Inp, Sel, Tarea, SecH } from "../components/ui/FormFields";
 
 const EVENT_TYPES = [
   { v: "reuniao", l: "📅 Reunião", color: "#2563eb" },
-  { v: "followup", l: "📞 Follow-up", color: "#7c3aed" },
-  { v: "lembrete", l: "🔔 Lembrete", color: "#f59e0b" },
-  { v: "pessoal", l: "🏠 Pessoal", color: "#6b7280" },
+  { v: "evento", l: "📌 Evento", color: "#7c3aed" },
 ];
 
 export default function Calendar() {
@@ -23,7 +21,7 @@ export default function Calendar() {
   const [loaded, setLoaded] = useState(false);
   const [modal, setModal] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ title: "", description: "", start_at: "", end_at: "", type: "reuniao", client_id: "", location: "", color: "#2563eb" });
+  const [form, setForm] = useState({ title: "", description: "", start_at: "", end_at: "", type: "reuniao", client_id: "", location: "", color: "#2563eb", guests: "" });
   const [viewDate, setViewDate] = useState(new Date());
   const [delConf, setDelConf] = useState(null);
 
@@ -63,23 +61,47 @@ export default function Calendar() {
     const dateStr = day ? `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}T09:00` : "";
     const endStr = day ? `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}T10:00` : "";
     setEditId(null);
-    setForm({ title: "", description: "", start_at: dateStr, end_at: endStr, type: "reuniao", client_id: "", location: "", color: "#2563eb" });
+    setForm({ title: "", description: "", start_at: dateStr, end_at: endStr, type: "reuniao", client_id: "", location: "", color: "#2563eb", guests: "" });
     setModal(true);
   };
 
-  const openEdit = (ev) => { setEditId(ev.id); setForm({ ...ev, start_at: ev.start_at?.slice(0, 16), end_at: ev.end_at?.slice(0, 16) }); setModal(true); };
+  const openEdit = (ev) => { setEditId(ev.id); setForm({ ...ev, start_at: ev.start_at?.slice(0, 16), end_at: ev.end_at?.slice(0, 16), guests: ev.guests || "" }); setModal(true); };
+
+  const buildOutlookUrl = (entry) => {
+    const params = new URLSearchParams();
+    params.set("subject", entry.title);
+    params.set("startdt", new Date(entry.start_at).toISOString());
+    params.set("enddt", new Date(entry.end_at).toISOString());
+    if (entry.location) params.set("location", entry.location);
+    if (entry.description) params.set("body", entry.description);
+    if (entry.guests) params.set("to", entry.guests.replace(/\s/g, ""));
+    return `https://outlook.office.com/calendar/0/deeplink/compose?${params.toString()}`;
+  };
 
   const save = async () => {
-    if (!form.title?.trim() || !form.start_at || !form.end_at) return;
-    const entry = { ...form };
+    if (!form.title?.trim()) { if (setToast) setToast({ type: "error", text: "Informe o título." }); return; }
+    if (!form.start_at) { if (setToast) setToast({ type: "error", text: "Informe o início." }); return; }
+    if (!form.end_at) { if (setToast) setToast({ type: "error", text: "Informe o fim." }); return; }
+
+    const typeColor = EVENT_TYPES.find((t) => t.v === form.type)?.color || "#2563eb";
+    const entry = { ...form, color: typeColor };
+    // Remove guests from DB entry (not a DB column), keep for Outlook
+    const guests = entry.guests || "";
+    delete entry.guests;
+
     if (!editId) {
       entry.id = huid();
       const { data } = await supabase.from("calendar_events").insert(entry).select();
       if (data) setEvents((p) => [...p, data[0]]);
+      // Open Outlook to create event and send invites
+      const outlookUrl = buildOutlookUrl({ ...entry, guests });
+      window.open(outlookUrl, "_blank");
+      if (setToast) setToast({ type: "success", text: "Evento criado! Outlook aberto para enviar convites." });
     } else {
       entry.id = editId;
       await supabase.from("calendar_events").update(entry).eq("id", editId);
       setEvents((p) => p.map((e) => (e.id === editId ? { ...e, ...entry } : e)));
+      if (setToast) setToast({ type: "success", text: "Evento atualizado." });
     }
     setModal(false);
   };
@@ -322,17 +344,23 @@ export default function Calendar() {
             <Inp label="Fim *" type="datetime-local" value={form.end_at} onChange={F("end_at")} />
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Sel label="Tipo" value={form.type} onChange={F("type")} opts={EVENT_TYPES.map((t) => ({ v: t.v, l: t.l }))} />
+            <Sel label="Tipo" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value, color: EVENT_TYPES.find((t) => t.v === e.target.value)?.color || "#2563eb" }))} opts={EVENT_TYPES.map((t) => ({ v: t.v, l: t.l }))} />
             <div style={{ marginBottom: 13 }}>
-              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Cliente (opcional)</label>
+              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Cliente</label>
               <select value={form.client_id || ""} onChange={F("client_id")} style={{ width: "100%", background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 7, padding: "8px 11px", fontSize: 13, color: B.navy, outline: "none" }}>
                 <option value="">— Nenhum —</option>
                 {[...clients].sort((a, b) => a.nome.localeCompare(b.nome)).map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
               </select>
             </div>
           </div>
-          <Inp label="Local" value={form.location || ""} onChange={F("location")} placeholder="Escritório, Online, etc." />
+          <Inp label="E-mail convidados" value={form.guests || ""} onChange={F("guests")} placeholder="email1@exemplo.com, email2@exemplo.com" />
+          <Inp label="Local" value={form.location || ""} onChange={F("location")} placeholder="Escritório, Online, Teams, etc." />
           <Tarea label="Descrição" value={form.description || ""} onChange={F("description")} placeholder="Detalhes do evento..." />
+          {!editId && (
+            <div style={{ fontSize: 11, color: "#0078d4", background: "#e1effe", border: "1px solid #bfdbfe", borderRadius: 8, padding: "8px 12px", marginTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 14 }}>📧</span> Ao criar, o Outlook será aberto para adicionar à sua agenda e enviar convites aos convidados.
+            </div>
+          )}
           <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
             <button onClick={() => setModal(false)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>
             {editId && <button onClick={() => { remove(editId); setModal(false); }} style={{ padding: "10px 16px", background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 7, cursor: "pointer", fontWeight: 600 }}>🗑</button>}
