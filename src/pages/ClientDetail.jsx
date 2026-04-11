@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useData } from "../hooks/useData";
-import { B } from "../utils/constants";
+import { B, PERFIL_MAP, EMPTY_CLIENT, LEAD_ORIGENS, PERIOD_OPTIONS } from "../utils/constants";
 import { money, fmtDate } from "../utils/formatters";
 import { getCurva, getCurrentPL, calcIdade, daysSince, getPeriodDays, getReuniaoStatusDynamic, getLiquidezAtual, huid, today } from "../utils/helpers";
 import Card from "../components/ui/Card";
@@ -9,7 +9,7 @@ import Avatar from "../components/ui/Avatar";
 import Modal from "../components/ui/Modal";
 import { SBadge, PBadge, CBadge } from "../components/ui/Badge";
 import { InlineText, InlineDate } from "../components/ui/InlineEdit";
-import { SecH, Inp, Sel, Tarea } from "../components/ui/FormFields";
+import { SecH, Inp, Sel, Tarea, Chk } from "../components/ui/FormFields";
 
 export default function ClientDetail() {
   const { id } = useParams();
@@ -17,6 +17,18 @@ export default function ClientDetail() {
   const { clients, history, aportes, reunioes, saveClient, deleteClient, saveReuniao, deleteReuniao, saveAporte, setToast } = useData();
 
   const client = clients.find((c) => c.id === id);
+
+  // ─── Edit modal ───
+  const [editModal, setEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const openEditModal = () => { setEditForm({ ...client }); setEditModal(true); };
+  const EF = (k) => (e) => setEditForm((f) => ({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
+  const saveEdit = async () => {
+    if (!editForm.nome?.trim()) { setToast({ type: "error", text: "Informe o nome." }); return; }
+    await saveClient({ ...editForm, id: client.id }, false);
+    setEditModal(false);
+    setToast({ type: "success", text: "Cadastro atualizado." });
+  };
 
   // ─── Reunião modal ───
   const [rhModal, setRhModal] = useState(false);
@@ -102,9 +114,12 @@ export default function ClientDetail() {
             </div>
           </div>
         </div>
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: 11, opacity: 0.5, textTransform: "uppercase" }}>PL Atual</div>
-          <div style={{ fontSize: 22, fontWeight: 700 }}>{money(pl)}</div>
+        <div style={{ textAlign: "right", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10 }}>
+          <div>
+            <div style={{ fontSize: 11, opacity: 0.5, textTransform: "uppercase" }}>PL Atual</div>
+            <div style={{ fontSize: 22, fontWeight: 700 }}>{money(pl)}</div>
+          </div>
+          <button onClick={openEditModal} style={{ padding: "7px 16px", background: "rgba(255,255,255,0.15)", color: "white", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Editar Cadastro</button>
         </div>
       </div>
 
@@ -241,6 +256,77 @@ export default function ClientDetail() {
         <button onClick={async () => { await updateField("status", "inativo"); navigate("/clients"); setToast({ type: "success", text: "Arquivado." }); }} style={{ padding: "9px 18px", background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Arquivar</button>
         <button onClick={async () => { if (confirm("Remover permanentemente?")) { await deleteClient(id); navigate("/clients"); setToast({ type: "success", text: "Removido." }); } }} style={{ padding: "9px 18px", background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Remover</button>
       </div>
+
+      {/* ═══ MODAL EDITAR CADASTRO ═══ */}
+      <Modal open={editModal} onClose={() => setEditModal(false)} wide>
+        <div style={{ padding: "26px 30px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: B.navy }}>Editar Cadastro</h3>
+            <button onClick={() => setEditModal(false)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: B.gray }}>×</button>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}` }}>Dados Pessoais</div>
+            <div style={{ gridColumn: "1/-1" }}><Inp label="Nome completo *" value={editForm.nome || ""} onChange={EF("nome")} /></div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 70px", gap: 8 }}><Inp label="Cidade" value={editForm.cidade || ""} onChange={EF("cidade")} /><Inp label="UF" value={editForm.uf || ""} onChange={EF("uf")} /></div>
+            <Inp label="Profissão" value={editForm.profissao || ""} onChange={EF("profissao")} />
+            <Sel label="Estado Civil" value={editForm.estado_civil || editForm.estadoCivil || ""} onChange={EF("estado_civil")} opts={[{ v: "", l: "—" }, { v: "Solteiro", l: "Solteiro" }, { v: "Casado", l: "Casado" }, { v: "Divorciado", l: "Divorciado" }, { v: "Viúvo", l: "Viúvo" }, { v: "União estável", l: "União estável" }]} />
+            <Inp label="Filhos" value={editForm.filhos || ""} onChange={EF("filhos")} />
+            <Inp label="Cônjuge" value={editForm.conjuge || ""} onChange={EF("conjuge")} />
+            <Inp label="Data Nascimento" value={editForm.data_nascimento || editForm.dataNascimento || ""} onChange={EF("data_nascimento")} type="date" />
+            <div style={{ gridColumn: "1/-1" }}><Inp label="Hobbies" value={editForm.hobbies || ""} onChange={EF("hobbies")} /></div>
+
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Status e Perfil</div>
+            <Sel label="Status" value={editForm.status || "ativo"} onChange={EF("status")} opts={[{ v: "ativo", l: "Ativo" }, { v: "inativo", l: "Inativo" }]} />
+            <Sel label="Perfil" value={editForm.perfil || "moderado"} onChange={EF("perfil")} opts={Object.entries(PERFIL_MAP).map(([k, v]) => ({ v: k, l: v.label }))} />
+
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Financeiro</div>
+            <Inp label="PL Inicial (R$)" value={editForm.pl_inicial ?? editForm.plInicial ?? ""} onChange={EF("pl_inicial")} type="number" />
+            <Inp label="Aporte Mensal (R$)" value={editForm.aporte_mensal ?? editForm.aporteMensal ?? ""} onChange={EF("aporte_mensal")} type="number" />
+            <Inp label="Meta Patrimonial (R$)" value={editForm.meta_patrimonio ?? editForm.metaPatrimonio ?? ""} onChange={EF("meta_patrimonio")} type="number" />
+            <Inp label="Liquidez Desejada (R$)" value={editForm.liquidez_desejada ?? editForm.liquidezDesejada ?? ""} onChange={EF("liquidez_desejada")} type="number" />
+            <Inp label="Taxa Contratada" value={editForm.taxa_contratada ?? editForm.taxaContratada ?? ""} onChange={EF("taxa_contratada")} />
+            <Inp label="Receita Mensal (R$)" value={editForm.receita_mensal ?? editForm.receitaMensal ?? ""} onChange={EF("receita_mensal")} type="number" />
+            <Sel label="Forma Pagamento" value={editForm.forma_pagamento ?? editForm.formaPagamento ?? "XP"} onChange={EF("forma_pagamento")} opts={["XP", "BTG", "Boleto", "Outros"].map((v) => ({ v, l: v }))} />
+            <Sel label="Declaração IR" value={editForm.declaracao_ir ?? editForm.declaracaoIR ?? "Simplificada"} onChange={EF("declaracao_ir")} opts={["Simplificada", "Completa"].map((v) => ({ v, l: v }))} />
+            <div style={{ gridColumn: "1/-1" }}><Inp label="Corretoras" value={editForm.corretoras || ""} onChange={EF("corretoras")} placeholder="XP, BTG, Avenue…" /></div>
+
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Origem</div>
+            <div style={{ gridColumn: "1/-1" }}>
+              <Sel label="Origem" value={editForm.origem_cliente || editForm.origemCliente || ""} onChange={EF("origem_cliente")} opts={[{ v: "", l: "—" }, ...LEAD_ORIGENS.map((o) => ({ v: o, l: o }))]} />
+            </div>
+
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Datas</div>
+            <Inp label="Início Carteira" value={editForm.inicio_carteira ?? editForm.inicioCarteira ?? ""} onChange={EF("inicio_carteira")} type="date" />
+            <Inp label="Última Reunião" value={editForm.ultima_reuniao ?? editForm.ultimaReuniao ?? ""} onChange={EF("ultima_reuniao")} type="date" />
+            <Inp label="Próxima Reunião" value={editForm.proxima_reuniao ?? editForm.proximaReuniao ?? ""} onChange={EF("proxima_reuniao")} type="date" />
+            <Inp label="Último Relatório" value={editForm.ultimo_relatorio ?? editForm.ultimoRelatorio ?? ""} onChange={EF("ultimo_relatorio")} type="date" />
+
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Reuniões e Relatórios</div>
+            <Sel label="Periodicidade Reunião" value={editForm.periodicidade_reuniao || editForm.periodicidadeReuniao || "Trimestral"} onChange={EF("periodicidade_reuniao")} opts={PERIOD_OPTIONS.map((o) => ({ v: o, l: o }))} />
+            <Sel label="Periodicidade Relatório" value={editForm.periodicidade_relatorio || editForm.periodicidadeRelatorio || ""} onChange={EF("periodicidade_relatorio")} opts={[{ v: "", l: "—" }, ...PERIOD_OPTIONS.map((o) => ({ v: o, l: o }))]} />
+
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Atributos</div>
+            <div style={{ gridColumn: "1/-1", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0 16px" }}>
+              <Chk label="IPS Enviada" checked={editForm.envio_ips ?? editForm.envioIps ?? false} onChange={EF("envio_ips")} />
+              <Chk label="Seguro de Vida" checked={editForm.seguro_vida ?? editForm.seguroVida ?? false} onChange={EF("seguro_vida")} />
+              <Chk label="PGBL" checked={editForm.pgbl ?? false} onChange={EF("pgbl")} />
+              <Chk label="VGBL" checked={editForm.vgbl ?? false} onChange={EF("vgbl")} />
+              <Chk label="Sucessão discutida" checked={editForm.sucessao ?? false} onChange={EF("sucessao")} />
+              <Chk label="Desbalanceado" checked={editForm.cliente_desbalanceado ?? editForm.clienteDesbalanceado ?? false} onChange={EF("cliente_desbalanceado")} />
+            </div>
+
+            <div style={{ gridColumn: "1/-1" }}><Inp label="Observação Rápida" value={editForm.observacao_rapida ?? editForm.observacaoRapida ?? ""} onChange={EF("observacao_rapida")} placeholder="Aparece destacada na ficha" /></div>
+            <div style={{ gridColumn: "1/-1" }}><Inp label="Grupo (PJ+PF)" value={editForm.grupo_nome ?? editForm.grupoNome ?? ""} onChange={EF("grupo_nome")} placeholder="Nome do grupo" /></div>
+            <div style={{ gridColumn: "1/-1" }}><Inp label="Link Rebalanceamento" value={editForm.link_rebalanceamento ?? editForm.linkRebalanceamento ?? ""} onChange={EF("link_rebalanceamento")} placeholder="https://…" /></div>
+            <div style={{ gridColumn: "1/-1" }}><Tarea label="Planejamento / Metas" value={editForm.planejamento || ""} onChange={EF("planejamento")} /></div>
+            <div style={{ gridColumn: "1/-1" }}><Tarea label="Observações" value={editForm.observacoes || ""} onChange={EF("observacoes")} /></div>
+          </div>
+          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+            <button onClick={() => setEditModal(false)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.muted, borderRadius: 7, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
+            <button onClick={saveEdit} style={{ flex: 2, padding: "10px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>SALVAR</button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Modal Reunião */}
       <Modal open={rhModal} onClose={() => setRhModal(false)} wide>
