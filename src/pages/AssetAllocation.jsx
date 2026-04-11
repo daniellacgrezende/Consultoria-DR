@@ -88,13 +88,50 @@ export default function AssetAllocation() {
 
   const totalProfileForm = ASSET_CLASSES.reduce((s, k) => s + Number(profileForm[k] || 0), 0);
 
+  // ─── New profile ───
+  const [newModal, setNewModal] = useState(false);
+  const [newForm, setNewForm] = useState({ nome: "", color: "#2563eb", renda_fixa: 0, renda_variavel: 0, multimercado: 0, internacional: 0, alternativos: 0 });
+  const totalNewForm = ASSET_CLASSES.reduce((s, k) => s + Number(newForm[k] || 0), 0);
+
+  const openNewProfile = () => {
+    setNewForm({ nome: "", color: "#2563eb", renda_fixa: 0, renda_variavel: 0, multimercado: 0, internacional: 0, alternativos: 0 });
+    setNewModal(true);
+  };
+
+  const saveNewProfile = async () => {
+    if (!newForm.nome?.trim()) { setToast({ type: "error", text: "Informe o nome do perfil." }); return; }
+    if (Math.abs(totalNewForm - 100) > 0.5) { setToast({ type: "error", text: `Total deve ser 100%. Atual: ${totalNewForm.toFixed(1)}%` }); return; }
+    const id = newForm.nome.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
+    if (profiles.find((p) => p.id === id)) { setToast({ type: "error", text: "Já existe um perfil com esse nome." }); return; }
+    const entry = { id, nome: newForm.nome, color: newForm.color, ...Object.fromEntries(ASSET_CLASSES.map((k) => [k, Number(newForm[k] || 0)])) };
+    const { data, error } = await supabase.from("allocation_profiles").insert(entry).select();
+    if (error) { setToast({ type: "error", text: `Erro: ${error.message}` }); return; }
+    if (data) setProfiles((p) => [...p, data[0]]);
+    setNewModal(false);
+    setToast({ type: "success", text: "Perfil criado!" });
+  };
+
+  // ─── Delete profile ───
+  const [delConf, setDelConf] = useState(null);
+
+  const deleteProfile = async (id) => {
+    const { error } = await supabase.from("allocation_profiles").delete().eq("id", id);
+    if (error) { setToast({ type: "error", text: `Erro: ${error.message}` }); return; }
+    setProfiles((p) => p.filter((pr) => pr.id !== id));
+    setDelConf(null);
+    setToast({ type: "success", text: "Perfil removido." });
+  };
+
   return (
     <>
       <SecH eyebrow="Carteira" title="Alocação de Ativos" desc="Compare a carteira real vs modelo do perfil." />
 
       {/* Perfis modelo */}
       <Card style={{ marginBottom: 16 }}>
-        <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Alocação por Perfil</div>
+        <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>Alocação por Perfil</span>
+          <button onClick={openNewProfile} style={{ background: B.brand, color: "white", border: "none", borderRadius: 7, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Novo Perfil</button>
+        </div>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
@@ -129,7 +166,10 @@ export default function AssetAllocation() {
                           <button onClick={saveProfile} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Salvar</button>
                         </div>
                       ) : (
-                        <button onClick={() => startEditProfile(p)} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Editar</button>
+                        <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                          <button onClick={() => startEditProfile(p)} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Editar</button>
+                          <button onClick={() => setDelConf(p.id)} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "4px 8px", fontSize: 11, cursor: "pointer" }}>🗑</button>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -257,6 +297,51 @@ export default function AssetAllocation() {
       {!selClient && (
         <div style={{ padding: 40, textAlign: "center", color: B.gray, background: "white", borderRadius: 12, border: `1px solid ${B.border}` }}>Selecione um cliente para analisar a alocação.</div>
       )}
+
+      {/* Modal Novo Perfil */}
+      <Modal open={newModal} onClose={() => setNewModal(false)}>
+        <div style={{ padding: "26px 30px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: B.navy }}>Novo Perfil de Alocação</h3>
+            <button onClick={() => setNewModal(false)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: B.gray }}>×</button>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, marginBottom: 16 }}>
+            <Inp label="Nome do Perfil *" value={newForm.nome} onChange={(e) => setNewForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Ex: Ultra Conservador" />
+            <div>
+              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Cor</label>
+              <input type="color" value={newForm.color} onChange={(e) => setNewForm((f) => ({ ...f, color: e.target.value }))} style={{ width: 44, height: 36, border: `1px solid ${B.border}`, borderRadius: 6, cursor: "pointer", padding: 2 }} />
+            </div>
+          </div>
+          {ASSET_CLASSES.map((k, i) => (
+            <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: ASSET_COLORS[i], flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: B.navy, width: 120 }}>{ASSET_LABELS[k]}</span>
+              <input type="number" value={newForm[k] || ""} onChange={(e) => setNewForm((f) => ({ ...f, [k]: e.target.value }))} style={{ width: 70, padding: "4px 8px", border: `1px solid ${B.border}`, borderRadius: 5, fontSize: 13, color: B.navy, outline: "none", textAlign: "right" }} />
+              <span style={{ fontSize: 11, color: B.gray }}>%</span>
+            </div>
+          ))}
+          <div style={{ marginTop: 8, padding: "8px 12px", background: Math.abs(totalNewForm - 100) <= 0.5 ? "#f0fdf4" : "#fef2f2", border: `1px solid ${Math.abs(totalNewForm - 100) <= 0.5 ? "#bbf7d0" : "#fecaca"}`, borderRadius: 8, display: "flex", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: Math.abs(totalNewForm - 100) <= 0.5 ? "#16a34a" : "#dc2626" }}>Total: {totalNewForm.toFixed(1)}%</span>
+            {Math.abs(totalNewForm - 100) > 0.5 && <span style={{ fontSize: 11, color: "#dc2626" }}>Deve ser 100%</span>}
+          </div>
+          <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+            <button onClick={() => setNewModal(false)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>
+            <button onClick={saveNewProfile} style={{ flex: 2, padding: "10px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>CRIAR PERFIL</button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal Confirmar Exclusão */}
+      <Modal open={!!delConf} onClose={() => setDelConf(null)}>
+        <div style={{ padding: "26px 30px" }}>
+          <h3 style={{ margin: "0 0 10px", color: "#dc2626", fontSize: 16, fontWeight: 700 }}>Remover perfil?</h3>
+          <p style={{ color: B.gray, fontSize: 13, marginBottom: 22 }}>Clientes com este perfil não serão afetados, mas o modelo de alocação será removido.</p>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={() => setDelConf(null)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>
+            <button onClick={() => deleteProfile(delConf)} style={{ flex: 1, padding: "10px", background: "#fee2e2", border: "1px solid #fecaca", color: "#dc2626", borderRadius: 7, cursor: "pointer", fontWeight: 700 }}>Remover</button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }
