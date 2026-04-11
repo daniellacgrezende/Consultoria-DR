@@ -24,6 +24,8 @@ export default function AssetAllocation() {
   const [showSug, setShowSug] = useState(false);
   const [form, setForm] = useState({});
   const [editing, setEditing] = useState(false);
+  const [editingProfileId, setEditingProfileId] = useState(null);
+  const [profileForm, setProfileForm] = useState({});
 
   useEffect(() => {
     Promise.all([
@@ -69,13 +71,29 @@ export default function AssetAllocation() {
 
   const totalForm = ASSET_CLASSES.reduce((s, k) => s + Number(form[k] || 0), 0);
 
+  const startEditProfile = (p) => {
+    setEditingProfileId(p.id);
+    setProfileForm(ASSET_CLASSES.reduce((acc, k) => ({ ...acc, [k]: p[k] || 0 }), {}));
+  };
+
+  const saveProfile = async () => {
+    const total = ASSET_CLASSES.reduce((s, k) => s + Number(profileForm[k] || 0), 0);
+    if (Math.abs(total - 100) > 0.5) { setToast({ type: "error", text: `Total deve ser 100%. Atual: ${total.toFixed(1)}%` }); return; }
+    await supabase.from("allocation_profiles").update({ ...Object.fromEntries(ASSET_CLASSES.map((k) => [k, Number(profileForm[k] || 0)])) }).eq("id", editingProfileId);
+    setProfiles((prev) => prev.map((p) => p.id === editingProfileId ? { ...p, ...profileForm } : p));
+    setEditingProfileId(null);
+    setToast({ type: "success", text: "Perfil atualizado." });
+  };
+
+  const totalProfileForm = ASSET_CLASSES.reduce((s, k) => s + Number(profileForm[k] || 0), 0);
+
   return (
     <>
       <SecH eyebrow="Carteira" title="Alocação de Ativos" desc="Compare a carteira real vs modelo do perfil." />
 
       {/* Perfis modelo */}
       <Card style={{ marginBottom: 16 }}>
-        <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Modelos de Alocação por Perfil</div>
+        <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Alocação por Perfil</div>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
@@ -84,17 +102,38 @@ export default function AssetAllocation() {
                 {ASSET_CLASSES.map((k) => (
                   <th key={k} style={{ padding: "10px 14px", textAlign: "center", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}` }}>{ASSET_LABELS[k]}</th>
                 ))}
+                <th style={{ padding: "10px 14px", borderBottom: `1px solid ${B.border}` }} />
               </tr>
             </thead>
             <tbody>
-              {profiles.map((p, i) => (
-                <tr key={p.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
-                  <td style={{ padding: "10px 14px" }}><PBadge p={p.id} /></td>
-                  {ASSET_CLASSES.map((k) => (
-                    <td key={k} style={{ padding: "10px 14px", textAlign: "center", fontWeight: 600, color: B.navy }}>{p[k]}%</td>
-                  ))}
-                </tr>
-              ))}
+              {profiles.map((p, i) => {
+                const isEditingThis = editingProfileId === p.id;
+                return (
+                  <tr key={p.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
+                    <td style={{ padding: "10px 14px" }}><PBadge p={p.id} /></td>
+                    {ASSET_CLASSES.map((k) => (
+                      <td key={k} style={{ padding: "8px 14px", textAlign: "center" }}>
+                        {isEditingThis ? (
+                          <input type="number" value={profileForm[k] ?? ""} onChange={(e) => setProfileForm((f) => ({ ...f, [k]: e.target.value }))} style={{ width: 60, padding: "4px 6px", border: `1px solid ${B.border}`, borderRadius: 5, fontSize: 13, color: B.navy, outline: "none", textAlign: "right" }} />
+                        ) : (
+                          <span style={{ fontWeight: 600, color: B.navy }}>{p[k]}%</span>
+                        )}
+                      </td>
+                    ))}
+                    <td style={{ padding: "8px 14px", textAlign: "right", whiteSpace: "nowrap" }}>
+                      {isEditingThis ? (
+                        <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", alignItems: "center" }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: Math.abs(totalProfileForm - 100) <= 0.5 ? "#16a34a" : "#dc2626" }}>{totalProfileForm.toFixed(1)}%</span>
+                          <button onClick={() => setEditingProfileId(null)} style={{ background: "white", color: B.gray, border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 10px", fontSize: 11, cursor: "pointer" }}>Cancelar</button>
+                          <button onClick={saveProfile} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Salvar</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => startEditProfile(p)} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Editar</button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
