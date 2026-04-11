@@ -501,7 +501,7 @@ export default function Pipeline() {
             <button onClick={() => setModal(false)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: B.muted }}>×</button>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
-            <div style={{ gridColumn: "1/-1" }}><Inp label="Nome *" value={form.nome} onChange={F("nome")} placeholder="Nome do lead" /></div>
+            <Inp label="Nome *" value={form.nome} onChange={F("nome")} placeholder="Nome do lead" />
             <Inp label="Telefone" value={form.telefone || ""} onChange={FPhone("telefone")} placeholder="(00)99999-9999" />
             <Inp label="E-mail" value={form.email || ""} onChange={F("email")} />
             <Sel label="Origem" value={form.origem || "Indicação"} onChange={F("origem")} opts={LEAD_ORIGENS.map((o) => ({ v: o, l: o }))} />
