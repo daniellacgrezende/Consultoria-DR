@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useData } from "../hooks/useData";
-import { B, PERFIL_MAP, EMPTY_CLIENT, LEAD_ORIGENS, PERIOD_OPTIONS } from "../utils/constants";
+import { B, PERFIL_MAP, EMPTY_CLIENT, LEAD_ORIGENS, PERIOD_OPTIONS, STATUS_MAP } from "../utils/constants";
 import { money, fmtDate } from "../utils/formatters";
 import { getCurva, getCurrentPL, calcIdade, daysSince, getPeriodDays, getReuniaoStatusDynamic, getLiquidezAtual, huid, today, slugify } from "../utils/helpers";
 import Card from "../components/ui/Card";
@@ -145,12 +145,31 @@ export default function ClientDetail() {
             ))}
             {idade !== null && <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Idade</div><span style={{ fontSize: 12, fontWeight: 600 }}>{idade} anos</span></div>}
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Início Carteira</div><InlineDate value={client.inicio_carteira} onSave={(v) => updateField("inicio_carteira", v)} /></div>
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Status</div>
+              <select value={client.status || "ativo"} onChange={(e) => updateField("status", e.target.value)}
+                style={{ fontSize: 12, fontWeight: 600, border: `1px solid ${B.border}`, borderRadius: 5, padding: "3px 6px", background: "white", cursor: "pointer", width: "100%" }}>
+                <option value="ativo">Ativo</option>
+                <option value="inativo">Inativo</option>
+              </select>
+            </div>
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Perfil</div>
+              <select value={client.perfil || "moderado"} onChange={(e) => updateField("perfil", e.target.value)}
+                style={{ fontSize: 12, fontWeight: 600, border: `1px solid ${B.border}`, borderRadius: 5, padding: "3px 6px", background: "white", cursor: "pointer", width: "100%" }}>
+                {Object.entries(PERFIL_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+              </select>
+            </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, paddingTop: 10, borderTop: `1px solid ${B.border}` }}>
             {[["envio_ips", "IPS"], ["seguro_vida", "Seguro de Vida"], ["pgbl", "PGBL"], ["vgbl", "VGBL"], ["sucessao", "Sucessão"]].map(([field, lbl]) => (
-              <div key={field} onClick={() => updateField(field, !client[field])} style={{ cursor: "pointer" }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>{lbl}</div>
-                <span style={{ fontSize: 12, fontWeight: 700, color: client[field] ? "#16a34a" : "#9ca3af" }}>{client[field] ? "Sim" : "Não"}</span>
+              <div key={field}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>{lbl}</div>
+                <select value={client[field] ? "sim" : "nao"} onChange={(e) => updateField(field, e.target.value === "sim")}
+                  style={{ fontSize: 12, fontWeight: 700, color: client[field] ? "#16a34a" : "#9ca3af", border: `1px solid ${B.border}`, borderRadius: 5, padding: "3px 6px", background: "white", cursor: "pointer", width: "100%" }}>
+                  <option value="nao">Não</option>
+                  <option value="sim">Sim</option>
+                </select>
               </div>
             ))}
           </div>
@@ -177,7 +196,13 @@ export default function ClientDetail() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Última Reunião</div><InlineDate value={client.ultima_reuniao} onSave={(v) => updateField("ultima_reuniao", v)} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Próxima</div><InlineDate value={client.proxima_reuniao} onSave={(v) => updateField("proxima_reuniao", v)} /></div>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Periodicidade</div><InlineText value={client.periodicidade_reuniao || "Trimestral"} onSave={(v) => updateField("periodicidade_reuniao", v)} /></div>
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Periodicidade</div>
+              <select value={client.periodicidade_reuniao || "Trimestral"} onChange={(e) => updateField("periodicidade_reuniao", e.target.value)}
+                style={{ fontSize: 12, fontWeight: 600, border: `1px solid ${B.border}`, borderRadius: 5, padding: "3px 6px", background: "white", cursor: "pointer", width: "100%" }}>
+                {PERIOD_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Último Relatório</div><InlineDate value={client.ultimo_relatorio} onSave={(v) => updateField("ultimo_relatorio", v)} /></div>
           </div>
         </Card>
