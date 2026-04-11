@@ -198,57 +198,51 @@ function PipelineColumn({ etapa, leads, openEdit, moveEtapa }) {
   );
 }
 
-/* ─── Exit Column (compact) ─── */
-function ExitColumn({ etapa, leads, openEdit }) {
+/* ─── Exit Column — mesma estrutura da PipelineColumn, visual atenuado ─── */
+function ExitColumn({ etapa, leads, openEdit, moveEtapa }) {
   const { setNodeRef, isOver } = useDroppable({ id: etapa });
   const ec = LEAD_ETAPA_COLORS[etapa];
+  const totalPatrimonio = leads.reduce((s, l) => s + Number(l.patrimonio_estimado || 0), 0);
+
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
+      {/* header igual ao PipelineColumn */}
       <div style={{
-        background: "#FAFAFA",
+        background: isOver ? "#FFF7ED" : "#FAFAFA",
         border: `1px solid ${isOver ? ec.color : B.border}`,
-        borderTop: `2px solid ${ec.color}`,
-        borderRadius: "8px 8px 0 0",
-        padding: "8px 12px",
+        borderTop: `3px solid ${ec.color}`,
+        borderRadius: "10px 10px 0 0",
+        padding: "10px 12px",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontSize: 10, fontWeight: 800, color: ec.color, textTransform: "uppercase", letterSpacing: "0.04em" }}>{etapa}</span>
-          <span style={{ fontSize: 10, fontWeight: 700, background: ec.bg, color: ec.color, border: `1px solid ${ec.border}`, borderRadius: 999, padding: "1px 7px" }}>{leads.length}</span>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+          <span style={{ fontSize: 11, fontWeight: 800, color: ec.color, textTransform: "uppercase", letterSpacing: "0.04em" }}>{etapa}</span>
+          <span style={{ fontSize: 11, fontWeight: 700, background: ec.bg, color: ec.color, border: `1px solid ${ec.border}`, borderRadius: 999, padding: "1px 8px", minWidth: 20, textAlign: "center" }}>{leads.length}</span>
         </div>
+        {totalPatrimonio > 0 && (
+          <div style={{ fontSize: 11, fontWeight: 700, color: B.navy }}>{money(totalPatrimonio)}</div>
+        )}
       </div>
+
+      {/* drop area */}
       <div
         ref={setNodeRef}
         style={{
-          background: isOver ? "#F5F0FF" : "#FAFAFA",
-          border: `1px solid ${B.border}`, borderTop: "none",
-          borderRadius: "0 0 8px 8px",
-          padding: "8px",
-          minHeight: 60,
-          display: "flex", flexDirection: "column", gap: 6,
+          background: isOver ? "#FFF7ED" : "#F7F7F7",
+          border: `1px solid ${isOver ? ec.color : B.border}`, borderTop: "none",
+          borderRadius: "0 0 10px 10px",
+          padding: "10px 8px",
+          minHeight: 160,
+          display: "flex", flexDirection: "column", gap: 8,
+          flex: 1,
           transition: "background 0.15s",
         }}
       >
         {leads.map((l) => (
-          <div
-            key={l.id}
-            onClick={() => openEdit(l)}
-            style={{
-              display: "flex", alignItems: "center", gap: 8,
-              background: "white", border: `1px solid ${B.border}`,
-              borderRadius: 6, padding: "7px 10px", cursor: "pointer",
-            }}
-          >
-            <Avatar nome={l.nome} size={22} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{l.nome}</div>
-              {l.motivo_negativa && <div style={{ fontSize: 9.5, color: B.muted }}>{l.motivo_negativa}</div>}
-            </div>
-            {Number(l.patrimonio_estimado) > 0 && (
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#15803D", whiteSpace: "nowrap" }}>{money(l.patrimonio_estimado)}</div>
-            )}
-          </div>
+          <DraggableLeadCard key={l.id} lead={l} openEdit={openEdit} moveEtapa={moveEtapa} />
         ))}
-        {leads.length === 0 && <div style={{ padding: "10px 0", textAlign: "center", color: "#C4CBD8", fontSize: 10 }}>Vazio</div>}
+        {leads.length === 0 && (
+          <div style={{ padding: "24px 0", textAlign: "center", color: "#C4CBD8", fontSize: 11 }}>Nenhum lead</div>
+        )}
       </div>
     </div>
   );
@@ -412,33 +406,40 @@ export default function Pipeline() {
       {/* ═══ PIPELINE VIEW ═══ */}
       {view === "pipeline" && (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          {/* Main funnel */}
-          <div style={{ display: "grid", gridTemplateColumns: `repeat(${LEAD_ETAPAS_MAIN.length}, 1fr)`, gap: 10, alignItems: "start", marginBottom: 20 }}>
-            {LEAD_ETAPAS_MAIN.map((etapa) => (
-              <PipelineColumn
-                key={etapa}
-                etapa={etapa}
-                leads={leads.filter((l) => l.etapa === etapa)}
-                openEdit={openEdit}
-                moveEtapa={moveEtapa}
-              />
-            ))}
-          </div>
+          {/* Funil único: etapas principais + saídas em uma só fila horizontal */}
+          <div style={{ overflowX: "auto", paddingBottom: 8 }}>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: `repeat(${LEAD_ETAPAS_MAIN.length}, minmax(170px, 1fr)) 2px repeat(${LEAD_ETAPAS_EXIT.length}, minmax(170px, 1fr))`,
+              gap: "0 10px",
+              alignItems: "start",
+              minWidth: 1100,
+            }}>
+              {/* Etapas principais */}
+              {LEAD_ETAPAS_MAIN.map((etapa) => (
+                <PipelineColumn
+                  key={etapa}
+                  etapa={etapa}
+                  leads={leads.filter((l) => l.etapa === etapa)}
+                  openEdit={openEdit}
+                  moveEtapa={moveEtapa}
+                />
+              ))}
 
-          {/* Exit stages */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-            <span style={{ fontSize: 9.5, fontWeight: 700, color: B.muted, textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap" }}>Saídas</span>
-            <div style={{ flex: 1, height: 1, background: B.border }} />
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: `repeat(${LEAD_ETAPAS_EXIT.length}, 1fr)`, gap: 10 }}>
-            {LEAD_ETAPAS_EXIT.map((etapa) => (
-              <ExitColumn
-                key={etapa}
-                etapa={etapa}
-                leads={leads.filter((l) => l.etapa === etapa)}
-                openEdit={openEdit}
-              />
-            ))}
+              {/* Separador vertical */}
+              <div style={{ alignSelf: "stretch", background: B.border, borderRadius: 2, margin: "0 2px" }} />
+
+              {/* Etapas de saída — mesmo nível, visual atenuado */}
+              {LEAD_ETAPAS_EXIT.map((etapa) => (
+                <ExitColumn
+                  key={etapa}
+                  etapa={etapa}
+                  leads={leads.filter((l) => l.etapa === etapa)}
+                  openEdit={openEdit}
+                  moveEtapa={moveEtapa}
+                />
+              ))}
+            </div>
           </div>
 
           <DragOverlay>{activeDragLead ? <OverlayCard lead={activeDragLead} /> : null}</DragOverlay>
