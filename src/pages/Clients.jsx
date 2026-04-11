@@ -95,9 +95,10 @@ export default function Clients() {
         <span style={{ fontSize: 11, color: B.muted, fontWeight: 700 }}>UF:</span>
         <input value={ufFilter} onChange={(e) => setUfFilter(e.target.value.toUpperCase())} placeholder="SP" style={{ width: 60, background: "white", border: `1px solid ${B.border}`, borderRadius: 7, padding: "5px 9px", fontSize: 12, color: B.navy, outline: "none" }} />
         <span style={{ fontSize: 11, color: B.muted, fontWeight: 700 }}>Curva:</span>
-        {["all", "A", "B", "C", "D"].map((k) => (
-          <button key={k} onClick={() => setFilterCurva(k)} style={{ padding: "5px 12px", borderRadius: 999, border: "1px solid", fontSize: 11, fontWeight: 700, cursor: "pointer", background: filterCurva === k ? "#e8eeff" : "white", color: filterCurva === k ? B.navy : "#8899bb", borderColor: filterCurva === k ? B.navy + "66" : "#dde4f5" }}>{k === "all" ? "Todos" : `Curva ${k}`}</button>
-        ))}
+        <select value={filterCurva} onChange={(e) => setFilterCurva(e.target.value)} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 600, color: B.navy, outline: "none", cursor: "pointer" }}>
+          <option value="all">Todas</option>
+          {["A", "B", "C", "D"].map((k) => <option key={k} value={k}>Curva {k}</option>)}
+        </select>
       </div>
 
       {/* Table */}

@@ -80,9 +80,11 @@ export default function Repasse() {
       </div>
 
       {/* Filtro */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 18, flexWrap: "wrap", alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 18, alignItems: "center" }}>
         <span style={{ fontSize: 11, color: "#8899bb", fontWeight: 700, textTransform: "uppercase" }}>Período:</span>
-        {anos.map((ano) => (<button key={ano} onClick={() => setAnoFilter(ano)} style={{ padding: "5px 14px", borderRadius: 999, border: "1px solid", fontSize: 12, fontWeight: 700, cursor: "pointer", background: anoFilter === ano ? B.navy : "white", color: anoFilter === ano ? "white" : "#8899bb", borderColor: anoFilter === ano ? B.navy : "#dde4f5" }}>{ano === "todos" ? "Todos" : ano}</button>))}
+        <select value={anoFilter} onChange={(e) => setAnoFilter(e.target.value)} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 600, color: B.navy, outline: "none", cursor: "pointer" }}>
+          {anos.map((ano) => <option key={ano} value={ano}>{ano === "todos" ? "Todos os anos" : ano}</option>)}
+        </select>
       </div>
 
       {/* Stats */}

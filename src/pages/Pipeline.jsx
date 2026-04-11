@@ -4,7 +4,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useData } from "../hooks/useData";
-import { B, LEAD_ETAPAS, LEAD_ETAPA_COLORS, LEAD_ORIGENS, EMPTY_LEAD, LEAD_TEMPERATURAS, TIPO_REUNIAO } from "../utils/constants";
+import { B, LEAD_ETAPAS, LEAD_ETAPAS_MAIN, LEAD_ETAPAS_EXIT, LEAD_ETAPA_COLORS, LEAD_ORIGENS, EMPTY_LEAD, LEAD_TEMPERATURAS, TIPO_REUNIAO } from "../utils/constants";
 import { money, fmtDate } from "../utils/formatters";
 import { huid, today } from "../utils/helpers";
 import Card from "../components/ui/Card";
@@ -29,15 +29,20 @@ function DraggableLeadCard({ lead, openEdit, moveEtapa }) {
     touchAction: "none",
   };
   const etapa = lead.etapa;
+  const tempMap = { fria: { bg: "#E8F0FE", color: "#2A7DE1", l: "Fria" }, morna: { bg: "#FFF4D6", color: "#E89B00", l: "Morna" }, quente: { bg: "#FDE8E8", color: "#D30000", l: "Quente" } };
+  const tc = lead.temperatura ? tempMap[lead.temperatura] : null;
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={() => openEdit(lead)}>
-      <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 3 }}>{lead.nome}</div>
-      {lead.origem && <div style={{ fontSize: 10, color: B.gray, marginBottom: 4 }}>📍 {lead.origem}</div>}
-      {lead.patrimonio_estimado > 0 && <div style={{ fontSize: 11, fontWeight: 600, color: "#16a34a", marginBottom: 4 }}>{money(lead.patrimonio_estimado)}</div>}
-      {etapa !== "Convertido" && etapa !== "Perdido" && (
+      <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 4 }}>{lead.nome}</div>
+      {lead.telefone && <div style={{ fontSize: 10, color: B.gray, marginBottom: 3 }}>{lead.telefone}</div>}
+      {lead.origem && <div style={{ fontSize: 10, color: B.gray, marginBottom: 3 }}>{lead.origem}</div>}
+      {lead.patrimonio_estimado > 0 && <div style={{ fontSize: 11, fontWeight: 600, color: "#16a34a", marginBottom: 3 }}>{money(lead.patrimonio_estimado)}</div>}
+      {tc && <div style={{ marginBottom: 4 }}><span style={{ fontSize: 9, fontWeight: 700, background: tc.bg, color: tc.color, borderRadius: 999, padding: "2px 8px" }}>{tc.l}</span></div>}
+      {etapa !== "Cliente" && etapa !== "Perdido" && etapa !== "Nutrição" && (
         <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
-          <button onClick={(e) => { e.stopPropagation(); moveEtapa(lead.id, "Convertido"); }} style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 6, padding: "4px", cursor: "pointer" }}>✅</button>
-          <button onClick={(e) => { e.stopPropagation(); moveEtapa(lead.id, "Perdido"); }} style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "4px", cursor: "pointer" }}>❌</button>
+          <button onClick={(e) => { e.stopPropagation(); moveEtapa(lead.id, "Cliente"); }} style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 6, padding: "4px", cursor: "pointer" }}>Converter</button>
+          <button onClick={(e) => { e.stopPropagation(); moveEtapa(lead.id, "Perdido"); }} style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "4px", cursor: "pointer" }}>Perdido</button>
+          <button onClick={(e) => { e.stopPropagation(); moveEtapa(lead.id, "Nutrição"); }} style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#fefce8", color: "#854d0e", border: "1px solid #fde047", borderRadius: 6, padding: "4px", cursor: "pointer" }}>Nutrição</button>
         </div>
       )}
     </div>
@@ -66,7 +71,7 @@ function OverlayCard({ lead }) {
   return (
     <div style={{ background: "white", border: `2px solid ${B.brand}`, borderRadius: 9, padding: "10px 12px", boxShadow: "0 8px 24px rgba(0,0,0,0.15)", width: 200 }}>
       <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 3 }}>{lead.nome}</div>
-      {lead.origem && <div style={{ fontSize: 10, color: B.gray }}>📍 {lead.origem}</div>}
+      {lead.origem && <div style={{ fontSize: 10, color: B.gray }}>{lead.origem}</div>}
       {lead.patrimonio_estimado > 0 && <div style={{ fontSize: 11, fontWeight: 600, color: "#16a34a" }}>{money(lead.patrimonio_estimado)}</div>}
     </div>
   );
@@ -124,7 +129,7 @@ export default function Pipeline() {
 
   const moveEtapa = async (id, etapa) => {
     const updates = { etapa, data_ultima_interacao: today() };
-    if (etapa === "Convertido") updates.convertido_em = today();
+    if (etapa === "Cliente") updates.convertido_em = today();
     const lead = leads.find((l) => l.id === id);
     await saveLead({ ...lead, ...updates }, false);
     setToast({ type: "success", text: `Movido para ${etapa}` });
@@ -153,16 +158,17 @@ export default function Pipeline() {
     setToast({ type: "success", text: "Removido do Radar." });
   };
   const moveRadarToLead = async (r) => {
-    await saveLead({ id: huid(), nome: r.nome, origem: r.origem, patrimonio_estimado: r.patrimonio_estimado, notas: r.observacoes, data_primeira_reuniao: today(), data_ultima_interacao: today(), etapa: "1ª Reunião" }, true);
+    await saveLead({ id: huid(), nome: r.nome, origem: r.origem, patrimonio_estimado: r.patrimonio_estimado, notas: r.observacoes, data_primeira_reuniao: today(), data_ultima_interacao: today(), etapa: "Lead" }, true);
     await deleteRadar(r.id);
     setSubTab("pipeline");
     setToast({ type: "success", text: `${r.nome} movido para o funil!` });
   };
 
   // ─── Stats ───
-  const ativos = leads.filter((l) => l.etapa !== "Convertido" && l.etapa !== "Perdido");
-  const convertidos = leads.filter((l) => l.etapa === "Convertido").length;
+  const ativos = leads.filter((l) => !["Cliente", "Perdido", "Nutrição"].includes(l.etapa));
+  const convertidos = leads.filter((l) => l.etapa === "Cliente").length;
   const perdidos = leads.filter((l) => l.etapa === "Perdido").length;
+  const nutricao = leads.filter((l) => l.etapa === "Nutrição").length;
   const taxaConv = leads.length > 0 ? Math.round((convertidos / leads.length) * 100) : 0;
   const filtered = etapaFilter === "todas" ? leads : leads.filter((l) => l.etapa === etapaFilter);
 
@@ -172,11 +178,11 @@ export default function Pipeline() {
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
-        <SecH eyebrow="Pipeline & Radar" title="Gestão de Leads 🎯" desc="Funil de leads e radar de prospecção." />
+        <SecH eyebrow="Pipeline & Radar" title="Gestão de Leads" desc="Funil de leads e radar de prospecção." />
         <div style={{ display: "flex", gap: 8 }}>
           {subTab === "pipeline" && (
             <>
-              <button onClick={() => setView((v) => (v === "pipeline" ? "lista" : "pipeline"))} style={{ padding: "8px 14px", background: "white", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{view === "pipeline" ? "📋 Lista" : "📊 Pipeline"}</button>
+              <button onClick={() => setView((v) => (v === "pipeline" ? "lista" : "pipeline"))} style={{ padding: "8px 14px", background: "white", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{view === "pipeline" ? "Lista" : "Pipeline"}</button>
               <button onClick={openNew} style={{ padding: "8px 18px", background: B.brand, color: "white", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Novo Lead</button>
             </>
           )}
@@ -186,7 +192,7 @@ export default function Pipeline() {
 
       {/* Sub tabs */}
       <div style={{ display: "flex", gap: 4, marginBottom: 20, background: "rgba(6,24,65,0.07)", borderRadius: 10, padding: 4, width: "fit-content" }}>
-        {[{ id: "pipeline", label: "🎯 Funil de Leads" }, { id: "radar", label: "📡 Radar" }].map((t) => (
+        {[{ id: "pipeline", label: "Funil de Leads" }, { id: "radar", label: "Radar" }].map((t) => (
           <button key={t.id} onClick={() => setSubTab(t.id)} style={{ padding: "7px 18px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: subTab === t.id ? B.navy : "transparent", color: subTab === t.id ? "white" : "#8899bb" }}>{t.label}</button>
         ))}
       </div>
@@ -194,27 +200,49 @@ export default function Pipeline() {
       {/* ═══ PIPELINE TAB ═══ */}
       {subTab === "pipeline" && (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginBottom: 20 }}>
-            <MiniStat icon="🎯" label="Total" value={leads.length} sub="cadastrados" />
-            <MiniStat icon="🔄" label="Ativos" value={ativos.length} sub="em andamento" />
-            <MiniStat icon="✅" label="Convertidos" value={convertidos} />
-            <MiniStat icon="❌" label="Perdidos" value={perdidos} />
-            <MiniStat icon="📊" label="Conversão" value={`${taxaConv}%`} sub={`${convertidos} de ${leads.length}`} />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 12, marginBottom: 20 }}>
+            <MiniStat label="Total" value={leads.length} sub="cadastrados" />
+            <MiniStat label="Ativos" value={ativos.length} sub="em andamento" />
+            <MiniStat label="Clientes" value={convertidos} />
+            <MiniStat label="Perdidos" value={perdidos} />
+            <MiniStat label="Nutrição" value={nutricao} />
+            <MiniStat label="Conversão" value={`${taxaConv}%`} sub={`${convertidos} de ${leads.length}`} />
           </div>
 
           {/* Etapa filter */}
-          <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center" }}>
             <span style={{ fontSize: 11, color: "#8899bb", fontWeight: 700, textTransform: "uppercase" }}>Etapa:</span>
-            {["todas", ...LEAD_ETAPAS].map((e) => {
-              const ec = LEAD_ETAPA_COLORS[e];
-              return <button key={e} onClick={() => setEtapaFilter(e)} style={{ padding: "5px 14px", borderRadius: 999, border: `1px solid ${etapaFilter === e ? (ec?.border || B.navy) : "#dde4f5"}`, fontSize: 11, fontWeight: 700, cursor: "pointer", background: etapaFilter === e ? (ec?.bg || "#e8eeff") : "white", color: etapaFilter === e ? (ec?.color || B.navy) : "#8899bb" }}>{e === "todas" ? "Todos" : e} {e !== "todas" && <span style={{ opacity: 0.6 }}>({leads.filter((l) => l.etapa === e).length})</span>}</button>;
-            })}
+            <select value={etapaFilter} onChange={(e) => setEtapaFilter(e.target.value)} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 600, color: B.navy, outline: "none", cursor: "pointer" }}>
+              <option value="todas">Todas ({leads.length})</option>
+              {LEAD_ETAPAS.map((e) => (
+                <option key={e} value={e}>{e} ({leads.filter((l) => l.etapa === e).length})</option>
+              ))}
+            </select>
           </div>
 
           {view === "pipeline" ? (
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-              <div style={{ display: "grid", gridTemplateColumns: `repeat(${LEAD_ETAPAS.length}, 1fr)`, gap: 12, alignItems: "start" }}>
-                {LEAD_ETAPAS.map((etapa) => {
+              {/* Funil principal */}
+              <div style={{ display: "grid", gridTemplateColumns: `repeat(${LEAD_ETAPAS_MAIN.length}, 1fr)`, gap: 12, alignItems: "start", marginBottom: 16 }}>
+                {LEAD_ETAPAS_MAIN.map((etapa) => {
+                  const etapaLeads = leads.filter((l) => l.etapa === etapa);
+                  return (
+                    <DroppableColumn key={etapa} etapa={etapa}>
+                      {etapaLeads.map((l) => (
+                        <DraggableLeadCard key={l.id} lead={l} openEdit={openEdit} moveEtapa={moveEtapa} />
+                      ))}
+                      {etapaLeads.length === 0 && <div style={{ padding: "20px 0", textAlign: "center", color: "#c4c9d4", fontSize: 11 }}>Nenhum lead</div>}
+                    </DroppableColumn>
+                  );
+                })}
+              </div>
+              {/* Saídas alternativas */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.08em" }}>Saídas alternativas</span>
+                <div style={{ flex: 1, height: 1, background: "#e5e7ef" }} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: `repeat(${LEAD_ETAPAS_EXIT.length}, 1fr)`, gap: 12, alignItems: "start" }}>
+                {LEAD_ETAPAS_EXIT.map((etapa) => {
                   const etapaLeads = leads.filter((l) => l.etapa === etapa);
                   return (
                     <DroppableColumn key={etapa} etapa={etapa}>
@@ -244,7 +272,7 @@ export default function Pipeline() {
                           <td style={{ padding: "11px 14px", fontWeight: 600, color: "#16a34a" }}>{l.patrimonio_estimado ? money(l.patrimonio_estimado) : "—"}</td>
                           <td style={{ padding: "11px 14px" }}><span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700, background: ec.bg, color: ec.color, border: `1px solid ${ec.border || B.border}` }}>{l.etapa}</span></td>
                           <td style={{ padding: "11px 14px", color: B.gray, fontSize: 12 }}>{fmtDate(l.data_primeira_reuniao)}</td>
-                          <td style={{ padding: "11px 14px" }}><button onClick={(e) => { e.stopPropagation(); remove(l.id); }} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer" }}>🗑</button></td>
+                          <td style={{ padding: "11px 14px" }}><button onClick={(e) => { e.stopPropagation(); remove(l.id); }} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer" }}>Remover</button></td>
                         </tr>
                       );
                     })}
@@ -260,12 +288,12 @@ export default function Pipeline() {
       {subTab === "radar" && (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
-            <MiniStat icon="📡" label="No Radar" value={radar.length} sub="potenciais a abordar" />
-            <MiniStat icon="🔴" label="Alta Prioridade" value={radar.filter((r) => r.prioridade === "Alta").length} warn={radar.filter((r) => r.prioridade === "Alta").length > 0} />
-            <MiniStat icon="💼" label="AUC Mapeado" value={money(radar.reduce((s, r) => s + Number(r.patrimonio_estimado || 0), 0))} sub="patrimônio estimado" />
+            <MiniStat label="No Radar" value={radar.length} sub="potenciais a abordar" />
+            <MiniStat label="Alta Prioridade" value={radar.filter((r) => r.prioridade === "Alta").length} warn={radar.filter((r) => r.prioridade === "Alta").length > 0} />
+            <MiniStat label="AUC Mapeado" value={money(radar.reduce((s, r) => s + Number(r.patrimonio_estimado || 0), 0))} sub="patrimônio estimado" />
           </div>
           <Card style={{ padding: 0, overflow: "hidden" }}>
-            <div style={{ padding: "14px 18px", borderBottom: `1px solid ${B.border}` }}><span style={{ fontWeight: 700, fontSize: 13, color: B.navy }}>📡 Prospects ({radar.length})</span></div>
+            <div style={{ padding: "14px 18px", borderBottom: `1px solid ${B.border}` }}><span style={{ fontWeight: 700, fontSize: 13, color: B.navy }}>Prospects ({radar.length})</span></div>
             {radarSorted.length === 0 ? <div style={{ padding: 40, textAlign: "center", color: B.gray }}>Nenhum prospect. Clique em "+ Adicionar ao Radar".</div> : (
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
@@ -275,7 +303,7 @@ export default function Pipeline() {
                       const pc = priorColors[r.prioridade] || priorColors["Média"];
                       return (
                         <tr key={r.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
-                          <td style={{ padding: "11px 14px" }}><div style={{ display: "flex", alignItems: "center", gap: 8 }}><Avatar nome={r.nome} size={28} /><div><div style={{ fontWeight: 700, color: B.navy }}>{r.nome}</div>{r.telefone && <div style={{ fontSize: 10, color: B.gray }}>📱 {r.telefone}</div>}</div></div></td>
+                          <td style={{ padding: "11px 14px" }}><div style={{ display: "flex", alignItems: "center", gap: 8 }}><Avatar nome={r.nome} size={28} /><div><div style={{ fontWeight: 700, color: B.navy }}>{r.nome}</div>{r.telefone && <div style={{ fontSize: 10, color: B.gray }}>{r.telefone}</div>}</div></div></td>
                           <td style={{ padding: "11px 14px", color: B.gray, fontSize: 12 }}>{r.origem || "—"}</td>
                           <td style={{ padding: "11px 14px", fontWeight: 700, color: "#7c3aed" }}>{r.patrimonio_estimado ? money(r.patrimonio_estimado) : "—"}</td>
                           <td style={{ padding: "11px 14px" }}><span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700, background: pc.bg, color: pc.color, border: `1px solid ${pc.border}` }}>{r.prioridade}</span></td>
@@ -283,8 +311,8 @@ export default function Pipeline() {
                           <td style={{ padding: "11px 14px" }}>
                             <div style={{ display: "flex", gap: 6 }}>
                               <button onClick={() => moveRadarToLead(r)} style={{ background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>→ Funil</button>
-                              <button onClick={() => openRadarEdit(r)} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer" }}>✏</button>
-                              <button onClick={() => setRadarDelConf(r.id)} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer" }}>🗑</button>
+                              <button onClick={() => openRadarEdit(r)} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer" }}>Editar</button>
+                              <button onClick={() => setRadarDelConf(r.id)} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer" }}>Remover</button>
                             </div>
                           </td>
                         </tr>
@@ -324,12 +352,12 @@ export default function Pipeline() {
             </div>
             <Inp label="Data 1ª Reunião" type="date" value={form.data_primeira_reuniao || ""} onChange={F("data_primeira_reuniao")} />
             <Inp label="Última Interação" type="date" value={form.data_ultima_interacao || ""} onChange={F("data_ultima_interacao")} />
-            {form.etapa === "Perdido" && <div style={{ gridColumn: "1/-1" }}><Inp label="Motivo" value={form.motivo_negativa || ""} onChange={F("motivo_negativa")} /></div>}
+            {(form.etapa === "Perdido" || form.etapa === "Nutrição") && <div style={{ gridColumn: "1/-1" }}><Inp label="Motivo" value={form.motivo_negativa || ""} onChange={F("motivo_negativa")} /></div>}
             <div style={{ gridColumn: "1/-1" }}><Tarea label="Notas" value={form.notas || ""} onChange={F("notas")} placeholder="Registre tudo sobre o lead..." /></div>
           </div>
           <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
             <button onClick={() => setModal(false)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
-            {editId && <button onClick={() => { remove(editId); setModal(false); }} style={{ padding: "10px 16px", background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 7, cursor: "pointer", fontWeight: 600 }}>🗑</button>}
+            {editId && <button onClick={() => { remove(editId); setModal(false); }} style={{ padding: "10px 16px", background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 7, cursor: "pointer", fontWeight: 600 }}>Excluir</button>}
             <button onClick={save} style={{ flex: 2, padding: "10px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>{editId ? "SALVAR" : "CADASTRAR"}</button>
           </div>
         </div>
@@ -339,7 +367,7 @@ export default function Pipeline() {
       <Modal open={radarModal} onClose={() => setRadarModal(false)}>
         <div style={{ padding: "26px 30px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-            <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: B.navy }}>{radarEditId ? "Editar Prospect" : "Adicionar ao Radar 📡"}</h3>
+            <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: B.navy }}>{radarEditId ? "Editar Prospect" : "Adicionar ao Radar"}</h3>
             <button onClick={() => setRadarModal(false)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: B.gray }}>×</button>
           </div>
           <Inp label="Nome *" value={radarForm.nome} onChange={(e) => setRadarForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Nome do prospect" />
