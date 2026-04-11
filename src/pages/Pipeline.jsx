@@ -16,13 +16,14 @@ import { Inp, Sel, Tarea, SecH } from "../components/ui/FormFields";
 /* Etapas que exigem agendamento de reunião */
 const ETAPAS_REUNIAO = ["Reunião", "Diagnóstico/Proposta"];
 
-function buildOutlookUrl({ title, start, end, location, body }) {
+function buildOutlookUrl({ title, start, end, location, body, to }) {
   const p = new URLSearchParams();
   p.set("subject", title);
   p.set("startdt", new Date(start).toISOString());
   p.set("enddt", new Date(end).toISOString());
   if (location) p.set("location", location);
   if (body) p.set("body", body);
+  if (to) p.set("to", to);
   return `https://outlook.office.com/calendar/0/deeplink/compose?path=%2Fcalendar%2Faction%2Fcompose&${p.toString()}`;
 }
 
@@ -354,7 +355,7 @@ export default function Pipeline() {
     if (ETAPAS_REUNIAO.includes(etapa)) {
       setReuniaoLead(lead);
       setReuniaoEtapa(etapa);
-      setReuniaoForm({ data: todayStr, horaInicio: "09:00", horaFim: "10:00", tipo: "presencial", local: "", notas: "" });
+      setReuniaoForm({ data: todayStr, horaInicio: "09:00", horaFim: "10:00", tipo: "presencial", local: "", notas: "", email: lead.email || "" });
       setReuniaoModal(true);
       return;
     }
@@ -379,7 +380,7 @@ export default function Pipeline() {
       type: "reuniao",
       location: reuniaoForm.local || "",
       color: "#2563eb",
-      guests: reuniaoLead.email || "",
+      guests: reuniaoForm.email || "",
     });
     // Atualiza o lead
     const updates = {
@@ -392,7 +393,7 @@ export default function Pipeline() {
     }
     await saveLead({ ...reuniaoLead, ...updates }, false);
     setReuniaoModal(false);
-    const outlookUrl = buildOutlookUrl({ title, start, end, location: reuniaoForm.local, body: reuniaoForm.notas });
+    const outlookUrl = buildOutlookUrl({ title, start, end, location: reuniaoForm.local, body: reuniaoForm.notas, to: reuniaoForm.email });
     setToast({ type: "success", text: `Reunião agendada e salva no calendário!` });
     setTimeout(() => window.open(outlookUrl, "_blank"), 400);
   };
@@ -559,20 +560,48 @@ export default function Pipeline() {
         </Card>
       )}
 
-      {/* ═══ MODAL AGENDAMENTO DE REUNIÃO ═══ */}
+      {/* ═══ MODAL AGENDAMENTO DE REUNIÃO / DIAGNÓSTICO ═══ */}
       <Modal open={reuniaoModal} onClose={() => setReuniaoModal(false)}>
         <div style={{ padding: "26px 30px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: B.navy }}>Agendar Reunião</h3>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: B.navy }}>
+              {reuniaoEtapa === "Diagnóstico/Proposta" ? "Agendar Diagnóstico / Proposta" : "Agendar Reunião"}
+            </h3>
             <button onClick={() => setReuniaoModal(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: B.gray }}>×</button>
           </div>
           {reuniaoLead && (
-            <div style={{ fontSize: 12, color: B.muted, marginBottom: 18 }}>
-              Movendo <strong style={{ color: B.navy }}>{reuniaoLead.nome}</strong> para <strong style={{ color: B.navy }}>{reuniaoEtapa}</strong>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 8, marginBottom: 16 }}>
+              <Avatar nome={reuniaoLead.nome} size={32} />
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 13, color: B.navy }}>{reuniaoLead.nome}</div>
+                <div style={{ fontSize: 11, color: B.muted }}>
+                  Movendo para <strong>{reuniaoEtapa}</strong>
+                  {reuniaoLead.telefone && <span style={{ marginLeft: 8 }}>· {reuniaoLead.telefone}</span>}
+                </div>
+              </div>
             </div>
           )}
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" }}>
+            {/* Email — pré-preenchido do cadastro do lead */}
+            <div style={{ gridColumn: "1/-1" }}>
+              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 4 }}>
+                E-mail do convidado
+              </label>
+              <input
+                type="email"
+                value={reuniaoForm.email}
+                onChange={RF("email")}
+                placeholder="email@exemplo.com"
+                style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: `1px solid ${reuniaoForm.email ? "#bfdbfe" : B.border}`, borderRadius: 7, fontSize: 13, color: B.navy, fontFamily: "inherit", outline: "none", background: reuniaoForm.email ? "#eff6ff" : "white" }}
+              />
+              {reuniaoForm.email && (
+                <div style={{ fontSize: 10, color: "#2563eb", marginTop: 3 }}>
+                  Este e-mail será adicionado como convidado no convite do Outlook.
+                </div>
+              )}
+            </div>
+
             <div style={{ gridColumn: "1/-1" }}>
               <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 4 }}>Data *</label>
               <input type="date" value={reuniaoForm.data} onChange={RF("data")}
@@ -594,12 +623,12 @@ export default function Pipeline() {
               <Inp label="Local / Link" value={reuniaoForm.local} onChange={RF("local")} placeholder="Endereço ou link da reunião" />
             </div>
             <div style={{ gridColumn: "1/-1" }}>
-              <Tarea label="Observações" value={reuniaoForm.notas} onChange={RF("notas")} placeholder="Pauta, tópicos a discutir..." />
+              <Tarea label="Pauta / Observações" value={reuniaoForm.notas} onChange={RF("notas")} placeholder="Tópicos a discutir, contexto da reunião..." />
             </div>
           </div>
 
-          <div style={{ marginTop: 4, padding: "10px 12px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, fontSize: 11, color: "#1d4ed8" }}>
-            Ao confirmar, a reunião será salva no <strong>Calendário</strong> e o Outlook será aberto para adicionar ao seu calendário.
+          <div style={{ marginTop: 12, padding: "10px 12px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, fontSize: 11, color: "#1d4ed8" }}>
+            Ao confirmar, o agendamento será salvo no <strong>Calendário</strong> e o Outlook abrirá com o convite pronto{reuniaoForm.email ? ` para ${reuniaoForm.email}` : ""}.
           </div>
 
           <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
