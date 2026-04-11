@@ -70,18 +70,18 @@ export const DOCUMENT_TYPES = [
 ];
 
 export const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: "🏠", group: null },
-  { id: "pipeline", label: "Pipeline", icon: "🎯", group: "vendas" },
-  { id: "calendar", label: "Calendário", icon: "📅", group: "vendas" },
-  { id: "tasks", label: "Tarefas", icon: "✅", group: "vendas" },
-  { id: "repasse", label: "Repasse", icon: "💸", group: "vendas" },
-  { id: "clients", label: "Clientes", icon: "👥", group: "clientes" },
-  { id: "meetings", label: "Reuniões", icon: "📋", group: "clientes" },
-  { id: "seguro", label: "Seguro de Vida", icon: "🛡️", group: "clientes" },
-  { id: "allocation", label: "Alocação", icon: "📊", group: "clientes" },
-  { id: "reports", label: "Relatórios", icon: "📈", group: "relatorios" },
-  { id: "backup", label: "Back-Up", icon: "💾", group: "config" },
-  { id: "settings", label: "Configurações", icon: "⚙️", group: "config" },
+  { id: "dashboard", label: "Dashboard", icon: "Home", group: null },
+  { id: "pipeline", label: "Pipeline", icon: "Target", group: "vendas" },
+  { id: "calendar", label: "Calendário", icon: "Calendar", group: "vendas" },
+  { id: "tasks", label: "Tarefas", icon: "CheckSquare", group: "vendas" },
+  { id: "repasse", label: "Repasse", icon: "DollarSign", group: "vendas" },
+  { id: "clients", label: "Clientes", icon: "Users", group: "clientes" },
+  { id: "meetings", label: "Reuniões", icon: "ClipboardList", group: "clientes" },
+  { id: "seguro", label: "Seguro de Vida", icon: "Shield", group: "clientes" },
+  { id: "allocation", label: "Alocação", icon: "PieChart", group: "clientes" },
+  { id: "reports", label: "Relatórios", icon: "TrendingUp", group: "relatorios" },
+  { id: "backup", label: "Back-Up", icon: "HardDrive", group: "config" },
+  { id: "settings", label: "Configurações", icon: "Settings", group: "config" },
 ];
 
 export const NAV_GROUPS = {

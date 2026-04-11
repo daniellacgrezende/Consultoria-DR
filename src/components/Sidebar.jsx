@@ -3,13 +3,16 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { B, NAV_ITEMS, NAV_GROUPS } from "../utils/constants";
 import { useAuth } from "../contexts/AuthContext";
 import Avatar from "./ui/Avatar";
+import { Home, Target, Calendar, CheckSquare, DollarSign, Users, ClipboardList, Shield, PieChart, TrendingUp, HardDrive, Settings } from "lucide-react";
+
+const ICON_MAP = { Home, Target, Calendar, CheckSquare, DollarSign, Users, ClipboardList, Shield, PieChart, TrendingUp, HardDrive, Settings };
 
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
   const current = location.pathname.replace("/", "") || "dashboard";
-  const [groups, setGroups] = useState({ vendas: true, clientes: true, relatorios: false, config: false });
+  const [groups, setGroups] = useState({ vendas: true, clientes: true, relatorios: true, config: true });
 
   const standalone = NAV_ITEMS.filter((i) => !i.group);
   const grouped = Object.entries(NAV_GROUPS);
@@ -22,6 +25,12 @@ export default function Sidebar() {
     fontWeight: active ? 600 : 400, fontSize: 12.5, textAlign: "left",
     transition: "all 0.15s ease", fontFamily: "inherit",
   });
+
+  const renderIcon = (iconName, active) => {
+    const IconComp = ICON_MAP[iconName];
+    if (!IconComp) return null;
+    return <IconComp size={16} strokeWidth={active ? 2.2 : 1.8} style={{ flexShrink: 0, opacity: active ? 1 : 0.7 }} />;
+  };
 
   return (
     <aside style={{
@@ -46,7 +55,7 @@ export default function Sidebar() {
             onMouseEnter={(e) => { if (current !== item.id) { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "rgba(255,255,255,0.92)"; } }}
             onMouseLeave={(e) => { if (current !== item.id) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,0.65)"; } }}
           >
-            <span style={{ fontSize: 15, width: 20, textAlign: "center" }}>{item.icon}</span>{item.label}
+            {renderIcon(item.icon, current === item.id)}{item.label}
           </button>
         ))}
 
@@ -63,14 +72,14 @@ export default function Sidebar() {
               <span>{label}</span>
               <span style={{ fontSize: 8, transition: "transform 0.2s", transform: groups[key] ? "rotate(0)" : "rotate(-90deg)" }}>▼</span>
             </button>
-            <div style={{ overflow: "hidden", maxHeight: groups[key] ? 500 : 0, transition: "max-height 0.25s ease", }}>
+            <div style={{ overflow: "hidden", maxHeight: groups[key] ? 500 : 0, transition: "max-height 0.25s ease" }}>
               {NAV_ITEMS.filter((i) => i.group === key).map((item) => (
                 <button key={item.id} onClick={() => navigate(`/${item.id}`)}
                   style={itemStyle(current === item.id)}
                   onMouseEnter={(e) => { if (current !== item.id) { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "rgba(255,255,255,0.92)"; } }}
                   onMouseLeave={(e) => { if (current !== item.id) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,0.65)"; } }}
                 >
-                  <span style={{ fontSize: 14, width: 20, textAlign: "center" }}>{item.icon}</span>{item.label}
+                  {renderIcon(item.icon, current === item.id)}{item.label}
                 </button>
               ))}
             </div>
