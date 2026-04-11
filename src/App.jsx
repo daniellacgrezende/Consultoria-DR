@@ -11,11 +11,9 @@ import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import Meetings from "./pages/Meetings";
 import AssetAllocation from "./pages/AssetAllocation";
-import Reports from "./pages/Reports";
 import Backup from "./pages/Backup";
 import Settings from "./pages/Settings";
 import Repasse from "./pages/Repasse";
-import Seguro from "./pages/Seguro";
 import Noticias from "./pages/Noticias";
 import EvolucaoPatrimonial from "./pages/EvolucaoPatrimonial";
 
@@ -45,9 +43,7 @@ function AppRoutes() {
         <Route path="meetings" element={<Meetings />} />
         <Route path="allocation" element={<AssetAllocation />} />
         <Route path="repasse" element={<Repasse />} />
-        <Route path="seguro" element={<Seguro />} />
         <Route path="noticias" element={<Noticias />} />
-        <Route path="reports" element={<Reports />} />
         <Route path="backup" element={<Backup />} />
         <Route path="settings" element={<Settings />} />
       </Route>

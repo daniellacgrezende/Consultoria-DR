@@ -84,7 +84,7 @@ export const NAV_ITEMS = [
   { id: "allocation", label: "Alocação", icon: "PieChart" },
   { id: "repasse", label: "Repasse", icon: "DollarSign" },
   { id: "noticias", label: "Notícias", icon: "Newspaper" },
-  { id: "seguro", label: "Seguro de Vida", icon: "Shield" },
+
   { id: "backup", label: "Back-Up", icon: "HardDrive" },
   { id: "settings", label: "Configurações", icon: "Settings" },
 ];
