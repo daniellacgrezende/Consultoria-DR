@@ -16,6 +16,7 @@ import Settings from "./pages/Settings";
 import Repasse from "./pages/Repasse";
 import Noticias from "./pages/Noticias";
 import EvolucaoPatrimonial from "./pages/EvolucaoPatrimonial";
+import Relatorios from "./pages/Relatorios";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -41,6 +42,7 @@ function AppRoutes() {
         <Route path="clients/:slug" element={<ClientDetail />} />
         <Route path="evolucao" element={<EvolucaoPatrimonial />} />
         <Route path="meetings" element={<Meetings />} />
+        <Route path="relatorios" element={<Relatorios />} />
         <Route path="allocation" element={<AssetAllocation />} />
         <Route path="repasse" element={<Repasse />} />
         <Route path="noticias" element={<Noticias />} />

@@ -19,10 +19,17 @@ export default function Tasks() {
   const [modal, setModal] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [filterStatus, setFilterStatus] = useState("todas"); // "todas" | "vencidas"
-  const [filterMonth, setFilterMonth] = useState(""); // "YYYY-MM"
+  const [filterStatus, setFilterStatus] = useState("todas");
+  const [filterMonth, setFilterMonth] = useState("");
+  const [quickText, setQuickText] = useState("");
 
-  const openNew = () => { setEditId(null); setForm(EMPTY_FORM); setModal(true); };
+  const quickAdd = async (e) => {
+    e.preventDefault();
+    if (!quickText.trim()) return;
+    await saveTodo({ id: huid(), texto: quickText.trim(), recorrencia: "", vencimento: today(), descricao: "", prioridade: "normal", done: false, done_at: null, data: today(), ordem: todos.length }, true);
+    setQuickText("");
+  };
+
   const openEdit = (t) => {
     setEditId(t.id);
     setForm({ texto: t.texto || "", recorrencia: t.recorrencia || "", vencimento: t.vencimento || t.data || "", descricao: t.descricao || "", prioridade: t.prioridade || "normal" });
@@ -134,10 +141,21 @@ export default function Tasks() {
 
   return (
     <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
-        <SecH eyebrow="Produtividade" title="Tarefas" desc="Gerencie suas pendências e to-dos." />
-        <button onClick={openNew} style={{ padding: "8px 18px", background: B.brand, color: "white", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Nova Tarefa</button>
-      </div>
+      <SecH eyebrow="Produtividade" title="To-Do" desc="Suas rotinas e pendências do dia a dia." />
+
+      {/* Quick add */}
+      <form onSubmit={quickAdd} style={{ display: "flex", gap: 8, marginBottom: 18 }}>
+        <input
+          value={quickText}
+          onChange={(e) => setQuickText(e.target.value)}
+          placeholder="Adicionar tarefa... pressione Enter para salvar"
+          style={{ flex: 1, padding: "11px 16px", border: `1.5px solid ${B.border}`, borderRadius: 10, fontSize: 14, color: B.navy, outline: "none", fontFamily: "inherit", background: "white", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
+          autoFocus
+        />
+        <button type="submit" style={{ padding: "11px 20px", background: B.navy, color: "white", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+          +
+        </button>
+      </form>
 
       {/* Filter bar */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
@@ -190,11 +208,11 @@ export default function Tasks() {
         </button>
       )}
 
-      {/* ═══ MODAL ═══ */}
+      {/* ═══ MODAL EDIÇÃO ═══ */}
       <Modal open={modal} onClose={() => setModal(false)}>
         <div style={{ padding: "26px 30px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: B.navy }}>{editId ? "Editar Tarefa" : "Nova Tarefa"}</h3>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: B.navy }}>Editar Tarefa</h3>
             <button onClick={() => setModal(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: B.muted }}>×</button>
           </div>
 
@@ -222,7 +240,7 @@ export default function Tasks() {
               <button onClick={() => { remove(editId); setModal(false); }} style={{ padding: "10px 16px", background: "#fff1f2", color: "#be123c", border: "1px solid #fecdd3", borderRadius: 7, cursor: "pointer", fontWeight: 600 }}>Excluir</button>
             )}
             <button onClick={save} style={{ flex: 2, padding: "10px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
-              {editId ? "SALVAR" : "CRIAR"}
+              SALVAR
             </button>
           </div>
         </div>

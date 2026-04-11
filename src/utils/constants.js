@@ -79,6 +79,7 @@ export const NAV_ITEMS = [
   { id: "tasks", label: "Tarefas", icon: "CheckSquare" },
   { id: "calendar", label: "Calendário", icon: "Calendar" },
   { id: "meetings", label: "Reuniões", icon: "ClipboardList" },
+  { id: "relatorios", label: "Relatórios", icon: "FileText" },
   { id: "clients", label: "Clientes", icon: "Users" },
   { id: "evolucao", label: "Evolução Patrimonial", icon: "BarChart2" },
   { id: "allocation", label: "Alocação", icon: "PieChart" },
