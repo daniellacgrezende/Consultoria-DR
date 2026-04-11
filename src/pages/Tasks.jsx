@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useData } from "../hooks/useData";
 import { B } from "../utils/constants";
 import { fmtDate } from "../utils/formatters";
 import { huid, today } from "../utils/helpers";
-import Card from "../components/ui/Card";
 import Modal from "../components/ui/Modal";
 import { Inp, Sel, Tarea, SecH } from "../components/ui/FormFields";
 
@@ -20,6 +19,9 @@ export default function Tasks() {
   const [modal, setModal] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [filterStatus, setFilterStatus] = useState("todas"); // "todas" | "vencidas"
+  const [filterFrom, setFilterFrom] = useState("");
+  const [filterTo, setFilterTo] = useState("");
 
   const openNew = () => { setEditId(null); setForm(EMPTY_FORM); setModal(true); };
   const openEdit = (t) => {
@@ -61,20 +63,37 @@ export default function Tasks() {
     await saveTodo({ ...t, vencimento: d.toISOString().slice(0, 10) }, false);
   };
 
-  const pendentes = todos.filter((t) => !t.done);
-  const concluidas = todos.filter((t) => t.done).sort((a, b) => (b.done_at || "").localeCompare(a.done_at || ""));
-  const atrasadas = pendentes.filter((t) => (t.vencimento || t.data || today()) < today());
-  const hojeList = pendentes.filter((t) => (t.vencimento || t.data || today()) === today());
-  const futuras = pendentes.filter((t) => (t.vencimento || t.data || today()) > today());
-
   const priorColors = {
     alta:   { bg: "#fef2f2", color: "#dc2626", border: "#fecaca" },
     normal: { bg: "#f8faff", color: B.navy,    border: B.border },
     baixa:  { bg: "#f9fafb", color: "#6b7280", border: "#e5e7eb" },
   };
 
+  const pendentes = todos.filter((t) => !t.done);
+  const concluidas = todos.filter((t) => t.done).sort((a, b) => (b.done_at || "").localeCompare(a.done_at || ""));
+  const atrasadasSet = new Set(pendentes.filter((t) => (t.vencimento || t.data || today()) < today()).map((t) => t.id));
+
+  const applyFilters = (list) => {
+    let r = list;
+    if (filterStatus === "vencidas") r = r.filter((t) => !t.done && atrasadasSet.has(t.id));
+    if (filterFrom) r = r.filter((t) => (t.vencimento || t.data || today()) >= filterFrom);
+    if (filterTo)   r = r.filter((t) => (t.vencimento || t.data || today()) <= filterTo);
+    return r;
+  };
+
+  const atrasadas = pendentes.filter((t) => atrasadasSet.has(t.id));
+  const hojeList  = pendentes.filter((t) => (t.vencimento || t.data || today()) === today());
+  const futuras   = pendentes.filter((t) => (t.vencimento || t.data || today()) > today());
+
+  const visAtrasadas = applyFilters(atrasadas);
+  const visHoje      = filterStatus === "vencidas" ? [] : applyFilters(hojeList);
+  const visFuturas   = filterStatus === "vencidas" ? [] : applyFilters(futuras);
+  const visConcluidas = filterStatus === "vencidas" ? [] : applyFilters(concluidas);
+
+  const totalVisible = visAtrasadas.length + visHoje.length + visFuturas.length + visConcluidas.length;
+
   const Item = ({ t }) => {
-    const atras = atrasadas.includes(t);
+    const atras = atrasadasSet.has(t.id);
     const pc = priorColors[t.prioridade || "normal"];
     const rc = t.recorrencia ? RECORR_COLORS[t.recorrencia] : null;
     return (
@@ -108,6 +127,13 @@ export default function Tasks() {
     </>
   );
 
+  const btnStyle = (active) => ({
+    padding: "5px 14px", fontSize: 11, fontWeight: 600, cursor: "pointer", borderRadius: 6,
+    background: active ? B.navy : "white",
+    color: active ? "white" : B.gray,
+    border: `1px solid ${active ? B.navy : B.border}`,
+  });
+
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
@@ -115,33 +141,59 @@ export default function Tasks() {
         <button onClick={openNew} style={{ padding: "8px 18px", background: B.brand, color: "white", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Nova Tarefa</button>
       </div>
 
-      <Card style={{ border: `2px solid ${B.navy}` }}>
-        <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span>To Do</span>
-          <span style={{ fontSize: 11, color: B.gray, background: "#f0f4ff", border: `1px solid ${B.border}`, borderRadius: 999, padding: "2px 10px" }}>{pendentes.length} pendente(s) · {concluidas.length} concluída(s)</span>
+      {/* Filter bar */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 4 }}>
+          <button style={btnStyle(filterStatus === "todas")}   onClick={() => setFilterStatus("todas")}>Todas</button>
+          <button style={btnStyle(filterStatus === "vencidas")} onClick={() => setFilterStatus("vencidas")}>Vencidas</button>
         </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {todos.length === 0 && <div style={{ padding: "24px 0", textAlign: "center", color: B.gray, fontSize: 12 }}>Nenhuma tarefa. Clique em "+ Nova Tarefa" para começar.</div>}
-          <Group label="Atrasadas" color="#dc2626" items={atrasadas} />
-          <Group label="Hoje" color={B.navy} items={hojeList} />
-          <Group label="Próximas" color="#6b7280" items={futuras} />
-          {concluidas.length > 0 && (
-            <>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#16a34a", textTransform: "uppercase", marginTop: 8 }}>Concluídas ({concluidas.length})</div>
-              <div style={{ maxHeight: 160, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
-                {concluidas.map((t) => <Item key={t.id} t={t} />)}
-              </div>
-            </>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <label style={{ fontSize: 11, color: B.gray, fontWeight: 600 }}>De</label>
+          <input type="date" value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)}
+            style={{ fontSize: 11, padding: "4px 8px", border: `1px solid ${B.border}`, borderRadius: 6, color: B.navy, background: "white" }} />
+          <label style={{ fontSize: 11, color: B.gray, fontWeight: 600 }}>Até</label>
+          <input type="date" value={filterTo} onChange={(e) => setFilterTo(e.target.value)}
+            style={{ fontSize: 11, padding: "4px 8px", border: `1px solid ${B.border}`, borderRadius: 6, color: B.navy, background: "white" }} />
+          {(filterFrom || filterTo) && (
+            <button onClick={() => { setFilterFrom(""); setFilterTo(""); }}
+              style={{ fontSize: 10, color: B.muted, background: "none", border: "none", cursor: "pointer" }}>limpar</button>
           )}
         </div>
+        <span style={{ marginLeft: "auto", fontSize: 11, color: B.gray }}>
+          {pendentes.length} pendente(s) · {concluidas.length} concluída(s)
+        </span>
+      </div>
 
-        {concluidas.length > 0 && (
-          <button onClick={clearDoneTodos} style={{ marginTop: 10, width: "100%", padding: "7px", background: "#f3f4f6", color: "#6b7280", border: "none", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-            Limpar concluídas ({concluidas.length})
-          </button>
+      {/* Task list */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {totalVisible === 0 && todos.length === 0 && (
+          <div style={{ padding: "32px 0", textAlign: "center", color: B.gray, fontSize: 12 }}>
+            Nenhuma tarefa. Clique em "+ Nova Tarefa" para começar.
+          </div>
         )}
-      </Card>
+        {totalVisible === 0 && todos.length > 0 && (
+          <div style={{ padding: "32px 0", textAlign: "center", color: B.gray, fontSize: 12 }}>
+            Nenhuma tarefa corresponde aos filtros selecionados.
+          </div>
+        )}
+        <Group label="Atrasadas" color="#dc2626" items={visAtrasadas} />
+        <Group label="Hoje"      color={B.navy}  items={visHoje} />
+        <Group label="Próximas"  color="#6b7280" items={visFuturas} />
+        {visConcluidas.length > 0 && (
+          <>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#16a34a", textTransform: "uppercase", marginTop: 8 }}>Concluídas ({visConcluidas.length})</div>
+            <div style={{ maxHeight: 160, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
+              {visConcluidas.map((t) => <Item key={t.id} t={t} />)}
+            </div>
+          </>
+        )}
+      </div>
+
+      {concluidas.length > 0 && filterStatus !== "vencidas" && (
+        <button onClick={clearDoneTodos} style={{ marginTop: 10, width: "100%", padding: "7px", background: "#f3f4f6", color: "#6b7280", border: "none", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+          Limpar concluídas ({concluidas.length})
+        </button>
+      )}
 
       {/* ═══ MODAL ═══ */}
       <Modal open={modal} onClose={() => setModal(false)}>
