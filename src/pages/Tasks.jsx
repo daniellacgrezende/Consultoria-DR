@@ -20,8 +20,7 @@ export default function Tasks() {
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [filterStatus, setFilterStatus] = useState("todas"); // "todas" | "vencidas"
-  const [filterFrom, setFilterFrom] = useState("");
-  const [filterTo, setFilterTo] = useState("");
+  const [filterMonth, setFilterMonth] = useState(""); // "YYYY-MM"
 
   const openNew = () => { setEditId(null); setForm(EMPTY_FORM); setModal(true); };
   const openEdit = (t) => {
@@ -76,8 +75,7 @@ export default function Tasks() {
   const applyFilters = (list) => {
     let r = list;
     if (filterStatus === "vencidas") r = r.filter((t) => !t.done && atrasadasSet.has(t.id));
-    if (filterFrom) r = r.filter((t) => (t.vencimento || t.data || today()) >= filterFrom);
-    if (filterTo)   r = r.filter((t) => (t.vencimento || t.data || today()) <= filterTo);
+    if (filterMonth) r = r.filter((t) => (t.vencimento || t.data || today()).slice(0, 7) === filterMonth);
     return r;
   };
 
@@ -148,14 +146,11 @@ export default function Tasks() {
           <button style={btnStyle(filterStatus === "vencidas")} onClick={() => setFilterStatus("vencidas")}>Vencidas</button>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <label style={{ fontSize: 11, color: B.gray, fontWeight: 600 }}>De</label>
-          <input type="date" value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)}
+          <label style={{ fontSize: 11, color: B.gray, fontWeight: 600 }}>Mês</label>
+          <input type="month" value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)}
             style={{ fontSize: 11, padding: "4px 8px", border: `1px solid ${B.border}`, borderRadius: 6, color: B.navy, background: "white" }} />
-          <label style={{ fontSize: 11, color: B.gray, fontWeight: 600 }}>Até</label>
-          <input type="date" value={filterTo} onChange={(e) => setFilterTo(e.target.value)}
-            style={{ fontSize: 11, padding: "4px 8px", border: `1px solid ${B.border}`, borderRadius: 6, color: B.navy, background: "white" }} />
-          {(filterFrom || filterTo) && (
-            <button onClick={() => { setFilterFrom(""); setFilterTo(""); }}
+          {filterMonth && (
+            <button onClick={() => setFilterMonth("")}
               style={{ fontSize: 10, color: B.muted, background: "none", border: "none", cursor: "pointer" }}>limpar</button>
           )}
         </div>
