@@ -42,7 +42,6 @@ function lastDayOfMonth(yearMonth) {
 export default function EvolucaoPatrimonial() {
   const { clients, history, addHistory, setToast } = useData();
   const [periodo, setPeriodo] = useState("12");
-  const [showValues, setShowValues] = useState(false);
   const [selectedClient, setSelectedClient] = useState("all");
 
   // Modal lançar PL
@@ -142,7 +141,6 @@ export default function EvolucaoPatrimonial() {
   const totalVarAbs = lastPoint - firstPoint;
 
   const formatYAxis = (v) => {
-    if (!showValues) return "•••";
     if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
     if (v >= 1_000) return `${(v / 1_000).toFixed(0)}k`;
     return v;
@@ -153,9 +151,7 @@ export default function EvolucaoPatrimonial() {
     return (
       <div style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "8px 12px", boxShadow: B.shadow }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: B.navy, marginBottom: 4 }}>{label}</div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: B.navy }}>
-          {showValues ? money(payload[0].value) : "• • • • •"}
-        </div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: B.navy }}>{money(payload[0].value)}</div>
       </div>
     );
   };
@@ -172,13 +168,10 @@ export default function EvolucaoPatrimonial() {
 
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
-        <div
-          onClick={() => setShowValues((v) => !v)}
-          style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${B.navy}`, cursor: "pointer", userSelect: "none" }}
-        >
+        <div style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${B.navy}` }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5 }}>AUM Total Atual</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: B.navy }}>{showValues ? money(totalAUM) : "• • • • •"}</div>
-          <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>{showValues ? `${active.length} clientes ativos` : "clique para revelar"}</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: B.navy }}>{money(totalAUM)}</div>
+          <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>{active.length} clientes ativos</div>
         </div>
 
         <div style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${totalVar >= 0 ? "#16a34a" : "#dc2626"}` }}>
@@ -187,7 +180,7 @@ export default function EvolucaoPatrimonial() {
             {totalVar >= 0 ? "+" : ""}{totalVar.toFixed(2)}%
           </div>
           <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>
-            {showValues ? (totalVarAbs >= 0 ? "+" : "") + money(totalVarAbs) : "• • •"} no período
+            {(totalVarAbs >= 0 ? "+" : "") + money(totalVarAbs)} no período
           </div>
         </div>
 
@@ -286,7 +279,7 @@ export default function EvolucaoPatrimonial() {
                   </div>
                 </div>
                 <div style={{ textAlign: "right", fontWeight: 700, fontSize: 12, color: B.navy }}>
-                  {showValues ? money(current) : "•••"}
+                  {money(current)}
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <VarBadge pct={variation} />

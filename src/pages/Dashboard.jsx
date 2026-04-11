@@ -15,7 +15,6 @@ import { SecH } from "../components/ui/FormFields";
 export default function Dashboard() {
   const navigate = useNavigate();
   const { clients, history, leads } = useData();
-  const [showAUM, setShowAUM] = useState(false);
   const [ufFilter, setUfFilter] = useState("");
 
   const active = useMemo(() => clients.filter((c) => c.status === "ativo"), [clients]);
@@ -79,23 +78,15 @@ export default function Dashboard() {
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
         <MiniStat label="Clientes Ativos" value={active.length} sub={`${clients.length} total na base`} />
-        <div onClick={() => setShowAUM((v) => !v)} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${B.navy}`, cursor: "pointer", userSelect: "none" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5 }}>Patrimônio sob Gestão</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: B.navy }}>{showAUM ? money(totalAUM) : "• • • • •"}</div>
-              <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>{showAUM ? `${active.length} clientes` : "clique para revelar"}</div>
-            </div>
-          </div>
+        <div style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${B.navy}` }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5 }}>Patrimônio sob Gestão</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: B.navy }}>{money(totalAUM)}</div>
+          <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>{active.length} clientes</div>
         </div>
-        <div onClick={() => setShowAUM((v) => !v)} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${B.navy}`, cursor: "pointer", userSelect: "none" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5 }}>Patrimônio Médio</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: B.navy }}>{showAUM ? money(aumMedio) : "• • • • •"}</div>
-              <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>{showAUM ? "por cliente ativo" : "clique para revelar"}</div>
-            </div>
-          </div>
+        <div style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${B.navy}` }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5 }}>Patrimônio Médio</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: B.navy }}>{money(aumMedio)}</div>
+          <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>por cliente ativo</div>
         </div>
       </div>
 
@@ -113,7 +104,7 @@ export default function Dashboard() {
                   <div style={{ fontSize: 10, color: B.gray }}>{c.profissao}</div>
                 </div>
                 <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: B.navy }}>{showAUM ? money(getPL(c)) : "•••"}</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: B.navy }}>{money(getPL(c))}</div>
                   <CBadge curva={getCurva(getPL(c))} />
                 </div>
               </div>
@@ -131,7 +122,7 @@ export default function Dashboard() {
                 <span style={{ fontSize: 11, fontWeight: 800, background: bg, color, borderRadius: 999, padding: "2px 9px", minWidth: 56, textAlign: "center" }}>{label}</span>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: B.navy }}>{showAUM ? money(aum) : "•••"}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: B.navy }}>{money(aum)}</span>
                     <span style={{ fontSize: 11, color: B.gray }}>{count}cl</span>
                   </div>
                   <div style={{ height: 5, background: "#e8eeff", borderRadius: 999 }}>

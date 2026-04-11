@@ -24,7 +24,6 @@ export default function Clients() {
   const [filterSeguro, setFilterSeguro] = useState("all");
   const [plMin, setPlMin] = useState("");
   const [plMax, setPlMax] = useState("");
-  const [showAUM, setShowAUM] = useState(false);
   const [sortCol, setSortCol] = useState("nome");
   const [sortDir, setSortDir] = useState("asc");
   const [ufFilter, setUfFilter] = useState("");
@@ -181,10 +180,10 @@ export default function Clients() {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 18 }}>
         <MiniStat label="Clientes Ativos" value={active.length} sub={`${rows.length} exibidos`} />
-        <div onClick={() => setShowAUM((v) => !v)} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${B.navy}`, cursor: "pointer", userSelect: "none" }}>
+        <div style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${B.navy}` }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 5 }}>AUM</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: B.navy }}>{showAUM ? money(totalAUM) : "• • • • •"}</div>
-          <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>{showAUM ? "patrimônio total" : "clique para revelar"}</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: B.navy }}>{money(totalAUM)}</div>
+          <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>patrimônio total</div>
         </div>
         <MiniStat label="Reunião em Atraso" value={alertas75} sub="fora da periodicidade" warn={alertas75 > 0} />
       </div>
@@ -268,7 +267,7 @@ export default function Clients() {
                       </div>
                     </td>
                     <td style={{ padding: "10px 12px", color: B.gray, fontSize: 12 }}>{c.cidade && c.uf ? `${c.cidade}/${c.uf}` : c.cidade || "—"}</td>
-                    <td style={{ padding: "10px 12px", fontWeight: 700, color: B.navy }} onClick={(e) => { e.stopPropagation(); setShowAUM((v) => !v); }}>{showAUM ? money(c._pl) : "• • •"}</td>
+                    <td style={{ padding: "10px 12px", fontWeight: 700, color: B.navy }}>{money(c._pl)}</td>
                     <td style={{ padding: "10px 12px" }}><PBadge p={c.perfil} /></td>
                     <td style={{ padding: "10px 12px" }}><span style={{ fontSize: 12, color: rW ? "#dc2626" : "#444", fontWeight: rW ? 700 : 400 }}>{(c.ultima_reuniao || c.ultimaReuniao) ? fmtDate(c.ultima_reuniao || c.ultimaReuniao) : "—"}</span></td>
                     <td style={{ padding: "10px 12px" }}><span style={{ fontSize: 12, fontWeight: 600, color: hasSeguro ? "#16a34a" : "#9ca3af" }}>{hasSeguro ? "Sim" : "Não"}</span></td>
