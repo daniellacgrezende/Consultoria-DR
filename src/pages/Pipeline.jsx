@@ -48,9 +48,7 @@ function DraggableLeadCard({ lead, openEdit, moveEtapa }) {
 
   const tc = lead.temperatura ? TEMP_MAP[lead.temperatura] : null;
   const patrimonio = Number(lead.patrimonio_estimado || 0);
-  const isExit = ["Cliente", "Perdido", "Nutrição"].includes(lead.etapa);
-  const dias = daysSince(lead.data_ultima_interacao);
-  const stale = dias !== null && dias > 21;
+  const stale = daysSince(lead.data_ultima_interacao) > 21;
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
@@ -61,7 +59,7 @@ function DraggableLeadCard({ lead, openEdit, moveEtapa }) {
           border: `1px solid ${stale ? "#FDE68A" : B.border}`,
           borderLeft: `3px solid ${tc ? tc.dot : B.border}`,
           borderRadius: 7,
-          padding: "8px 10px",
+          padding: "9px 11px",
           cursor: "pointer",
           boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
           transition: "box-shadow 0.15s",
@@ -69,52 +67,24 @@ function DraggableLeadCard({ lead, openEdit, moveEtapa }) {
         onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 3px 10px rgba(0,0,0,0.09)")}
         onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)")}
       >
-        {/* Row 1: name + days */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 4, marginBottom: 4 }}>
-          <span style={{ fontWeight: 700, fontSize: 11, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1 }}>
-            {lead.nome}
-          </span>
-          <DaysBadge date={lead.data_ultima_interacao} />
+        {/* Nome */}
+        <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {lead.nome}
         </div>
 
-        {/* Row 2: patrimônio */}
-        {patrimonio > 0 && (
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#15803D", marginBottom: 4 }}>
-            {money(patrimonio)}
-          </div>
+        {/* Telefone */}
+        {lead.telefone && (
+          <div style={{ fontSize: 11, color: B.muted, marginBottom: 2 }}>{lead.telefone}</div>
         )}
 
-        {/* Row 3: origem + temperatura */}
-        <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap", marginBottom: !isExit ? 6 : 0 }}>
-          {lead.origem && (
-            <span style={{ fontSize: 9, color: B.muted, background: "#F8FAFF", border: `1px solid ${B.border}`, borderRadius: 4, padding: "1px 5px" }}>
-              {lead.origem}
-            </span>
-          )}
-          {tc && (
-            <span style={{ fontSize: 9, fontWeight: 700, background: tc.bg, color: tc.color, borderRadius: 999, padding: "1px 6px", display: "flex", alignItems: "center", gap: 3 }}>
-              <span style={{ width: 4, height: 4, borderRadius: "50%", background: tc.dot, display: "inline-block" }} />
-              {tc.label}
-            </span>
-          )}
-        </div>
+        {/* Origem */}
+        {lead.origem && (
+          <div style={{ fontSize: 11, color: B.muted, marginBottom: 2 }}>{lead.origem}</div>
+        )}
 
-        {/* Row 4: quick actions */}
-        {!isExit && (
-          <div style={{ display: "flex", gap: 3, marginTop: 1 }}>
-            <button
-              onClick={(e) => { e.stopPropagation(); moveEtapa(lead.id, "Cliente"); }}
-              style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#F0FDF4", color: "#15803D", border: "1px solid #BBF7D0", borderRadius: 4, padding: "3px 0", cursor: "pointer" }}
-            >✓ Converter</button>
-            <button
-              onClick={(e) => { e.stopPropagation(); moveEtapa(lead.id, "Perdido"); }}
-              style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#FFF1F2", color: "#BE123C", border: "1px solid #FECDD3", borderRadius: 4, padding: "3px 0", cursor: "pointer" }}
-            >✕ Perdido</button>
-            <button
-              onClick={(e) => { e.stopPropagation(); moveEtapa(lead.id, "Nutrição"); }}
-              style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#FEFCE8", color: "#92400E", border: "1px solid #FDE68A", borderRadius: 4, padding: "3px 0", cursor: "pointer" }}
-            >↻ Nutrir</button>
-          </div>
+        {/* Patrimônio */}
+        {patrimonio > 0 && (
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#15803D", marginTop: 4 }}>{money(patrimonio)}</div>
         )}
       </div>
     </div>
