@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { useData } from "../hooks/useData";
 import { B, PERFIL_MAP, CURVA_MAP } from "../utils/constants";
 import { money } from "../utils/formatters";
 import { getCurva, getCurrentPL, daysSince, getPeriodDays } from "../utils/helpers";
+import { supabase } from "../lib/supabase";
 import Card from "../components/ui/Card";
 import MiniStat from "../components/ui/MiniStat";
 import Avatar from "../components/ui/Avatar";
@@ -45,6 +46,25 @@ export default function Dashboard() {
 
   const leadsAtivos = leads.filter((l) => !["Cliente", "Perdido", "Nutrição"].includes(l.etapa)).length;
   const leadsConvertidos = leads.filter((l) => l.etapa === "Cliente").length;
+
+  // Calendar events
+  const [calEvents, setCalEvents] = useState([]);
+  useEffect(() => {
+    supabase.from("calendar_events").select("*").order("start_at").then(({ data }) => {
+      setCalEvents(data || []);
+    });
+  }, []);
+
+  const proximosEventos = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const end = new Date(today);
+    end.setDate(end.getDate() + 7);
+    end.setHours(23, 59, 59, 999);
+    return calEvents
+      .filter((e) => { const d = new Date(e.start_at); return d >= today && d <= end; })
+      .sort((a, b) => new Date(a.start_at) - new Date(b.start_at));
+  }, [calEvents]);
 
   // UF data
   const ufMap = {};
@@ -171,6 +191,39 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
+
+      {/* Próximos Eventos */}
+      <Card style={{ marginBottom: 0 }}>
+        <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>
+          Próximos Eventos <span style={{ fontWeight: 400, fontSize: 11, color: B.gray }}>(hoje + 7 dias)</span>
+        </div>
+        {proximosEventos.length === 0 ? (
+          <div style={{ padding: "16px 0", textAlign: "center", color: B.gray, fontSize: 12 }}>Nenhum evento nos próximos 7 dias</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {proximosEventos.map((ev) => {
+              const d = new Date(ev.start_at);
+              const isToday = d.toDateString() === new Date().toDateString();
+              const dateLabel = isToday ? "Hoje" : d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" });
+              const timeLabel = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+              const dotColor = ev.color || (ev.type === "reuniao" ? "#2563eb" : "#7c3aed");
+              return (
+                <div key={ev.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 10px", borderRadius: 8, background: isToday ? "#eff6ff" : "#f8faff", border: `1px solid ${isToday ? "#bfdbfe" : B.border}` }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 12, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ev.title}</div>
+                    {ev.location && <div style={{ fontSize: 10, color: B.gray, marginTop: 1 }}>{ev.location}</div>}
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ fontSize: 11, fontWeight: isToday ? 700 : 500, color: isToday ? "#2563eb" : B.navy }}>{dateLabel}</div>
+                    <div style={{ fontSize: 10, color: B.gray }}>{timeLabel}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
     </>
   );
 }
