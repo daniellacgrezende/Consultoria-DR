@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { useData } from "../hooks/useData";
 import { B } from "../utils/constants";
@@ -32,12 +32,19 @@ export default function Calendar() {
   const [syncResult, setSyncResult] = useState(null);
 
   // Load events
-  useState(() => {
-    supabase.from("calendar_events").select("*").order("start_at").then(({ data }) => {
-      setEvents(data || []);
-      setLoaded(true);
-    });
+  const loadEvents = useCallback(async () => {
+    const { data } = await supabase.from("calendar_events").select("*").order("start_at");
+    setEvents(data || []);
+    setLoaded(true);
   }, []);
+
+  useEffect(() => { loadEvents(); }, [loadEvents]);
+
+  const refresh = async () => {
+    setLoaded(false);
+    await loadEvents();
+    if (setToast) setToast({ type: "success", text: "Calendário atualizado!" });
+  };
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
@@ -218,6 +225,7 @@ export default function Calendar() {
         <button onClick={prevMonth} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontSize: 13, fontWeight: 600, color: B.navy }}>← Anterior</button>
         <span style={{ fontSize: 18, fontWeight: 700, color: B.navy, textTransform: "capitalize" }}>{monthName}</span>
         <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={refresh} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "8px 12px", cursor: "pointer", fontSize: 13, color: B.navy }} title="Atualizar calendário">🔄</button>
           <button onClick={() => setSyncModal(true)} style={{ background: "#0078d4", color: "white", border: "none", borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ fontSize: 14 }}>📧</span> Outlook / Teams
             {outlookCount > 0 && <span style={{ background: "rgba(255,255,255,0.3)", borderRadius: 999, padding: "1px 6px", fontSize: 10 }}>{outlookCount}</span>}
