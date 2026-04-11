@@ -401,7 +401,7 @@ export default function Pipeline() {
       {/* Confirm delete radar */}
       <Modal open={!!radarDelConf} onClose={() => setRadarDelConf(null)}>
         <div style={{ padding: "26px 30px" }}>
-          <h3 style={{ margin: "0 0 10px", color: "#dc2626", fontSize: 16, fontWeight: 700 }}>⚠️ Remover do Radar?</h3>
+          <h3 style={{ margin: "0 0 10px", color: "#dc2626", fontSize: 16, fontWeight: 700 }}>Remover do Radar?</h3>
           <p style={{ color: B.gray, fontSize: 13, marginBottom: 22 }}>Esta ação não pode ser desfeita.</p>
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => setRadarDelConf(null)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>

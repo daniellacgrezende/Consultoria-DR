@@ -68,30 +68,30 @@ export default function Clients() {
   const openEdit = (c) => { setEditId(c.id); setForm({ ...c }); setModal(true); };
 
   const SortIcon = ({ col }) => {
-    if (sortCol !== col) return <span style={{ color: "#ccc", fontSize: 10 }}>⇅</span>;
-    return <span style={{ color: B.navy, fontSize: 10 }}>{sortDir === "asc" ? "↑" : "↓"}</span>;
+    if (sortCol !== col) return null;
+    return <span style={{ color: B.navy, fontSize: 10 }}>{sortDir === "asc" ? "▲" : "▼"}</span>;
   };
 
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
-        <SecH eyebrow="Carteira" title="Clientes 👥" desc="Gestão completa da sua carteira." />
+        <SecH eyebrow="Carteira" title="Clientes" desc="Gestão completa da sua carteira." />
         <button onClick={openNew} style={{ padding: "8px 18px", background: B.brand, color: "white", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Novo Cliente</button>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 18 }}>
-        <MiniStat icon="👥" label="Clientes Ativos" value={active.length} sub={`${rows.length} exibidos`} />
+        <MiniStat label="Clientes Ativos" value={active.length} sub={`${rows.length} exibidos`} />
         <div onClick={() => setShowAUM((v) => !v)} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${B.navy}`, cursor: "pointer", userSelect: "none" }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 5 }}>💼 AUM {showAUM ? "🔓" : "🔒"}</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 5 }}>AUM</div>
           <div style={{ fontSize: 20, fontWeight: 700, color: B.navy }}>{showAUM ? money(totalAUM) : "• • • • •"}</div>
           <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>{showAUM ? "patrimônio total" : "clique para revelar"}</div>
         </div>
-        <MiniStat icon="📅" label="Reunião em Atraso" value={alertas75} sub="fora da periodicidade" warn={alertas75 > 0} />
+        <MiniStat label="Reunião em Atraso" value={alertas75} sub="fora da periodicidade" warn={alertas75 > 0} />
       </div>
 
       {/* Filters */}
       <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="🔍 Buscar..." style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "7px 14px", fontSize: 13, color: B.navy, outline: "none", minWidth: 220 }} />
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar..." style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "7px 14px", fontSize: 13, color: B.navy, outline: "none", minWidth: 220 }} />
         <span style={{ fontSize: 11, color: B.muted, fontWeight: 700 }}>UF:</span>
         <input value={ufFilter} onChange={(e) => setUfFilter(e.target.value.toUpperCase())} placeholder="SP" style={{ width: 60, background: "white", border: `1px solid ${B.border}`, borderRadius: 7, padding: "5px 9px", fontSize: 12, color: B.navy, outline: "none" }} />
         <span style={{ fontSize: 11, color: B.muted, fontWeight: 700 }}>Curva:</span>
@@ -131,18 +131,18 @@ export default function Clients() {
                         <Avatar nome={c.nome} size={32} />
                         <div>
                           <span style={{ fontWeight: 600, color: B.navy }}>{c.nome}</span>
-                          {grupoNome && <div style={{ fontSize: 10, color: "#8b5cf6", fontWeight: 600 }}>🔗 {grupoNome}</div>}
+                          {grupoNome && <div style={{ fontSize: 10, color: "#8b5cf6", fontWeight: 600 }}>{grupoNome}</div>}
                         </div>
                       </div>
                     </td>
                     <td style={{ padding: "10px 12px", color: B.gray, fontSize: 12 }}>{c.cidade && c.uf ? `${c.cidade}/${c.uf}` : c.cidade || "—"}</td>
                     <td style={{ padding: "10px 12px", fontWeight: 700, color: B.navy }} onClick={(e) => { e.stopPropagation(); setShowAUM((v) => !v); }}>{showAUM ? money(c._pl) : "• • •"}</td>
                     <td style={{ padding: "10px 12px" }}><PBadge p={c.perfil} /></td>
-                    <td style={{ padding: "10px 12px" }}><span style={{ fontSize: 12, color: rW ? "#dc2626" : "#444", fontWeight: rW ? 700 : 400 }}>{(c.ultima_reuniao || c.ultimaReuniao) ? (rW ? `⚠ ${fmtDate(c.ultima_reuniao || c.ultimaReuniao)}` : fmtDate(c.ultima_reuniao || c.ultimaReuniao)) : "—"}</span></td>
-                    <td style={{ padding: "10px 12px" }}><span style={{ fontSize: 12, fontWeight: 600, color: hasSeguro ? "#16a34a" : "#9ca3af" }}>{hasSeguro ? "✅ Sim" : "✗ Não"}</span></td>
+                    <td style={{ padding: "10px 12px" }}><span style={{ fontSize: 12, color: rW ? "#dc2626" : "#444", fontWeight: rW ? 700 : 400 }}>{(c.ultima_reuniao || c.ultimaReuniao) ? fmtDate(c.ultima_reuniao || c.ultimaReuniao) : "—"}</span></td>
+                    <td style={{ padding: "10px 12px" }}><span style={{ fontSize: 12, fontWeight: 600, color: hasSeguro ? "#16a34a" : "#9ca3af" }}>{hasSeguro ? "Sim" : "Não"}</span></td>
                     <td style={{ padding: "10px 12px" }}><CBadge curva={c._curva} /></td>
                     <td style={{ padding: "10px 12px" }}>
-                      <button onClick={(e) => { e.stopPropagation(); openEdit(c); }} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>✏</button>
+                      <button onClick={(e) => { e.stopPropagation(); openEdit(c); }} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Editar</button>
                     </td>
                   </tr>
                 );
@@ -160,7 +160,7 @@ export default function Clients() {
             <button onClick={() => setModal(false)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: B.gray }}>×</button>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
-            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}` }}>👤 Dados Pessoais</div>
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}` }}>Dados Pessoais</div>
             <div style={{ gridColumn: "1/-1" }}><Inp label="Nome completo *" value={form.nome} onChange={F("nome")} placeholder="Nome" /></div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 70px", gap: 8 }}><Inp label="Cidade" value={form.cidade} onChange={F("cidade")} /><Inp label="UF" value={form.uf} onChange={F("uf")} /></div>
             <Inp label="Profissão" value={form.profissao} onChange={F("profissao")} />
@@ -170,11 +170,11 @@ export default function Clients() {
             <Inp label="Data Nascimento" value={form.data_nascimento || form.dataNascimento || ""} onChange={F("data_nascimento")} type="date" />
             <div style={{ gridColumn: "1/-1" }}><Inp label="Hobbies" value={form.hobbies} onChange={F("hobbies")} /></div>
 
-            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>⚙️ Status e Perfil</div>
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Status e Perfil</div>
             <Sel label="Status" value={form.status} onChange={F("status")} opts={[{ v: "ativo", l: "Ativo" }, { v: "inativo", l: "Inativo" }]} />
             <Sel label="Perfil" value={form.perfil} onChange={F("perfil")} opts={Object.entries(PERFIL_MAP).map(([k, v]) => ({ v: k, l: v.label }))} />
 
-            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>💰 Financeiro</div>
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Financeiro</div>
             <Inp label="PL Inicial (R$)" value={form.pl_inicial ?? form.plInicial ?? ""} onChange={F("pl_inicial")} type="number" />
             <Inp label="Aporte Mensal (R$)" value={form.aporte_mensal ?? form.aporteMensal ?? ""} onChange={F("aporte_mensal")} type="number" />
             <Inp label="Meta Patrimonial (R$)" value={form.meta_patrimonio ?? form.metaPatrimonio ?? ""} onChange={F("meta_patrimonio")} type="number" />
@@ -185,7 +185,7 @@ export default function Clients() {
             <Sel label="Declaração IR" value={form.declaracao_ir ?? form.declaracaoIR ?? "Simplificada"} onChange={F("declaracao_ir")} opts={["Simplificada", "Completa"].map((v) => ({ v, l: v }))} />
             <div style={{ gridColumn: "1/-1" }}><Inp label="Corretoras" value={form.corretoras || ""} onChange={F("corretoras")} placeholder="XP, BTG, Avenue…" /></div>
 
-            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>📍 Origem</div>
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Origem</div>
             <div style={{ gridColumn: "1/-1" }}>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
                 {LEAD_ORIGENS.map((o) => (
@@ -194,13 +194,13 @@ export default function Clients() {
               </div>
             </div>
 
-            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>📅 Datas</div>
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Datas</div>
             <Inp label="Início Carteira" value={form.inicio_carteira ?? form.inicioCarteira ?? ""} onChange={F("inicio_carteira")} type="date" />
             <Inp label="Última Reunião" value={form.ultima_reuniao ?? form.ultimaReuniao ?? ""} onChange={F("ultima_reuniao")} type="date" />
             <Inp label="Próxima Reunião" value={form.proxima_reuniao ?? form.proximaReuniao ?? ""} onChange={F("proxima_reuniao")} type="date" />
             <Inp label="Último Relatório" value={form.ultimo_relatorio ?? form.ultimoRelatorio ?? ""} onChange={F("ultimo_relatorio")} type="date" />
 
-            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>📅 Reuniões e Relatórios</div>
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Reuniões e Relatórios</div>
             <div>
               <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 4 }}>Periodicidade Reunião</label>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
@@ -214,7 +214,7 @@ export default function Clients() {
               </div>
             </div>
 
-            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>✅ Atributos</div>
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Atributos</div>
             <div style={{ gridColumn: "1/-1", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0 16px" }}>
               <Chk label="IPS Enviada" checked={form.envio_ips ?? form.envioIps} onChange={F("envio_ips")} />
               <Chk label="Seguro de Vida" checked={form.seguro_vida ?? form.seguroVida} onChange={F("seguro_vida")} />

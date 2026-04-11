@@ -81,9 +81,9 @@ export default function Reports() {
 
   return (
     <>
-      <SecH eyebrow="Histórico" title="Evolução Patrimonial 📈" />
+      <SecH eyebrow="Histórico" title="Evolução Patrimonial" />
       <div style={{ display: "flex", gap: 4, marginBottom: 20, background: "rgba(6,24,65,0.07)", borderRadius: 10, padding: 4, width: "fit-content" }}>
-        {[{ id: "consolidada", label: "📊 Consolidada" }, { id: "individual", label: "👤 Individual" }, { id: "manutencao", label: "🔧 Manutenção" }].map((t) => (
+        {[{ id: "consolidada", label: "Consolidada" }, { id: "individual", label: "Individual" }, { id: "manutencao", label: "Manutenção" }].map((t) => (
           <button key={t.id} onClick={() => setSubTab(t.id)} style={{ padding: "7px 18px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: subTab === t.id ? B.navy : "transparent", color: subTab === t.id ? "white" : "#8899bb" }}>{t.label}</button>
         ))}
       </div>
@@ -92,8 +92,8 @@ export default function Reports() {
       {subTab === "consolidada" && (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginBottom: 18 }}>
-            <MiniStat icon="📊" label="Patrimônio Médio" value={money(aumMedio)} sub={`${active.length} clientes`} />
-            <MiniStat icon="📈" label="Com Histórico" value={[...new Set(history.map((h) => h.client_id))].length} sub="com evolução" />
+            <MiniStat label="Patrimônio Médio" value={money(aumMedio)} sub={`${active.length} clientes`} />
+            <MiniStat label="Com Histórico" value={[...new Set(history.map((h) => h.client_id))].length} sub="com evolução" />
           </div>
           <Card style={{ marginBottom: 14 }}>
             <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${B.border}` }}>Carteira Consolidada</div>
@@ -110,7 +110,7 @@ export default function Reports() {
             )}
           </Card>
           <Card>
-            <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>📋 PL por Cliente</div>
+            <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>PL por Cliente</div>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead><tr style={{ background: "#f5f7ff" }}>{["#", "Cliente", "Perfil", "Curva", "PL Atual", "PL Inicial", "Var %", "Meta", "Progresso"].map((h) => (<th key={h} style={{ padding: "11px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, whiteSpace: "nowrap" }}>{h}</th>))}</tr></thead>
@@ -148,7 +148,7 @@ export default function Reports() {
       {subTab === "individual" && (
         <>
           <Card style={{ marginBottom: 14 }}>
-            <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12 }}>🔍 Buscar Cliente</div>
+            <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12 }}>Buscar Cliente</div>
             <SearchBox placeholder="Digite o nome..." value={indSearch} onChange={(e) => { setIndSearch(e.target.value); setIndShowSug(true); }} onFocus={() => setIndShowSug(true)} onBlur={() => setTimeout(() => setIndShowSug(false), 150)} suggestions={indShowSug ? indSugg : []} onSelect={(c) => { setIndSelId(c.id); setIndSearch(c.nome); setIndShowSug(false); }} />
           </Card>
           {indClient ? (
@@ -184,7 +184,7 @@ export default function Reports() {
                 </Card>
               )}
               <Card>
-                <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>📈 Evolução — {indClient.nome.split(" ")[0]}</div>
+                <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Evolução — {indClient.nome.split(" ")[0]}</div>
                 {indHist.length < 2 ? <div style={{ padding: 24, textAlign: "center", color: B.gray }}>Apenas 1 registro. Adicione via Manutenção.</div> : (
                   <ResponsiveContainer width="100%" height={220}>
                     <AreaChart data={indHist} margin={{ top: 8, right: 8, left: 8, bottom: 4 }}>
@@ -206,7 +206,7 @@ export default function Reports() {
       {subTab === "manutencao" && (
         <>
           <Card style={{ marginBottom: 14 }}>
-            <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12 }}>🔍 Buscar Cliente</div>
+            <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12 }}>Buscar Cliente</div>
             <SearchBox placeholder="Digite o nome..." value={maintSearch} onChange={(e) => { setMaintSearch(e.target.value); setMaintShowSug(true); }} onFocus={() => setMaintShowSug(true)} onBlur={() => setTimeout(() => setMaintShowSug(false), 150)} suggestions={maintShowSug ? maintSugg : []} onSelect={(c) => { setMaintSelId(c.id); setMaintSearch(c.nome); setMaintShowSug(false); setEditId(null); setAddMode(false); }} />
           </Card>
           {maintClient ? (
@@ -220,7 +220,7 @@ export default function Reports() {
               </div>
               {addMode && (
                 <Card style={{ marginBottom: 12, border: "2px solid #bbf7d0", background: "#f0fdf4" }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#166534", marginBottom: 12 }}>➕ Novo Registro</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#166534", marginBottom: 12 }}>Novo Registro</div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto auto", gap: 10, alignItems: "end" }}>
                     <Inp label="Data" type="date" value={addForm.data} onChange={(e) => setAddForm((f) => ({ ...f, data: e.target.value }))} style={{ marginBottom: 0 }} />
                     <Inp label="Patrimônio (R$)" type="number" value={addForm.patrimonio} onChange={(e) => setAddForm((f) => ({ ...f, patrimonio: e.target.value }))} placeholder="0" style={{ marginBottom: 0 }} />

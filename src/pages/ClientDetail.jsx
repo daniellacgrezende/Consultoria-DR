@@ -111,7 +111,7 @@ export default function ClientDetail() {
       {/* Alerta */}
       {obsRapida && (
         <div style={{ background: "linear-gradient(135deg,#fffbeb,#fef3c7)", border: "2px solid #f59e0b", borderRadius: 9, padding: "10px 14px", marginBottom: 14, display: "flex", gap: 10 }}>
-          <span style={{ fontSize: 16 }}>⚡</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#92400e", textTransform: "uppercase" }}>!</span>
           <div><div style={{ fontSize: 10, fontWeight: 800, color: "#92400e", textTransform: "uppercase" }}>Atenção</div><p style={{ margin: 0, fontSize: 12, color: "#78350f" }}>{obsRapida}</p></div>
         </div>
       )}
@@ -120,7 +120,7 @@ export default function ClientDetail() {
         {/* Dados Pessoais */}
         <Card style={{ gridColumn: "1/-1" }}>
           <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between" }}>
-            <span>👤 Dados Pessoais</span>
+            <span>Dados Pessoais</span>
             <span style={{ fontSize: 10, color: "#8899bb", fontWeight: 400 }}>clique para editar</span>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 10 }}>
@@ -133,7 +133,7 @@ export default function ClientDetail() {
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", paddingTop: 8, borderTop: `1px solid ${B.border}` }}>
             {[["envio_ips", "IPS"], ["seguro_vida", "Seguro"], ["pgbl", "PGBL"], ["vgbl", "VGBL"], ["sucessao", "Sucessão"]].map(([field, lbl]) => (
               <div key={field} onClick={() => updateField(field, !client[field])} style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 999, border: `1px solid ${client[field] ? "#bbf7d0" : "#e5e7eb"}`, background: client[field] ? "#f0fdf4" : "#f9fafb", cursor: "pointer" }}>
-                <span style={{ fontSize: 13 }}>{client[field] ? "✅" : "⬜"}</span>
+                <span style={{ fontSize: 11, fontWeight: 700 }}>{client[field] ? "✓" : "○"}</span>
                 <span style={{ fontSize: 11, fontWeight: 600, color: client[field] ? "#16a34a" : "#6b7280" }}>{lbl}</span>
               </div>
             ))}
@@ -143,7 +143,7 @@ export default function ClientDetail() {
         {/* Grupo PJ+PF */}
         {grupoMembers.length > 0 && (
           <Card style={{ gridColumn: "1/-1", background: "#f5f3ff", border: "2px solid #ddd6fe" }}>
-            <div style={{ fontWeight: 700, fontSize: 12, color: "#7c3aed", marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid #ddd6fe" }}>🔗 Contas vinculadas — {grupoNome}</div>
+            <div style={{ fontWeight: 700, fontSize: 12, color: "#7c3aed", marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid #ddd6fe" }}>Contas vinculadas — {grupoNome}</div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               {[client, ...grupoMembers].map((c) => (
                 <div key={c.id} onClick={() => c.id !== id && navigate(`/clients/${c.id}`)} style={{ background: "white", border: "1px solid #ddd6fe", borderRadius: 9, padding: "10px 14px", cursor: c.id !== id ? "pointer" : "default", flex: 1, minWidth: 160 }}>
@@ -157,7 +157,7 @@ export default function ClientDetail() {
 
         {/* Agenda */}
         <Card>
-          <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>🗓️ Agenda</div>
+          <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Agenda</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Última Reunião</div><InlineDate value={client.ultima_reuniao} onSave={(v) => updateField("ultima_reuniao", v)} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Próxima</div><InlineDate value={client.proxima_reuniao} onSave={(v) => updateField("proxima_reuniao", v)} /></div>
@@ -168,7 +168,7 @@ export default function ClientDetail() {
 
         {/* Contrato */}
         <Card>
-          <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>📋 Contrato</div>
+          <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Contrato</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Taxa</div><InlineText value={client.taxa_contratada} onSave={(v) => updateField("taxa_contratada", v)} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Pagamento</div><InlineText value={client.forma_pagamento} onSave={(v) => updateField("forma_pagamento", v)} /></div>
@@ -181,7 +181,7 @@ export default function ClientDetail() {
       {/* Aportes */}
       <Card style={{ marginBottom: 12 }}>
         <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between" }}>
-          <span>💰 Aportes e Resgates</span>
+          <span>Aportes e Resgates</span>
           <button onClick={() => { setAptForm({ client_id: id, data: today(), tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false }); setAptModal(true); }} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Registrar</button>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 12 }}>
@@ -194,7 +194,7 @@ export default function ClientDetail() {
             {clientAportes.slice(0, 10).map((a) => (
               <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", borderRadius: 6, background: a.tipo === "aporte" ? "#f0fdf4" : "#fff5f5", border: `1px solid ${a.tipo === "aporte" ? "#dcfce7" : "#fee2e2"}` }}>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <span style={{ fontSize: 11, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "📥" : "📤"}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "+" : "−"}</span>
                   <span style={{ fontSize: 11, color: B.gray }}>{fmtDate(a.data)}</span>
                   {a.observacao && <span style={{ fontSize: 10, color: "#9baabf", fontStyle: "italic" }}>{a.observacao}</span>}
                 </div>
@@ -208,7 +208,7 @@ export default function ClientDetail() {
       {/* Reuniões */}
       <Card style={{ marginBottom: 12 }}>
         <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between" }}>
-          <span>📓 Histórico de Reuniões ({clientReunioes.length})</span>
+          <span>Histórico de Reuniões ({clientReunioes.length})</span>
           <button onClick={() => { setRhEditId(null); setRhForm({ client_id: id, data: today(), texto: "" }); setRhModal(true); }} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Registrar</button>
         </div>
         {clientReunioes.length === 0 ? <div style={{ padding: 16, textAlign: "center", color: B.gray, fontSize: 12 }}>Nenhum registro.</div> : (
@@ -216,10 +216,10 @@ export default function ClientDetail() {
             {clientReunioes.map((r) => (
               <div key={r.id} style={{ background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 9, padding: "12px 14px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: B.navy }}>📅 {fmtDate(r.data)}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: B.navy }}>{fmtDate(r.data)}</span>
                   <div style={{ display: "flex", gap: 5 }}>
-                    <button onClick={() => { setRhEditId(r.id); setRhForm({ ...r }); setRhModal(true); }} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 5, padding: "3px 9px", fontSize: 10, cursor: "pointer" }}>✏</button>
-                    <button onClick={async () => { await deleteReuniao(r.id); setToast({ type: "success", text: "Removido." }); }} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 5, padding: "3px 9px", fontSize: 10, cursor: "pointer" }}>🗑</button>
+                    <button onClick={() => { setRhEditId(r.id); setRhForm({ ...r }); setRhModal(true); }} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 5, padding: "3px 9px", fontSize: 10, cursor: "pointer" }}>Editar</button>
+                    <button onClick={async () => { await deleteReuniao(r.id); setToast({ type: "success", text: "Removido." }); }} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 5, padding: "3px 9px", fontSize: 10, cursor: "pointer" }}>Remover</button>
                   </div>
                 </div>
                 <p style={{ margin: 0, fontSize: 12, color: "#445566", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{r.texto}</p>
@@ -231,15 +231,15 @@ export default function ClientDetail() {
 
       {/* Notas Gerais */}
       <Card style={{ marginBottom: 12, border: "2px solid #e0e7ff", background: "#fafbff" }}>
-        <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid #e0e7ff" }}>🗒️ Informações Gerais</div>
+        <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid #e0e7ff" }}>Informações Gerais</div>
         <InlineText value={client.notas_gerais} onSave={(v) => updateField("notas_gerais", v)} placeholder="Clique para adicionar informações gerais..." multiline style={{ width: "100%", minHeight: 60 }} />
       </Card>
 
       {/* Actions */}
       <div style={{ display: "flex", gap: 8 }}>
         <button onClick={() => navigate("/reports")} style={{ padding: "9px 18px", background: B.brand, color: "white", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Ver Evolução →</button>
-        <button onClick={async () => { await updateField("status", "inativo"); navigate("/clients"); setToast({ type: "success", text: "Arquivado." }); }} style={{ padding: "9px 18px", background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>🗄 Arquivar</button>
-        <button onClick={async () => { if (confirm("Remover permanentemente?")) { await deleteClient(id); navigate("/clients"); setToast({ type: "success", text: "Removido." }); } }} style={{ padding: "9px 18px", background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>🗑 Remover</button>
+        <button onClick={async () => { await updateField("status", "inativo"); navigate("/clients"); setToast({ type: "success", text: "Arquivado." }); }} style={{ padding: "9px 18px", background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Arquivar</button>
+        <button onClick={async () => { if (confirm("Remover permanentemente?")) { await deleteClient(id); navigate("/clients"); setToast({ type: "success", text: "Removido." }); } }} style={{ padding: "9px 18px", background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Remover</button>
       </div>
 
       {/* Modal Reunião */}
@@ -265,7 +265,7 @@ export default function ClientDetail() {
           <Inp label="Data *" type="date" value={aptForm.data} onChange={(e) => setAptForm((f) => ({ ...f, data: e.target.value }))} />
           <div style={{ display: "flex", gap: 8, marginBottom: 13 }}>
             {["aporte", "resgate"].map((t) => (
-              <button key={t} onClick={() => setAptForm((f) => ({ ...f, tipo: t }))} style={{ flex: 1, padding: "9px", border: `2px solid ${aptForm.tipo === t ? (t === "aporte" ? "#16a34a" : "#dc2626") : B.border}`, borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13, background: aptForm.tipo === t ? (t === "aporte" ? "#f0fdf4" : "#fff5f5") : "white", color: aptForm.tipo === t ? (t === "aporte" ? "#16a34a" : "#dc2626") : B.gray }}>{t === "aporte" ? "📥 Aporte" : "📤 Resgate"}</button>
+              <button key={t} onClick={() => setAptForm((f) => ({ ...f, tipo: t }))} style={{ flex: 1, padding: "9px", border: `2px solid ${aptForm.tipo === t ? (t === "aporte" ? "#16a34a" : "#dc2626") : B.border}`, borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13, background: aptForm.tipo === t ? (t === "aporte" ? "#f0fdf4" : "#fff5f5") : "white", color: aptForm.tipo === t ? (t === "aporte" ? "#16a34a" : "#dc2626") : B.gray }}>{t === "aporte" ? "Aporte" : "Resgate"}</button>
             ))}
           </div>
           <Inp label="Valor (R$) *" type="number" value={aptForm.valor} onChange={(e) => setAptForm((f) => ({ ...f, valor: e.target.value }))} placeholder="0" />

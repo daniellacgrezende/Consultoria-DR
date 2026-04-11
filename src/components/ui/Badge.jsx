@@ -25,5 +25,5 @@ export function TempBadge({ temp }) {
     quente: { bg: "#FDE8E8", color: "#D30000" },
   };
   const c = map[temp] || map.morna;
-  return <span style={{ ...badgeBase, background: c.bg, color: c.color }}>{temp === "fria" ? "🥶 Fria" : temp === "quente" ? "🔥 Quente" : "🌤 Morna"}</span>;
+  return <span style={{ ...badgeBase, background: c.bg, color: c.color }}>{temp === "fria" ? "Fria" : temp === "quente" ? "Quente" : "Morna"}</span>;
 }

@@ -41,24 +41,24 @@ export default function Seguro() {
     <>
       <SecH eyebrow="Proteção" title="Seguro de Vida" />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 18 }}>
-        <MiniStat icon="🛡️" label="Com seguro" value={totalSeguro} sub={`${Math.round((totalSeguro / Math.max(active.length, 1)) * 100)}% da base`} />
-        <MiniStat icon="⚠️" label="Sem seguro" value={semSeguro.length} warn={semSeguro.length > 0} />
-        <MiniStat icon="💰" label="Prêmio total/mês" value={money(premioTotal)} />
+        <MiniStat label="Com seguro" value={totalSeguro} sub={`${Math.round((totalSeguro / Math.max(active.length, 1)) * 100)}% da base`} />
+        <MiniStat label="Sem seguro" value={semSeguro.length} warn={semSeguro.length > 0} />
+        <MiniStat label="Prêmio total/mês" value={money(premioTotal)} />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
         <Card>
           <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", alignItems: "center", gap: 6 }}>
-            🛡️ Com Seguro <span style={{ marginLeft: "auto", background: "#dcfce7", color: "#16a34a", borderRadius: 999, fontSize: 11, fontWeight: 700, padding: "2px 10px" }}>{totalSeguro}</span>
+            Com Seguro <span style={{ marginLeft: "auto", background: "#dcfce7", color: "#16a34a", borderRadius: 999, fontSize: 11, fontWeight: 700, padding: "2px 10px" }}>{totalSeguro}</span>
           </div>
           {comSeguro.map((c) => <ClientRow key={c.id} c={c} bg="#f0fdf4" />)}
           {totalSeguro === 0 && <div style={{ padding: 24, textAlign: "center", color: B.gray }}>Nenhum cliente com seguro</div>}
         </Card>
         <Card>
           <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", alignItems: "center", gap: 6 }}>
-            ⚠️ Sem Seguro <span style={{ marginLeft: "auto", background: "#fee2e2", color: "#dc2626", borderRadius: 999, fontSize: 11, fontWeight: 700, padding: "2px 10px" }}>{semSeguro.length}</span>
+            Sem Seguro <span style={{ marginLeft: "auto", background: "#fee2e2", color: "#dc2626", borderRadius: 999, fontSize: 11, fontWeight: 700, padding: "2px 10px" }}>{semSeguro.length}</span>
           </div>
           {semSeguro.map((c) => <ClientRow key={c.id} c={c} bg="#fff5f5" />)}
-          {semSeguro.length === 0 && <div style={{ padding: 24, textAlign: "center", color: "#16a34a", fontWeight: 600 }}>✅ Todos possuem seguro!</div>}
+          {semSeguro.length === 0 && <div style={{ padding: 24, textAlign: "center", color: "#16a34a", fontWeight: 600 }}>Todos possuem seguro!</div>}
         </Card>
       </div>
     </>

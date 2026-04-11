@@ -62,7 +62,7 @@ export default function Backup() {
           await supabase.from("todos").insert(data.todos);
         }
 
-        setToast({ type: "success", text: `✅ ${data.clients.length} clientes importados! Recarregue a página.` });
+        setToast({ type: "success", text: `${data.clients.length} clientes importados! Recarregue a página.` });
         setTimeout(() => window.location.reload(), 1500);
       } catch (err) {
         setToast({ type: "error", text: "Erro ao importar: arquivo inválido." });
@@ -74,25 +74,25 @@ export default function Backup() {
 
   return (
     <>
-      <SecH eyebrow="Dados" title="Back-Up 💾" desc="Exporte e importe seus dados." />
+      <SecH eyebrow="Dados" title="Back-Up" desc="Exporte e importe seus dados." />
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
         <Card style={{ background: "linear-gradient(135deg,#16a34a,#15803d)", border: "none" }}>
-          <div style={{ fontWeight: 700, fontSize: 14, color: "white", marginBottom: 6 }}>📤 Exportar Dados (JSON)</div>
+          <div style={{ fontWeight: 700, fontSize: 14, color: "white", marginBottom: 6 }}>Exportar Dados (JSON)</div>
           <p style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", margin: "0 0 14px", lineHeight: 1.6 }}>Baixa um arquivo com <strong style={{ color: "white" }}>todos os seus dados</strong> — clientes, histórico, aportes, reuniões, leads, tarefas e repasse.</p>
-          <button onClick={exportJSON} style={{ background: "white", color: "#16a34a", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 800, fontSize: 13, cursor: "pointer" }}>⬇ Exportar JSON</button>
+          <button onClick={exportJSON} style={{ background: "white", color: "#16a34a", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 800, fontSize: 13, cursor: "pointer" }}>Exportar JSON</button>
         </Card>
         <Card style={{ background: "linear-gradient(135deg,#2563eb,#1d4ed8)", border: "none" }}>
-          <div style={{ fontWeight: 700, fontSize: 14, color: "white", marginBottom: 6 }}>📥 Importar Dados (JSON)</div>
+          <div style={{ fontWeight: 700, fontSize: 14, color: "white", marginBottom: 6 }}>Importar Dados (JSON)</div>
           <p style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", margin: "0 0 14px", lineHeight: 1.6 }}>Restaura um backup. <strong style={{ color: "#fbbf24" }}>Atenção:</strong> substitui todos os dados atuais.</p>
           <label style={{ background: "white", color: "#2563eb", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 800, fontSize: 13, cursor: "pointer", display: "inline-block" }}>
-            ⬆ Importar JSON
+            Importar JSON
             <input type="file" accept=".json" style={{ display: "none" }} onChange={importJSON} />
           </label>
         </Card>
       </div>
 
       <Card style={{ background: `linear-gradient(135deg,${B.navy},${B.navy2})`, border: "none" }}>
-        <div style={{ fontWeight: 700, fontSize: 14, color: "white", marginBottom: 12 }}>📊 Resumo dos Dados</div>
+        <div style={{ fontWeight: 700, fontSize: 14, color: "white", marginBottom: 12 }}>Resumo dos Dados</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
           {[
             { l: "Clientes", v: clients.length, c: "#A78BFA" },

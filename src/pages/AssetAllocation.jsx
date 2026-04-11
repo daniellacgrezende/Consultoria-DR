@@ -71,11 +71,11 @@ export default function AssetAllocation() {
 
   return (
     <>
-      <SecH eyebrow="Carteira" title="Alocação de Ativos 📊" desc="Compare a carteira real vs modelo do perfil." />
+      <SecH eyebrow="Carteira" title="Alocação de Ativos" desc="Compare a carteira real vs modelo do perfil." />
 
       {/* Perfis modelo */}
       <Card style={{ marginBottom: 16 }}>
-        <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>📋 Modelos de Alocação por Perfil</div>
+        <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Modelos de Alocação por Perfil</div>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
@@ -102,7 +102,7 @@ export default function AssetAllocation() {
 
       {/* Buscar cliente */}
       <Card style={{ marginBottom: 16 }}>
-        <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12 }}>🔍 Analisar Cliente</div>
+        <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12 }}>Analisar Cliente</div>
         <SearchBox placeholder="Buscar cliente..." value={search} onChange={(e) => { setSearch(e.target.value); setShowSug(true); }} onFocus={() => setShowSug(true)} onBlur={() => setTimeout(() => setShowSug(false), 150)} suggestions={showSug ? sugg : []} onSelect={(c) => { setSelId(c.id); setSearch(c.nome); setShowSug(false); setEditing(false); }} />
       </Card>
 
@@ -126,7 +126,7 @@ export default function AssetAllocation() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
             {/* Modelo */}
             <Card>
-              <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>📐 Modelo — {PERFIL_MAP[selClient.perfil]?.label || selClient.perfil}</div>
+              <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Modelo — {PERFIL_MAP[selClient.perfil]?.label || selClient.perfil}</div>
               {selProfile ? (
                 <>
                   <ResponsiveContainer width="100%" height={180}>
@@ -144,8 +144,8 @@ export default function AssetAllocation() {
             {/* Carteira Real */}
             <Card>
               <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between" }}>
-                <span>💼 Carteira Real</span>
-                {!editing && <button onClick={startEdit} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{selAllocation ? "✏ Editar" : "+ Cadastrar"}</button>}
+                <span>Carteira Real</span>
+                {!editing && <button onClick={startEdit} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{selAllocation ? "Editar" : "+ Cadastrar"}</button>}
               </div>
               {editing ? (
                 <div>
@@ -184,7 +184,7 @@ export default function AssetAllocation() {
           {/* Comparativo */}
           {selProfile && selAllocation && (
             <Card>
-              <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>⚖️ Comparativo: Modelo vs Real — Gaps</div>
+              <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Comparativo: Modelo vs Real — Gaps</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
                 {ASSET_CLASSES.map((k, i) => {
                   const modelo = Number(selProfile[k] || 0);
@@ -198,7 +198,7 @@ export default function AssetAllocation() {
                       <div style={{ fontSize: 11, color: B.gray }}>Modelo: {modelo}%</div>
                       <div style={{ fontSize: 11, color: B.gray }}>Real: {real}%</div>
                       <div style={{ fontSize: 14, fontWeight: 800, color: isOk ? "#16a34a" : gap > 0 ? "#dc2626" : "#92400e", marginTop: 4 }}>
-                        {isOk ? "✅" : gap > 0 ? `↑ +${gap.toFixed(1)}%` : `↓ ${gap.toFixed(1)}%`}
+                        {isOk ? "OK" : gap > 0 ? `+${gap.toFixed(1)}%` : `${gap.toFixed(1)}%`}
                       </div>
                       {!isOk && (
                         <div style={{ fontSize: 10, color: gap > 0 ? "#dc2626" : "#92400e", marginTop: 2 }}>

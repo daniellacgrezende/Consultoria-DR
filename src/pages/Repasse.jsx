@@ -90,24 +90,24 @@ export default function Repasse() {
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
         <div style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: "3px solid #b45309" }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 5 }}>🏆 Maior Líquido</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 5 }}>Maior Líquido</div>
           <div style={{ fontSize: 20, fontWeight: 700, color: "#b45309" }}>{maiorRep ? money(maiorRep.receita_liquida) : "—"}</div>
           {maiorRep && <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>{fmtComp(maiorRep.competencia)}</div>}
         </div>
         <div style={{ background: "white", border: `1px solid ${crescUltimoMes ? (crescUltimoMes.pct >= 0 ? "#bbf7d0" : "#fecaca") : B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${crescUltimoMes ? (crescUltimoMes.pct >= 0 ? "#16a34a" : "#dc2626") : B.navy}` }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 5 }}>📅 vs. Mês Anterior</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 5 }}>vs. Mês Anterior</div>
           <div style={{ fontSize: 20, fontWeight: 700, color: crescUltimoMes ? (crescUltimoMes.pct >= 0 ? "#16a34a" : "#dc2626") : B.navy }}>{crescUltimoMes ? `${crescUltimoMes.pct >= 0 ? "+" : ""}${crescUltimoMes.pct.toFixed(1)}%` : "—"}</div>
           {crescUltimoMes && <div style={{ fontSize: 11, color: crescUltimoMes.pct >= 0 ? "#16a34a" : "#dc2626", fontWeight: 600, marginTop: 2 }}>{crescUltimoMes.val >= 0 ? "+" : ""}{money(crescUltimoMes.val)}</div>}
         </div>
-        <MiniStat icon="📊" label="Média Mensal" value={money(filtrado.length ? acumulado / filtrado.length : 0)} sub="bruta por mês" />
-        <MiniStat icon="💰" label={`Acumulado ${anoFilter === "todos" ? "(Todos)" : anoFilter}`} value={money(acumulado)} sub="receita bruta total" />
+        <MiniStat label="Média Mensal" value={money(filtrado.length ? acumulado / filtrado.length : 0)} sub="bruta por mês" />
+        <MiniStat label={`Acumulado ${anoFilter === "todos" ? "(Todos)" : anoFilter}`} value={money(acumulado)} sub="receita bruta total" />
       </div>
 
       {/* Gráfico */}
       {chartData.length > 0 && (
         <Card style={{ marginBottom: 16 }}>
           <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between" }}>
-            <span>📊 Evolução Mensal</span>
+            <span>Evolução Mensal</span>
             <div style={{ display: "flex", gap: 8 }}>
               {[{ c: "#16a34a", l: "Líquida" }, { c: "#2563eb", l: "Bruta" }, { c: "#dc2626", l: "Impostos" }].map(({ c, l }) => (
                 <div key={l} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: B.gray }}><div style={{ width: 8, height: 8, borderRadius: "50%", background: c }} />{l}</div>
@@ -131,7 +131,7 @@ export default function Repasse() {
 
       {/* Tabela */}
       <Card style={{ padding: 0, overflow: "hidden" }}>
-        <div style={{ padding: "14px 18px", borderBottom: `1px solid ${B.border}` }}><span style={{ fontWeight: 700, fontSize: 13, color: B.navy }}>📋 Lançamentos ({filtrado.length})</span></div>
+        <div style={{ padding: "14px 18px", borderBottom: `1px solid ${B.border}` }}><span style={{ fontWeight: 700, fontSize: 13, color: B.navy }}>Lançamentos ({filtrado.length})</span></div>
         {filtrado.length === 0 ? <div style={{ padding: 40, textAlign: "center", color: B.gray }}>Nenhum lançamento{anoFilter !== "todos" ? ` em ${anoFilter}` : ""}.</div> : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
@@ -145,8 +145,8 @@ export default function Repasse() {
                     <td style={{ padding: "12px 16px" }}><span style={{ fontWeight: 800, fontSize: 16, color: Number(r.receita_liquida || 0) >= 0 ? "#16a34a" : "#dc2626" }}>{r.receita_liquida ? money(r.receita_liquida) : "—"}</span></td>
                     <td style={{ padding: "12px 16px" }}>
                       <div style={{ display: "flex", gap: 6 }}>
-                        <button onClick={() => openEdit(r)} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "5px 11px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>✏</button>
-                        <button onClick={() => setDelConf(r.id)} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "5px 11px", fontSize: 11, cursor: "pointer" }}>🗑</button>
+                        <button onClick={() => openEdit(r)} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "5px 11px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Editar</button>
+                        <button onClick={() => setDelConf(r.id)} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "5px 11px", fontSize: 11, cursor: "pointer" }}>Remover</button>
                       </div>
                     </td>
                   </tr>
@@ -180,7 +180,7 @@ export default function Repasse() {
           <Inp label="Receita Bruta (R$) *" type="number" value={form.receita_bruta} onChange={RF("receita_bruta")} placeholder="Valor total" />
           <Inp label="Impostos PJ (R$)" type="number" value={form.impostos} onChange={RF("impostos")} placeholder="Ex: 500" />
           <div style={{ background: "#f0fdf4", border: "2px solid #bbf7d0", borderRadius: 8, padding: "14px 16px", marginBottom: 18 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: "#16a34a", textTransform: "uppercase", marginBottom: 4 }}>✅ Receita Líquida</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#16a34a", textTransform: "uppercase", marginBottom: 4 }}>Receita Líquida</div>
             <div style={{ fontSize: 26, fontWeight: 800, color: "#16a34a" }}>{money(parseNum(form.receita_bruta) - parseNum(form.impostos))}</div>
             <div style={{ fontSize: 11, color: "#15803d", marginTop: 2 }}>= Bruta − Impostos</div>
           </div>
@@ -194,7 +194,7 @@ export default function Repasse() {
       {/* Confirm delete */}
       <Modal open={!!delConf} onClose={() => setDelConf(null)}>
         <div style={{ padding: "26px 30px" }}>
-          <h3 style={{ margin: "0 0 10px", color: "#dc2626", fontSize: 16, fontWeight: 700 }}>⚠️ Remover lançamento?</h3>
+          <h3 style={{ margin: "0 0 10px", color: "#dc2626", fontSize: 16, fontWeight: 700 }}>Remover lançamento?</h3>
           <p style={{ color: B.gray, fontSize: 13, marginBottom: 22 }}>Esta ação não pode ser desfeita.</p>
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => setDelConf(null)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>

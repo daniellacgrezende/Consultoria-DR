@@ -53,9 +53,9 @@ export const LEAD_ORIGENS = [
 export const PERIOD_OPTIONS = ["Mensal", "Bimestral", "Trimestral", "Semestral", "Anual"];
 
 export const LEAD_TEMPERATURAS = [
-  { v: "fria", l: "🥶 Fria", color: "#3b82f6" },
-  { v: "morna", l: "🌤 Morna", color: "#f59e0b" },
-  { v: "quente", l: "🔥 Quente", color: "#dc2626" },
+  { v: "fria", l: "Fria", color: "#3b82f6" },
+  { v: "morna", l: "Morna", color: "#f59e0b" },
+  { v: "quente", l: "Quente", color: "#dc2626" },
 ];
 
 export const TIPO_REUNIAO = [

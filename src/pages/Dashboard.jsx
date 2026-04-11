@@ -58,11 +58,11 @@ export default function Dashboard() {
 
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
-        <MiniStat icon="👥" label="Clientes Ativos" value={active.length} sub={`${clients.length} total na base`} />
+        <MiniStat label="Clientes Ativos" value={active.length} sub={`${clients.length} total na base`} />
         <div onClick={() => setShowAUM((v) => !v)} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${B.navy}`, cursor: "pointer", userSelect: "none" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5 }}>💼 Patrimônio sob Gestão <span style={{ fontSize: 9, opacity: 0.5 }}>{showAUM ? "🔓" : "🔒"}</span></div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5 }}>Patrimônio sob Gestão</div>
               <div style={{ fontSize: 20, fontWeight: 700, color: B.navy }}>{showAUM ? money(totalAUM) : "• • • • •"}</div>
               <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>{showAUM ? `${active.length} clientes` : "clique para revelar"}</div>
             </div>
@@ -71,7 +71,7 @@ export default function Dashboard() {
         <div onClick={() => setShowAUM((v) => !v)} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${B.navy}`, cursor: "pointer", userSelect: "none" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5 }}>📊 Patrimônio Médio <span style={{ fontSize: 9, opacity: 0.5 }}>{showAUM ? "🔓" : "🔒"}</span></div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5 }}>Patrimônio Médio</div>
               <div style={{ fontSize: 20, fontWeight: 700, color: B.navy }}>{showAUM ? money(aumMedio) : "• • • • •"}</div>
               <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>{showAUM ? "por cliente ativo" : "clique para revelar"}</div>
             </div>
@@ -82,7 +82,7 @@ export default function Dashboard() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
         {/* Top 10 */}
         <Card>
-          <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>🏆 Top 10 por Patrimônio</div>
+          <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Top 10 por Patrimônio</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {top10.map((c, i) => (
               <div key={c.id} onClick={() => navigate(`/clients/${c.id}`)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, cursor: "pointer", background: i === 0 ? "#fef3c7" : i === 1 ? "#f1f5f9" : i === 2 ? "#fef9ef" : "white", border: `1px solid ${i < 3 ? "#e8dfc8" : B.border}` }}>
@@ -105,7 +105,7 @@ export default function Dashboard() {
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {/* AUM por Curva */}
           <Card>
-            <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>📊 AUM por Curva</div>
+            <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>AUM por Curva</div>
             {curvaSummary.map(({ k, label, color, bg, count, aum }) => (
               <div key={k} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                 <span style={{ fontSize: 11, fontWeight: 800, background: bg, color, borderRadius: 999, padding: "2px 9px", minWidth: 56, textAlign: "center" }}>{label}</span>
@@ -124,7 +124,7 @@ export default function Dashboard() {
 
           {/* Perfil */}
           <Card>
-            <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 8, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>📊 Clientes por Perfil</div>
+            <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 8, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Clientes por Perfil</div>
             {perfilData.length > 0 ? (
               <ResponsiveContainer width="100%" height={130}>
                 <PieChart><Pie data={perfilData} cx="50%" cy="50%" outerRadius={52} dataKey="value" label={({ name, value }) => `${name}: ${value}`} labelLine={false} fontSize={9}>{perfilData.map((_, i) => (<Cell key={i} fill={PCOLS[i % PCOLS.length]} />))}</Pie><Tooltip formatter={(v, n) => [`${v}cl`, n]} /></PieChart>

@@ -55,14 +55,14 @@ export default function Tasks() {
         <span style={{ flex: 1, fontSize: 13, color: t.done ? "#9baabf" : atras ? "#dc2626" : pc.color, textDecoration: t.done ? "line-through" : "none", lineHeight: 1.4 }}>{t.texto}</span>
         {!t.done && (
           <select value={t.prioridade || "normal"} onChange={(e) => updatePriority(t, e.target.value)} style={{ fontSize: 10, border: `1px solid ${pc.border}`, borderRadius: 5, padding: "2px 4px", background: pc.bg, color: pc.color, cursor: "pointer", fontWeight: 700 }}>
-            <option value="alta">🔴 Alta</option>
-            <option value="normal">⚪ Normal</option>
-            <option value="baixa">⬇ Baixa</option>
+            <option value="alta">Alta</option>
+            <option value="normal">Normal</option>
+            <option value="baixa">Baixa</option>
           </select>
         )}
-        <span style={{ fontSize: 10, color: atras ? "#dc2626" : "#9baabf", flexShrink: 0, fontWeight: atras ? 700 : 400 }}>{atras ? "⚠ " : ""}{fmtDate(t.vencimento || t.data)}</span>
+        <span style={{ fontSize: 10, color: atras ? "#dc2626" : "#9baabf", flexShrink: 0, fontWeight: atras ? 700 : 400 }}>{fmtDate(t.vencimento || t.data)}</span>
         {!t.done && <button onClick={() => postpone(t)} title="+1d" style={{ background: "#fffbeb", border: "1px solid #fde68a", color: "#92400e", borderRadius: 6, padding: "3px 7px", fontSize: 10, cursor: "pointer", fontWeight: 700 }}>+1d</button>}
-        {!t.done && <button onClick={() => { setEditId(t.id); setEditText(t.texto); }} style={{ background: "#f0f4ff", border: "1px solid #c7d2fe", color: "#4f46e5", borderRadius: 6, padding: "3px 7px", fontSize: 10, cursor: "pointer" }}>✏</button>}
+        {!t.done && <button onClick={() => { setEditId(t.id); setEditText(t.texto); }} style={{ background: "#f0f4ff", border: "1px solid #c7d2fe", color: "#4f46e5", borderRadius: 6, padding: "3px 7px", fontSize: 10, cursor: "pointer" }}>Editar</button>}
         <button onClick={() => remove(t.id)} style={{ background: "none", border: "none", color: "#d1d5db", cursor: "pointer", fontSize: 14, padding: "0 2px", flexShrink: 0 }}>×</button>
       </div>
     );
@@ -70,10 +70,10 @@ export default function Tasks() {
 
   return (
     <>
-      <SecH eyebrow="Produtividade" title="Tarefas ✅" desc="Gerencie suas pendências e to-dos." />
+      <SecH eyebrow="Produtividade" title="Tarefas" desc="Gerencie suas pendências e to-dos." />
       <Card style={{ marginBottom: 20, border: `2px solid ${B.navy}` }}>
         <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span>✅ To Do</span>
+          <span>To Do</span>
           <span style={{ fontSize: 11, color: B.gray, background: "#f0f4ff", border: `1px solid ${B.border}`, borderRadius: 999, padding: "2px 10px" }}>{pendentes.length} pendente(s) · {concluidas.length} concluída(s)</span>
         </div>
 
@@ -94,13 +94,13 @@ export default function Tasks() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {todos.length === 0 && <div style={{ padding: "16px 0", textAlign: "center", color: B.gray, fontSize: 12 }}>Nenhuma tarefa.</div>}
-          {atrasadas.length > 0 && <><div style={{ fontSize: 10, fontWeight: 700, color: "#dc2626", textTransform: "uppercase", marginTop: 4 }}>⚠ Atrasadas ({atrasadas.length})</div>{atrasadas.map((t) => <Item key={t.id} t={t} />)}</>}
-          {hoje.length > 0 && <><div style={{ fontSize: 10, fontWeight: 700, color: B.navy, textTransform: "uppercase", marginTop: 4 }}>📅 Hoje ({hoje.length})</div>{hoje.map((t) => <Item key={t.id} t={t} />)}</>}
-          {futuras.length > 0 && <><div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", marginTop: 4 }}>🗓 Próximas ({futuras.length})</div>{futuras.map((t) => <Item key={t.id} t={t} />)}</>}
-          {concluidas.length > 0 && <><div style={{ fontSize: 10, fontWeight: 700, color: "#16a34a", textTransform: "uppercase", marginTop: 8 }}>✅ Concluídas ({concluidas.length})</div><div style={{ maxHeight: 160, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>{concluidas.map((t) => <Item key={t.id} t={t} />)}</div></>}
+          {atrasadas.length > 0 && <><div style={{ fontSize: 10, fontWeight: 700, color: "#dc2626", textTransform: "uppercase", marginTop: 4 }}>Atrasadas ({atrasadas.length})</div>{atrasadas.map((t) => <Item key={t.id} t={t} />)}</>}
+          {hoje.length > 0 && <><div style={{ fontSize: 10, fontWeight: 700, color: B.navy, textTransform: "uppercase", marginTop: 4 }}>Hoje ({hoje.length})</div>{hoje.map((t) => <Item key={t.id} t={t} />)}</>}
+          {futuras.length > 0 && <><div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", marginTop: 4 }}>Próximas ({futuras.length})</div>{futuras.map((t) => <Item key={t.id} t={t} />)}</>}
+          {concluidas.length > 0 && <><div style={{ fontSize: 10, fontWeight: 700, color: "#16a34a", textTransform: "uppercase", marginTop: 8 }}>Concluídas ({concluidas.length})</div><div style={{ maxHeight: 160, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>{concluidas.map((t) => <Item key={t.id} t={t} />)}</div></>}
         </div>
 
-        {concluidas.length > 0 && <button onClick={clearDoneTodos} style={{ marginTop: 10, width: "100%", padding: "7px", background: "#f3f4f6", color: "#6b7280", border: "none", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>🗑 Limpar concluídas ({concluidas.length})</button>}
+        {concluidas.length > 0 && <button onClick={clearDoneTodos} style={{ marginTop: 10, width: "100%", padding: "7px", background: "#f3f4f6", color: "#6b7280", border: "none", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Limpar concluídas ({concluidas.length})</button>}
       </Card>
     </>
   );

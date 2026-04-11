@@ -61,12 +61,12 @@ export default function Meetings() {
 
   return (
     <>
-      <SecH eyebrow="Agenda" title="Reuniões 📅" desc="Acompanhe as reuniões com seus clientes." />
+      <SecH eyebrow="Agenda" title="Reuniões" desc="Acompanhe as reuniões com seus clientes." />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 18 }}>
-        <MiniStat icon="🔴" label="Atrasada" value={critico} warn={critico > 0} />
-        <MiniStat icon="🟡" label="Atenção" value={agendar} warn={agendar > 0} />
-        <MiniStat icon="✅" label="Em Dia" value={emDia} />
-        <MiniStat icon="📓" label="Registros" value={reunioes.length} sub="total de reuniões" />
+        <MiniStat label="Atrasada" value={critico} warn={critico > 0} />
+        <MiniStat label="Atenção" value={agendar} warn={agendar > 0} />
+        <MiniStat label="Em Dia" value={emDia} />
+        <MiniStat label="Registros" value={reunioes.length} sub="total de reuniões" />
       </div>
 
       {/* Tabela */}
@@ -79,7 +79,7 @@ export default function Meetings() {
                 <th style={{ padding: "10px 14px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff" }}>Última Reunião</th>
                 <th style={{ padding: "10px 14px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff" }}>Periodicidade</th>
                 <th style={{ padding: "10px 14px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff" }}>Próxima</th>
-                <th onClick={() => toggleSort("diasAte")} style={{ padding: "10px 14px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer" }}>Dias p/ Reunião {sortCol === "diasAte" ? (sortDir === "asc" ? "↑" : "↓") : "⇅"}</th>
+                <th onClick={() => toggleSort("diasAte")} style={{ padding: "10px 14px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer" }}>Dias p/ Reunião</th>
                 <th style={{ padding: "10px 14px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff" }}>Status</th>
                 <th style={{ padding: "10px 14px", background: "#f5f7ff", borderBottom: `1px solid ${B.border}` }}></th>
               </tr>
@@ -103,7 +103,7 @@ export default function Meetings() {
                       <div style={{ display: "flex", gap: 5 }}>
                         <button onClick={() => navigate(`/clients/${c.id}`)} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Ficha</button>
                         {!isAvisado && c.diasSem !== null && c.diasSem > Math.round(c.periodDays * 0.83) && (
-                          <button onClick={() => markAvisado(c)} style={{ background: "#ecfeff", color: "#0891B2", border: "1px solid #a5f3fc", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>📩 Avisei</button>
+                          <button onClick={() => markAvisado(c)} style={{ background: "#ecfeff", color: "#0891B2", border: "1px solid #a5f3fc", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Avisei</button>
                         )}
                       </div>
                     </td>
@@ -117,12 +117,12 @@ export default function Meetings() {
 
       {/* Histórico */}
       <div style={{ fontWeight: 700, fontSize: 14, color: B.navy, marginBottom: 14, display: "flex", justifyContent: "space-between" }}>
-        <span>📓 Histórico de Reuniões</span>
+        <span>Histórico de Reuniões</span>
         <span style={{ fontSize: 12, color: B.gray, fontWeight: 400 }}>{reunioes.length} registro(s)</span>
       </div>
       <div style={{ display: "flex", gap: 10, marginBottom: 14, alignItems: "center" }}>
         <div style={{ flex: 1, maxWidth: 340 }}>
-          <SearchBox placeholder="🔍 Filtrar por cliente..." value={rhSearch} onChange={(e) => { setRhSearch(e.target.value); setRhShowSug(true); }} onFocus={() => setRhShowSug(true)} onBlur={() => setTimeout(() => setRhShowSug(false), 150)} suggestions={rhShowSug ? clients.filter((c) => c.nome.toLowerCase().includes(rhSearch.toLowerCase())).slice(0, 6) : []} onSelect={(c) => { setRhFilter(c.id); setRhSearch(c.nome); setRhShowSug(false); }} />
+          <SearchBox placeholder="Filtrar por cliente..." value={rhSearch} onChange={(e) => { setRhSearch(e.target.value); setRhShowSug(true); }} onFocus={() => setRhShowSug(true)} onBlur={() => setTimeout(() => setRhShowSug(false), 150)} suggestions={rhShowSug ? clients.filter((c) => c.nome.toLowerCase().includes(rhSearch.toLowerCase())).slice(0, 6) : []} onSelect={(c) => { setRhFilter(c.id); setRhSearch(c.nome); setRhShowSug(false); }} />
         </div>
         {rhFilter && <button onClick={() => { setRhFilter(null); setRhSearch(""); }} style={{ padding: "9px 14px", background: "white", color: B.gray, border: `1px solid ${B.border}`, borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>✕ Limpar</button>}
       </div>
@@ -140,7 +140,7 @@ export default function Meetings() {
                     <div><div style={{ fontWeight: 700, fontSize: 13, color: B.navy }}>{cl?.nome || "—"}</div><div style={{ fontSize: 11, color: B.gray }}>{cl?.profissao || "—"}</div></div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: B.navy }}>📅 {fmtDate(r.data)}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: B.navy }}>{fmtDate(r.data)}</div>
                     <button onClick={() => navigate(`/clients/${cl?.id}`)} style={{ fontSize: 10, color: "#2563eb", background: "none", border: "none", cursor: "pointer", fontWeight: 600, marginTop: 2 }}>Ver ficha →</button>
                   </div>
                 </div>
