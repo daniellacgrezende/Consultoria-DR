@@ -341,15 +341,7 @@ export default function Pipeline() {
             <Inp label="Patrimônio Estimado (R$)" type="number" value={form.patrimonio_estimado || ""} onChange={F("patrimonio_estimado")} />
             <Sel label="Temperatura" value={form.temperatura || "morna"} onChange={F("temperatura")} opts={LEAD_TEMPERATURAS.map((t) => ({ v: t.v, l: t.l }))} />
             <Sel label="Tipo Reunião" value={form.tipo_reuniao || ""} onChange={F("tipo_reuniao")} opts={[{ v: "", l: "—" }, ...TIPO_REUNIAO.map((t) => ({ v: t.v, l: t.l }))]} />
-            <div style={{ gridColumn: "1/-1", marginBottom: 13 }}>
-              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 6 }}>Etapa</label>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {LEAD_ETAPAS.map((e) => {
-                  const ec = LEAD_ETAPA_COLORS[e];
-                  return <button key={e} type="button" onClick={() => setForm((f) => ({ ...f, etapa: e }))} style={{ padding: "6px 14px", borderRadius: 999, border: `1px solid ${form.etapa === e ? ec.border : "#dde4f5"}`, fontSize: 11, fontWeight: 700, cursor: "pointer", background: form.etapa === e ? ec.bg : "white", color: form.etapa === e ? ec.color : "#8899bb" }}>{e}</button>;
-                })}
-              </div>
-            </div>
+            <Sel label="Etapa" value={form.etapa || "Lead"} onChange={F("etapa")} opts={LEAD_ETAPAS.map((e) => ({ v: e, l: e }))} />
             <Inp label="Data 1ª Reunião" type="date" value={form.data_primeira_reuniao || ""} onChange={F("data_primeira_reuniao")} />
             <Inp label="Última Interação" type="date" value={form.data_ultima_interacao || ""} onChange={F("data_ultima_interacao")} />
             {(form.etapa === "Perdido" || form.etapa === "Nutrição") && <div style={{ gridColumn: "1/-1" }}><Inp label="Motivo" value={form.motivo_negativa || ""} onChange={F("motivo_negativa")} /></div>}
