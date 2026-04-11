@@ -107,27 +107,39 @@ export default function Calendar() {
       outlook_event_id: form.outlook_event_id || "",
     };
 
-    if (!editId) {
-      entry.id = huid();
-      const { data, error } = await supabase.from("calendar_events").insert(entry).select();
-      if (error) {
-        if (setToast) setToast({ type: "error", text: `Erro ao salvar: ${error.message}` });
-        return;
+    try {
+      if (!editId) {
+        entry.id = huid();
+        console.log("[Calendar] Inserindo evento:", JSON.stringify(entry));
+        const { data, error } = await supabase.from("calendar_events").insert(entry).select();
+        console.log("[Calendar] Resultado insert:", { data, error });
+        if (error) {
+          setToast({ type: "error", text: `Erro ao salvar: ${error.message}` });
+          return;
+        }
+        if (data && data[0]) {
+          setEvents((p) => [...p, data[0]]);
+          setToast({ type: "success", text: "Evento criado com sucesso!" });
+        }
+        // Open Outlook after successful save
+        if (guests.trim()) {
+          const outlookUrl = buildOutlookUrl({ ...entry, guests });
+          window.open(outlookUrl, "_blank");
+        }
+      } else {
+        entry.id = editId;
+        const { error } = await supabase.from("calendar_events").update(entry).eq("id", editId);
+        if (error) {
+          setToast({ type: "error", text: `Erro ao atualizar: ${error.message}` });
+          return;
+        }
+        setEvents((p) => p.map((e) => (e.id === editId ? { ...e, ...entry } : e)));
+        setToast({ type: "success", text: "Evento atualizado." });
       }
-      if (data) setEvents((p) => [...p, data[0]]);
-      // Open Outlook to create event and send invites
-      const outlookUrl = buildOutlookUrl({ ...entry, guests });
-      window.open(outlookUrl, "_blank");
-      if (setToast) setToast({ type: "success", text: "Evento criado! Outlook aberto para enviar convites." });
-    } else {
-      entry.id = editId;
-      const { error } = await supabase.from("calendar_events").update(entry).eq("id", editId);
-      if (error) {
-        if (setToast) setToast({ type: "error", text: `Erro ao atualizar: ${error.message}` });
-        return;
-      }
-      setEvents((p) => p.map((e) => (e.id === editId ? { ...e, ...entry } : e)));
-      if (setToast) setToast({ type: "success", text: "Evento atualizado." });
+    } catch (err) {
+      console.error("[Calendar] Erro inesperado:", err);
+      setToast({ type: "error", text: `Erro inesperado: ${err.message}` });
+      return;
     }
     setModal(false);
   };
