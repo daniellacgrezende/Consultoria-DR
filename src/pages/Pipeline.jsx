@@ -14,7 +14,8 @@ import Modal from "../components/ui/Modal";
 import { Inp, Sel, Tarea, SecH } from "../components/ui/FormFields";
 
 /* Etapas que exigem agendamento de reunião */
-const ETAPAS_REUNIAO = ["Reunião", "Diagnóstico/Proposta"];
+/* Palavras-chave para identificar etapas que exigem agendamento (insensível a acentuação/case) */
+const ETAPAS_REUNIAO_KEYS = ["reuni", "diagn\u00f3stico", "diagnostico"];
 
 function buildOutlookUrl({ title, start, end, location, body, to }) {
   const p = new URLSearchParams();
@@ -352,7 +353,8 @@ export default function Pipeline() {
   const moveEtapa = (id, etapa) => {
     const lead = leads.find((l) => l.id === id);
     if (!lead) return;
-    if (ETAPAS_REUNIAO.includes(etapa)) {
+    const etapaNorm = etapa.toLowerCase().normalize("NFC");
+    if (ETAPAS_REUNIAO_KEYS.some((k) => etapaNorm.includes(k))) {
       setReuniaoLead(lead);
       setReuniaoEtapa(etapa);
       setReuniaoForm({ data: todayStr, horaInicio: "09:00", horaFim: "10:00", tipo: "presencial", local: "", notas: "", email: lead.email || "" });
