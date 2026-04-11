@@ -11,7 +11,6 @@ import Card from "../components/ui/Card";
 import MiniStat from "../components/ui/MiniStat";
 import Avatar from "../components/ui/Avatar";
 import Modal from "../components/ui/Modal";
-import { TempBadge } from "../components/ui/Badge";
 import { Inp, Sel, Tarea, SecH } from "../components/ui/FormFields";
 
 /* ─── Draggable Lead Card ─── */
@@ -78,13 +77,12 @@ function OverlayCard({ lead }) {
 }
 
 export default function Pipeline() {
-  const { leads, saveLead, deleteLead, radar, saveRadar, deleteRadar, setLeads, setToast } = useData();
+  const { leads, saveLead, deleteLead, setToast } = useData();
   const [modal, setModal] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(EMPTY_LEAD);
   const [view, setView] = useState("pipeline");
   const [etapaFilter, setEtapaFilter] = useState("todas");
-  const [subTab, setSubTab] = useState("pipeline");
   const [activeDragLead, setActiveDragLead] = useState(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -105,11 +103,6 @@ export default function Pipeline() {
     moveEtapa(leadId, targetEtapa);
   };
 
-  // ─── Radar state ───
-  const [radarModal, setRadarModal] = useState(false);
-  const [radarEditId, setRadarEditId] = useState(null);
-  const [radarForm, setRadarForm] = useState({ nome: "", origem: "", patrimonioEstimado: "", prioridade: "Média", observacoes: "", dataMapeamento: "", email: "", telefone: "" });
-  const [radarDelConf, setRadarDelConf] = useState(null);
 
   const save = async () => {
     if (!form.nome?.trim()) { setToast({ type: "error", text: "Informe o nome." }); return; }
@@ -148,30 +141,6 @@ export default function Pipeline() {
   };
   const FPhone = (k) => (e) => setForm((f) => ({ ...f, [k]: fmtPhone(e.target.value) }));
 
-  // ─── Radar handlers ───
-  const openRadarNew = () => { setRadarEditId(null); setRadarForm({ nome: "", origem: "", patrimonio_estimado: "", prioridade: "Média", observacoes: "", data_mapeamento: today(), email: "", telefone: "" }); setRadarModal(true); };
-  const openRadarEdit = (r) => { setRadarEditId(r.id); setRadarForm({ ...r }); setRadarModal(true); };
-  const saveRadarEntry = async () => {
-    if (!radarForm.nome?.trim()) { setToast({ type: "error", text: "Informe o nome." }); return; }
-    const isNew = !radarEditId;
-    const entry = { ...radarForm };
-    if (isNew) entry.id = huid();
-    else entry.id = radarEditId;
-    await saveRadar(entry, isNew);
-    setRadarModal(false);
-    setToast({ type: "success", text: isNew ? "Adicionado ao Radar." : "Atualizado." });
-  };
-  const delRadarEntry = async (id) => {
-    await deleteRadar(id);
-    setRadarDelConf(null);
-    setToast({ type: "success", text: "Removido do Radar." });
-  };
-  const moveRadarToLead = async (r) => {
-    await saveLead({ id: huid(), nome: r.nome, origem: r.origem, patrimonio_estimado: r.patrimonio_estimado, notas: r.observacoes, data_primeira_reuniao: today(), data_ultima_interacao: today(), etapa: "Lead" }, true);
-    await deleteRadar(r.id);
-    setSubTab("pipeline");
-    setToast({ type: "success", text: `${r.nome} movido para o funil!` });
-  };
 
   // ─── Stats ───
   const ativos = leads.filter((l) => !["Cliente", "Perdido", "Nutrição"].includes(l.etapa));
@@ -181,8 +150,6 @@ export default function Pipeline() {
   const taxaConv = leads.length > 0 ? Math.round((convertidos / leads.length) * 100) : 0;
   const filtered = etapaFilter === "todas" ? leads : leads.filter((l) => l.etapa === etapaFilter);
 
-  const priorColors = { "Alta": { bg: "#fef2f2", color: "#dc2626", border: "#fecaca" }, "Média": { bg: "#fffbeb", color: "#92400e", border: "#fde68a" }, "Baixa": { bg: "#f0fdf4", color: "#16a34a", border: "#bbf7d0" } };
-  const radarSorted = [...radar].sort((a, b) => { const po = { "Alta": 0, "Média": 1, "Baixa": 2 }; return (po[a.prioridade] || 1) - (po[b.prioridade] || 1); });
 
   return (
     <>
