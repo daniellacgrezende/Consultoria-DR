@@ -43,8 +43,8 @@ export default function Dashboard() {
   const perfilData = Object.entries(perfilMap).map(([name, value]) => ({ name, value }));
   const PCOLS = ["#2563eb", "#7c3aed", "#0891b2", "#dc2626", "#9f1239", "#16a34a"];
 
-  const leadsAtivos = leads.filter((l) => l.etapa !== "Convertido" && l.etapa !== "Perdido").length;
-  const leadsConvertidos = leads.filter((l) => l.etapa === "Convertido").length;
+  const leadsAtivos = leads.filter((l) => !["Cliente", "Perdido", "Nutrição"].includes(l.etapa)).length;
+  const leadsConvertidos = leads.filter((l) => l.etapa === "Cliente").length;
 
   // UF data
   const ufMap = {};
