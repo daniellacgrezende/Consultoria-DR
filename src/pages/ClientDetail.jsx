@@ -9,7 +9,7 @@ import Avatar from "../components/ui/Avatar";
 import Modal from "../components/ui/Modal";
 import { SBadge, PBadge, CBadge } from "../components/ui/Badge";
 import { InlineText, InlineDate } from "../components/ui/InlineEdit";
-import { SecH, Inp, Sel, Tarea, Chk } from "../components/ui/FormFields";
+import { SecH, Inp, Sel, Tarea } from "../components/ui/FormFields";
 
 export default function ClientDetail() {
   const { slug } = useParams();
@@ -308,12 +308,21 @@ export default function ClientDetail() {
 
             <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Atributos</div>
             <div style={{ gridColumn: "1/-1", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0 16px" }}>
-              <Chk label="IPS Enviada" checked={editForm.envio_ips ?? editForm.envioIps ?? false} onChange={EF("envio_ips")} />
-              <Chk label="Seguro de Vida" checked={editForm.seguro_vida ?? editForm.seguroVida ?? false} onChange={EF("seguro_vida")} />
-              <Chk label="PGBL" checked={editForm.pgbl ?? false} onChange={EF("pgbl")} />
-              <Chk label="VGBL" checked={editForm.vgbl ?? false} onChange={EF("vgbl")} />
-              <Chk label="Sucessão discutida" checked={editForm.sucessao ?? false} onChange={EF("sucessao")} />
-              <Chk label="Desbalanceado" checked={editForm.cliente_desbalanceado ?? editForm.clienteDesbalanceado ?? false} onChange={EF("cliente_desbalanceado")} />
+              <Sel label="IPS Enviada" value={(editForm.envio_ips ?? editForm.envioIps) ? "sim" : "nao"}
+                onChange={(e) => setEditForm((f) => ({ ...f, envio_ips: e.target.value === "sim" }))}
+                opts={[{ v: "nao", l: "Não" }, { v: "sim", l: "Sim" }]} />
+              <Sel label="Seguro de Vida" value={(editForm.seguro_vida ?? editForm.seguroVida) ? "sim" : "nao"}
+                onChange={(e) => setEditForm((f) => ({ ...f, seguro_vida: e.target.value === "sim" }))}
+                opts={[{ v: "nao", l: "Não" }, { v: "sim", l: "Sim" }]} />
+              <Sel label="Previdência" value={editForm.pgbl && editForm.vgbl ? "ambos" : editForm.pgbl ? "pgbl" : editForm.vgbl ? "vgbl" : "nao"}
+                onChange={(e) => { const v = e.target.value; setEditForm((f) => ({ ...f, pgbl: v === "pgbl" || v === "ambos", vgbl: v === "vgbl" || v === "ambos" })); }}
+                opts={[{ v: "nao", l: "Não" }, { v: "pgbl", l: "PGBL" }, { v: "vgbl", l: "VGBL" }, { v: "ambos", l: "PGBL e VGBL" }]} />
+              <Sel label="Sucessão discutida" value={editForm.sucessao ? "sim" : "nao"}
+                onChange={(e) => setEditForm((f) => ({ ...f, sucessao: e.target.value === "sim" }))}
+                opts={[{ v: "nao", l: "Não" }, { v: "sim", l: "Sim" }]} />
+              <Sel label="Desbalanceado" value={(editForm.cliente_desbalanceado ?? editForm.clienteDesbalanceado) ? "sim" : "nao"}
+                onChange={(e) => setEditForm((f) => ({ ...f, cliente_desbalanceado: e.target.value === "sim" }))}
+                opts={[{ v: "nao", l: "Não" }, { v: "sim", l: "Sim" }]} />
             </div>
 
             <div style={{ gridColumn: "1/-1" }}><Inp label="Observação Rápida" value={editForm.observacao_rapida ?? editForm.observacaoRapida ?? ""} onChange={EF("observacao_rapida")} placeholder="Aparece destacada na ficha" /></div>

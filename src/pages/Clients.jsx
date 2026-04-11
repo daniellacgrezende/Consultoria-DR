@@ -10,7 +10,7 @@ import MiniStat from "../components/ui/MiniStat";
 import Avatar from "../components/ui/Avatar";
 import Modal from "../components/ui/Modal";
 import { PBadge, CBadge } from "../components/ui/Badge";
-import { Inp, Sel, Tarea, Chk, SecH } from "../components/ui/FormFields";
+import { Inp, Sel, Tarea, SecH } from "../components/ui/FormFields";
 
 export default function Clients() {
   const navigate = useNavigate();
@@ -333,12 +333,21 @@ export default function Clients() {
 
             <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Atributos</div>
             <div style={{ gridColumn: "1/-1", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0 16px" }}>
-              <Chk label="IPS Enviada" checked={form.envio_ips ?? form.envioIps} onChange={F("envio_ips")} />
-              <Chk label="Seguro de Vida" checked={form.seguro_vida ?? form.seguroVida} onChange={F("seguro_vida")} />
-              <Chk label="PGBL" checked={form.pgbl} onChange={F("pgbl")} />
-              <Chk label="VGBL" checked={form.vgbl} onChange={F("vgbl")} />
-              <Chk label="Sucessão discutida" checked={form.sucessao} onChange={F("sucessao")} />
-              <Chk label="Desbalanceado" checked={form.cliente_desbalanceado ?? form.clienteDesbalanceado} onChange={F("cliente_desbalanceado")} />
+              <Sel label="IPS Enviada" value={(form.envio_ips ?? form.envioIps) ? "sim" : "nao"}
+                onChange={(e) => setForm((f) => ({ ...f, envio_ips: e.target.value === "sim" }))}
+                opts={[{ v: "nao", l: "Não" }, { v: "sim", l: "Sim" }]} />
+              <Sel label="Seguro de Vida" value={(form.seguro_vida ?? form.seguroVida) ? "sim" : "nao"}
+                onChange={(e) => setForm((f) => ({ ...f, seguro_vida: e.target.value === "sim" }))}
+                opts={[{ v: "nao", l: "Não" }, { v: "sim", l: "Sim" }]} />
+              <Sel label="Previdência" value={form.pgbl && form.vgbl ? "ambos" : form.pgbl ? "pgbl" : form.vgbl ? "vgbl" : "nao"}
+                onChange={(e) => { const v = e.target.value; setForm((f) => ({ ...f, pgbl: v === "pgbl" || v === "ambos", vgbl: v === "vgbl" || v === "ambos" })); }}
+                opts={[{ v: "nao", l: "Não" }, { v: "pgbl", l: "PGBL" }, { v: "vgbl", l: "VGBL" }, { v: "ambos", l: "PGBL e VGBL" }]} />
+              <Sel label="Sucessão discutida" value={form.sucessao ? "sim" : "nao"}
+                onChange={(e) => setForm((f) => ({ ...f, sucessao: e.target.value === "sim" }))}
+                opts={[{ v: "nao", l: "Não" }, { v: "sim", l: "Sim" }]} />
+              <Sel label="Desbalanceado" value={(form.cliente_desbalanceado ?? form.clienteDesbalanceado) ? "sim" : "nao"}
+                onChange={(e) => setForm((f) => ({ ...f, cliente_desbalanceado: e.target.value === "sim" }))}
+                opts={[{ v: "nao", l: "Não" }, { v: "sim", l: "Sim" }]} />
             </div>
 
             <div style={{ gridColumn: "1/-1" }}><Inp label="Observação Rápida" value={form.observacao_rapida ?? form.observacaoRapida ?? ""} onChange={F("observacao_rapida")} placeholder="Aparece destacada na ficha" /></div>
