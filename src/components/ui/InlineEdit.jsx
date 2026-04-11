@@ -22,6 +22,27 @@ export function InlineText({ value, onSave, placeholder = "—", style = {}, mul
   );
 }
 
+export function InlineSelect({ value, onSave, opts = [], placeholder = "—", style = {} }) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(value ?? "");
+  useEffect(() => { setVal(value ?? ""); }, [value]);
+
+  const label = opts.find((o) => o.v === val)?.l || val || placeholder;
+
+  if (editing) return (
+    <select value={val} autoFocus onChange={(e) => { setVal(e.target.value); onSave(e.target.value); setEditing(false); }}
+      onBlur={() => setEditing(false)}
+      style={{ padding: "3px 8px", border: "1px solid #D30000", borderRadius: 6, fontSize: 12, fontFamily: "inherit", outline: "none", boxShadow: "0 0 0 3px rgba(211,0,0,0.08)", background: "#fff", ...style }}>
+      {opts.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
+    </select>
+  );
+  return (
+    <span onClick={() => setEditing(true)} title="Clique para editar" style={{ cursor: "pointer", borderBottom: "1px dashed rgba(10,8,9,0.2)", paddingBottom: 1, fontSize: 12, color: val !== "" && val !== null ? "inherit" : "#9E9C9E", display: "inline-block", ...style }}>
+      {label}
+    </span>
+  );
+}
+
 export function InlineDate({ value, onSave, style = {} }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(value || "");
