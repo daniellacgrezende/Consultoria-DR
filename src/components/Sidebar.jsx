@@ -2,9 +2,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { B, NAV_ITEMS } from "../utils/constants";
 import { useAuth } from "../contexts/AuthContext";
 import Avatar from "./ui/Avatar";
-import { Home, Target, Calendar, CheckSquare, DollarSign, Users, ClipboardList, Shield, PieChart, TrendingUp, HardDrive, Settings, Newspaper } from "lucide-react";
+import { Home, Target, Calendar, CheckSquare, DollarSign, Users, ClipboardList, Shield, PieChart, TrendingUp, HardDrive, Settings, Newspaper, BarChart2 } from "lucide-react";
 
-const ICON_MAP = { Home, Target, Calendar, CheckSquare, DollarSign, Users, ClipboardList, Shield, PieChart, TrendingUp, HardDrive, Settings, Newspaper };
+const ICON_MAP = { Home, Target, Calendar, CheckSquare, DollarSign, Users, ClipboardList, Shield, PieChart, TrendingUp, HardDrive, Settings, Newspaper, BarChart2 };
 
 export default function Sidebar() {
   const navigate = useNavigate();

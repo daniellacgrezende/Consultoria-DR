@@ -80,6 +80,7 @@ export const NAV_ITEMS = [
   { id: "calendar", label: "Calendário", icon: "Calendar" },
   { id: "meetings", label: "Reuniões", icon: "ClipboardList" },
   { id: "clients", label: "Clientes", icon: "Users" },
+  { id: "evolucao", label: "Evolução Patrimonial", icon: "BarChart2" },
   { id: "allocation", label: "Alocação", icon: "PieChart" },
   { id: "repasse", label: "Repasse", icon: "DollarSign" },
   { id: "reports", label: "Relatórios", icon: "TrendingUp" },
