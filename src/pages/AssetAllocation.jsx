@@ -12,12 +12,25 @@ import { PBadge } from "../components/ui/Badge";
 import Modal from "../components/ui/Modal";
 import { Inp, SecH } from "../components/ui/FormFields";
 
-const ASSET_CLASSES = ["renda_fixa", "renda_variavel", "multimercado", "internacional", "alternativos"];
-const ASSET_LABELS = { renda_fixa: "Renda Fixa", renda_variavel: "Renda Variável", multimercado: "Multimercado", internacional: "Internacional", alternativos: "Alternativos" };
-const ASSET_COLORS = ["#2563eb", "#dc2626", "#f59e0b", "#0891b2", "#7c3aed"];
+// Fallback caso o banco ainda não tenha retornado
+const FALLBACK_CLASSES = [
+  { id: "renda_fixa",     nome: "Renda Fixa",       color: "#2563eb", ordem: 1 },
+  { id: "renda_variavel", nome: "Renda Variável",   color: "#dc2626", ordem: 2 },
+  { id: "multimercado",   nome: "Multimercado",     color: "#f59e0b", ordem: 3 },
+  { id: "internacional",  nome: "Internacional",    color: "#0891b2", ordem: 4 },
+  { id: "alternativos",   nome: "Alternativos",     color: "#7c3aed", ordem: 5 },
+];
+
+function getAllocValue(row, classId) {
+  if (!row) return 0;
+  // Tenta coluna nativa, depois extras JSONB
+  if (row[classId] !== undefined) return Number(row[classId] || 0);
+  if (row.extras && row.extras[classId] !== undefined) return Number(row.extras[classId] || 0);
+  return 0;
+}
 
 export default function AssetAllocation() {
-  const { clients, history, setToast } = useData();
+  const { clients, history, assetClasses, saveAssetClass, deleteAssetClass, setToast } = useData();
   const [profiles, setProfiles] = useState([]);
   const [allocations, setAllocations] = useState([]);
   const [search, setSearch] = useState("");
@@ -27,6 +40,14 @@ export default function AssetAllocation() {
   const [editing, setEditing] = useState(false);
   const [editingProfileId, setEditingProfileId] = useState(null);
   const [profileForm, setProfileForm] = useState({});
+
+  // Gerenciar produtos
+  const [classModal, setClassModal] = useState(false);
+  const [newClassForm, setNewClassForm] = useState({ nome: "", color: "#6b7280" });
+  const [delClassConf, setDelClassConf] = useState(null);
+
+  const classes = assetClasses.length > 0 ? assetClasses : FALLBACK_CLASSES;
+  const FIXED_CLASS_IDS = ["renda_fixa", "renda_variavel", "multimercado", "internacional", "alternativos"];
 
   useEffect(() => {
     Promise.all([
@@ -45,24 +66,35 @@ export default function AssetAllocation() {
   const selAllocation = selClient ? allocations.find((a) => a.client_id === selClient.id) : null;
   const pl = selClient ? getCurrentPL(selClient, history) : 0;
 
-  const modelData = selProfile ? ASSET_CLASSES.map((k, i) => ({ name: ASSET_LABELS[k], value: Number(selProfile[k] || 0), fill: ASSET_COLORS[i] })) : [];
-  const actualData = selAllocation ? ASSET_CLASSES.map((k, i) => ({ name: ASSET_LABELS[k], value: Number(selAllocation[k] || 0), fill: ASSET_COLORS[i] })) : [];
+  const modelData = selProfile ? classes.map((c) => ({ name: c.nome, value: getAllocValue(selProfile, c.id), fill: c.color })) : [];
+  const actualData = selAllocation ? classes.map((c) => ({ name: c.nome, value: getAllocValue(selAllocation, c.id), fill: c.color })) : [];
+
+  const buildEmptyForm = (base) => classes.reduce((acc, c) => ({ ...acc, [c.id]: getAllocValue(base, c.id) }), {});
 
   const startEdit = () => {
-    const base = selAllocation || {};
-    setForm(ASSET_CLASSES.reduce((acc, k) => ({ ...acc, [k]: base[k] || 0 }), {}));
+    setForm(buildEmptyForm(selAllocation || {}));
     setEditing(true);
   };
 
   const saveAllocation = async () => {
-    const total = ASSET_CLASSES.reduce((s, k) => s + Number(form[k] || 0), 0);
+    const total = classes.reduce((s, c) => s + Number(form[c.id] || 0), 0);
     if (Math.abs(total - 100) > 0.5) { setToast({ type: "error", text: `Total deve ser 100%. Atual: ${total.toFixed(1)}%` }); return; }
 
+    // Separa colunas nativas das extras
+    const nativeKeys = ["renda_fixa", "renda_variavel", "multimercado", "internacional", "alternativos"];
+    const nativePart = {};
+    const extrasPart = {};
+    classes.forEach((c) => {
+      if (nativeKeys.includes(c.id)) nativePart[c.id] = Number(form[c.id] || 0);
+      else extrasPart[c.id] = Number(form[c.id] || 0);
+    });
+    const payload = { ...nativePart, extras: extrasPart };
+
     if (selAllocation) {
-      await supabase.from("client_allocation").update({ ...form, updated_at: new Date().toISOString() }).eq("id", selAllocation.id);
-      setAllocations((p) => p.map((a) => a.id === selAllocation.id ? { ...a, ...form } : a));
+      await supabase.from("client_allocation").update({ ...payload, updated_at: new Date().toISOString() }).eq("id", selAllocation.id);
+      setAllocations((p) => p.map((a) => a.id === selAllocation.id ? { ...a, ...payload } : a));
     } else {
-      const entry = { id: `alloc-${Date.now()}`, client_id: selId, ...form };
+      const entry = { id: `alloc-${Date.now()}`, client_id: selId, ...payload };
       const { data } = await supabase.from("client_allocation").insert(entry).select();
       if (data) setAllocations((p) => [...p, data[0]]);
     }
@@ -70,31 +102,39 @@ export default function AssetAllocation() {
     setToast({ type: "success", text: "Alocação atualizada." });
   };
 
-  const totalForm = ASSET_CLASSES.reduce((s, k) => s + Number(form[k] || 0), 0);
+  const totalForm = classes.reduce((s, c) => s + Number(form[c.id] || 0), 0);
 
   const startEditProfile = (p) => {
     setEditingProfileId(p.id);
-    setProfileForm(ASSET_CLASSES.reduce((acc, k) => ({ ...acc, [k]: p[k] || 0 }), {}));
+    setProfileForm(buildEmptyForm(p));
   };
 
   const saveProfile = async () => {
-    const total = ASSET_CLASSES.reduce((s, k) => s + Number(profileForm[k] || 0), 0);
+    const total = classes.reduce((s, c) => s + Number(profileForm[c.id] || 0), 0);
     if (Math.abs(total - 100) > 0.5) { setToast({ type: "error", text: `Total deve ser 100%. Atual: ${total.toFixed(1)}%` }); return; }
-    await supabase.from("allocation_profiles").update({ ...Object.fromEntries(ASSET_CLASSES.map((k) => [k, Number(profileForm[k] || 0)])) }).eq("id", editingProfileId);
-    setProfiles((prev) => prev.map((p) => p.id === editingProfileId ? { ...p, ...profileForm } : p));
+
+    const nativeKeys = ["renda_fixa", "renda_variavel", "multimercado", "internacional", "alternativos"];
+    const nativePart = {};
+    const extrasPart = {};
+    classes.forEach((c) => {
+      if (nativeKeys.includes(c.id)) nativePart[c.id] = Number(profileForm[c.id] || 0);
+      else extrasPart[c.id] = Number(profileForm[c.id] || 0);
+    });
+    await supabase.from("allocation_profiles").update({ ...nativePart, extras: extrasPart }).eq("id", editingProfileId);
+    setProfiles((prev) => prev.map((p) => p.id === editingProfileId ? { ...p, ...nativePart, extras: extrasPart } : p));
     setEditingProfileId(null);
     setToast({ type: "success", text: "Perfil atualizado." });
   };
 
-  const totalProfileForm = ASSET_CLASSES.reduce((s, k) => s + Number(profileForm[k] || 0), 0);
+  const totalProfileForm = classes.reduce((s, c) => s + Number(profileForm[c.id] || 0), 0);
 
   // ─── New profile ───
   const [newModal, setNewModal] = useState(false);
-  const [newForm, setNewForm] = useState({ nome: "", color: "#2563eb", renda_fixa: 0, renda_variavel: 0, multimercado: 0, internacional: 0, alternativos: 0 });
-  const totalNewForm = ASSET_CLASSES.reduce((s, k) => s + Number(newForm[k] || 0), 0);
+  const [newForm, setNewForm] = useState({});
+  const totalNewForm = classes.reduce((s, c) => s + Number(newForm[c.id] || 0), 0);
 
   const openNewProfile = () => {
-    setNewForm({ nome: "", color: "#2563eb", renda_fixa: 0, renda_variavel: 0, multimercado: 0, internacional: 0, alternativos: 0 });
+    setNewForm({ nome: "", color: "#2563eb", ...classes.reduce((a, c) => ({ ...a, [c.id]: 0 }), {}) });
     setNewModal(true);
   };
 
@@ -103,7 +143,15 @@ export default function AssetAllocation() {
     if (Math.abs(totalNewForm - 100) > 0.5) { setToast({ type: "error", text: `Total deve ser 100%. Atual: ${totalNewForm.toFixed(1)}%` }); return; }
     const id = newForm.nome.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
     if (profiles.find((p) => p.id === id)) { setToast({ type: "error", text: "Já existe um perfil com esse nome." }); return; }
-    const entry = { id, nome: newForm.nome, color: newForm.color, ...Object.fromEntries(ASSET_CLASSES.map((k) => [k, Number(newForm[k] || 0)])) };
+
+    const nativeKeys = ["renda_fixa", "renda_variavel", "multimercado", "internacional", "alternativos"];
+    const nativePart = {};
+    const extrasPart = {};
+    classes.forEach((c) => {
+      if (nativeKeys.includes(c.id)) nativePart[c.id] = Number(newForm[c.id] || 0);
+      else extrasPart[c.id] = Number(newForm[c.id] || 0);
+    });
+    const entry = { id, nome: newForm.nome, color: newForm.color, ...nativePart, extras: extrasPart };
     const { data, error } = await supabase.from("allocation_profiles").insert(entry).select();
     if (error) { setToast({ type: "error", text: `Erro: ${error.message}` }); return; }
     if (data) setProfiles((p) => [...p, data[0]]);
@@ -113,7 +161,6 @@ export default function AssetAllocation() {
 
   // ─── Delete profile ───
   const [delConf, setDelConf] = useState(null);
-
   const deleteProfile = async (id) => {
     const { error } = await supabase.from("allocation_profiles").delete().eq("id", id);
     if (error) { setToast({ type: "error", text: `Erro: ${error.message}` }); return; }
@@ -121,6 +168,41 @@ export default function AssetAllocation() {
     setDelConf(null);
     setToast({ type: "success", text: "Perfil removido." });
   };
+
+  // ─── Novo produto (asset class) ───
+  const saveNewClass = async () => {
+    if (!newClassForm.nome?.trim()) { setToast({ type: "error", text: "Informe o nome do produto." }); return; }
+    const id = newClassForm.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
+    if (classes.find((c) => c.id === id)) { setToast({ type: "error", text: "Produto já existe." }); return; }
+    const maxOrdem = classes.reduce((m, c) => Math.max(m, c.ordem), 0);
+    await saveAssetClass({ id, nome: newClassForm.nome, color: newClassForm.color, ordem: maxOrdem + 1 }, true);
+    setClassModal(false);
+    setNewClassForm({ nome: "", color: "#6b7280" });
+    setToast({ type: "success", text: "Produto adicionado." });
+  };
+
+  const confirmDeleteClass = async (id) => {
+    await deleteAssetClass(id);
+    setDelClassConf(null);
+    setToast({ type: "success", text: "Produto removido." });
+  };
+
+  const AllocationInputs = ({ values, onChange, total }) => (
+    <div>
+      {classes.map((c) => (
+        <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <div style={{ width: 10, height: 10, borderRadius: "50%", background: c.color, flexShrink: 0 }} />
+          <span style={{ fontSize: 12, color: B.navy, flex: 1 }}>{c.nome}</span>
+          <input type="number" value={values[c.id] || ""} onChange={(e) => onChange(c.id, e.target.value)} style={{ width: 70, padding: "4px 8px", border: `1px solid ${B.border}`, borderRadius: 5, fontSize: 13, color: B.navy, outline: "none", textAlign: "right" }} />
+          <span style={{ fontSize: 11, color: B.gray }}>%</span>
+        </div>
+      ))}
+      <div style={{ marginTop: 8, padding: "8px 12px", background: Math.abs(total - 100) <= 0.5 ? "#f0fdf4" : "#fef2f2", border: `1px solid ${Math.abs(total - 100) <= 0.5 ? "#bbf7d0" : "#fecaca"}`, borderRadius: 8, display: "flex", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: Math.abs(total - 100) <= 0.5 ? "#16a34a" : "#dc2626" }}>Total: {total.toFixed(1)}%</span>
+        {Math.abs(total - 100) > 0.5 && <span style={{ fontSize: 11, color: "#dc2626" }}>Deve ser 100%</span>}
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -130,15 +212,37 @@ export default function AssetAllocation() {
       <Card style={{ marginBottom: 16 }}>
         <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span>Alocação por Perfil</span>
-          <button onClick={openNewProfile} style={{ background: B.brand, color: "white", border: "none", borderRadius: 7, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Novo Perfil</button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => { setNewClassForm({ nome: "", color: "#6b7280" }); setClassModal(true); }} style={{ background: "white", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 7, padding: "6px 12px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>+ Produto</button>
+            <button onClick={openNewProfile} style={{ background: B.brand, color: "white", border: "none", borderRadius: 7, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Novo Perfil</button>
+          </div>
         </div>
+
+        {/* Legenda dos produtos */}
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
+          {classes.map((c) => (
+            <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: B.gray, background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 999, padding: "2px 8px" }}>
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: c.color }} />
+              {c.nome}
+              {!FIXED_CLASS_IDS.includes(c.id) && (
+                <button onClick={() => setDelClassConf(c.id)} style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 10, padding: "0 0 0 2px", lineHeight: 1 }}>×</button>
+              )}
+            </div>
+          ))}
+        </div>
+
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ background: "#f5f7ff" }}>
                 <th style={{ padding: "10px 14px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}` }}>Perfil</th>
-                {ASSET_CLASSES.map((k) => (
-                  <th key={k} style={{ padding: "10px 14px", textAlign: "center", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}` }}>{ASSET_LABELS[k]}</th>
+                {classes.map((c) => (
+                  <th key={c.id} style={{ padding: "10px 14px", textAlign: "center", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}` }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                      <div style={{ width: 7, height: 7, borderRadius: "50%", background: c.color }} />
+                      {c.nome}
+                    </div>
+                  </th>
                 ))}
                 <th style={{ padding: "10px 14px", borderBottom: `1px solid ${B.border}` }} />
               </tr>
@@ -149,12 +253,12 @@ export default function AssetAllocation() {
                 return (
                   <tr key={p.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
                     <td style={{ padding: "10px 14px" }}><PBadge p={p.id} /></td>
-                    {ASSET_CLASSES.map((k) => (
-                      <td key={k} style={{ padding: "8px 14px", textAlign: "center" }}>
+                    {classes.map((c) => (
+                      <td key={c.id} style={{ padding: "8px 14px", textAlign: "center" }}>
                         {isEditingThis ? (
-                          <input type="number" value={profileForm[k] ?? ""} onChange={(e) => setProfileForm((f) => ({ ...f, [k]: e.target.value }))} style={{ width: 60, padding: "4px 6px", border: `1px solid ${B.border}`, borderRadius: 5, fontSize: 13, color: B.navy, outline: "none", textAlign: "right" }} />
+                          <input type="number" value={profileForm[c.id] ?? ""} onChange={(e) => setProfileForm((f) => ({ ...f, [c.id]: e.target.value }))} style={{ width: 60, padding: "4px 6px", border: `1px solid ${B.border}`, borderRadius: 5, fontSize: 13, color: B.navy, outline: "none", textAlign: "right" }} />
                         ) : (
-                          <span style={{ fontWeight: 600, color: B.navy }}>{p[k]}%</span>
+                          <span style={{ fontWeight: 600, color: B.navy }}>{getAllocValue(p, c.id)}%</span>
                         )}
                       </td>
                     ))}
@@ -188,7 +292,6 @@ export default function AssetAllocation() {
 
       {selClient && (
         <>
-          {/* Header */}
           <div style={{ background: `linear-gradient(135deg,${B.navy},${B.navy2})`, borderRadius: 11, padding: "18px 22px", marginBottom: 14, color: "white", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
               <Avatar nome={selClient.nome} size={40} />
@@ -204,16 +307,15 @@ export default function AssetAllocation() {
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
-            {/* Modelo */}
             <Card>
               <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Modelo — {PERFIL_MAP[selClient.perfil]?.label || selClient.perfil}</div>
               {selProfile ? (
                 <>
                   <ResponsiveContainer width="100%" height={180}>
-                    <PieChart><Pie data={modelData} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, value }) => `${value}%`} labelLine={false} fontSize={10}>{modelData.map((d, i) => <Cell key={i} fill={d.fill} />)}</Pie><Tooltip formatter={(v) => [`${v}%`]} /></PieChart>
+                    <PieChart><Pie data={modelData.filter((d) => d.value > 0)} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, value }) => `${value}%`} labelLine={false} fontSize={10}>{modelData.map((d, i) => <Cell key={i} fill={d.fill} />)}</Pie><Tooltip formatter={(v) => [`${v}%`]} /></PieChart>
                   </ResponsiveContainer>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 8 }}>
-                    {modelData.map((d) => (
+                    {modelData.filter((d) => d.value > 0).map((d) => (
                       <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: B.gray }}><div style={{ width: 8, height: 8, borderRadius: "50%", background: d.fill }} />{d.name}: {d.value}%</div>
                     ))}
                   </div>
@@ -221,7 +323,6 @@ export default function AssetAllocation() {
               ) : <div style={{ padding: 20, textAlign: "center", color: B.gray }}>Perfil não encontrado.</div>}
             </Card>
 
-            {/* Carteira Real */}
             <Card>
               <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between" }}>
                 <span>Carteira Real</span>
@@ -229,18 +330,7 @@ export default function AssetAllocation() {
               </div>
               {editing ? (
                 <div>
-                  {ASSET_CLASSES.map((k, i) => (
-                    <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                      <div style={{ width: 10, height: 10, borderRadius: "50%", background: ASSET_COLORS[i], flexShrink: 0 }} />
-                      <span style={{ fontSize: 12, color: B.navy, width: 120 }}>{ASSET_LABELS[k]}</span>
-                      <input type="number" value={form[k] || ""} onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))} style={{ width: 70, padding: "4px 8px", border: `1px solid ${B.border}`, borderRadius: 5, fontSize: 13, color: B.navy, outline: "none", textAlign: "right" }} />
-                      <span style={{ fontSize: 11, color: B.gray }}>%</span>
-                    </div>
-                  ))}
-                  <div style={{ marginTop: 8, padding: "8px 12px", background: Math.abs(totalForm - 100) <= 0.5 ? "#f0fdf4" : "#fef2f2", border: `1px solid ${Math.abs(totalForm - 100) <= 0.5 ? "#bbf7d0" : "#fecaca"}`, borderRadius: 8, display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: Math.abs(totalForm - 100) <= 0.5 ? "#16a34a" : "#dc2626" }}>Total: {totalForm.toFixed(1)}%</span>
-                    {Math.abs(totalForm - 100) > 0.5 && <span style={{ fontSize: 11, color: "#dc2626" }}>Deve ser 100%</span>}
-                  </div>
+                  <AllocationInputs values={form} onChange={(id, v) => setForm((f) => ({ ...f, [id]: v }))} total={totalForm} />
                   <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                     <button onClick={() => setEditing(false)} style={{ flex: 1, padding: "8px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>
                     <button onClick={saveAllocation} style={{ flex: 2, padding: "8px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700 }}>Salvar</button>
@@ -249,10 +339,10 @@ export default function AssetAllocation() {
               ) : selAllocation ? (
                 <>
                   <ResponsiveContainer width="100%" height={180}>
-                    <PieChart><Pie data={actualData} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, value }) => `${value}%`} labelLine={false} fontSize={10}>{actualData.map((d, i) => <Cell key={i} fill={d.fill} />)}</Pie><Tooltip formatter={(v) => [`${v}%`]} /></PieChart>
+                    <PieChart><Pie data={actualData.filter((d) => d.value > 0)} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, value }) => `${value}%`} labelLine={false} fontSize={10}>{actualData.map((d, i) => <Cell key={i} fill={d.fill} />)}</Pie><Tooltip formatter={(v) => [`${v}%`]} /></PieChart>
                   </ResponsiveContainer>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 8 }}>
-                    {actualData.map((d) => (
+                    {actualData.filter((d) => d.value > 0).map((d) => (
                       <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: B.gray }}><div style={{ width: 8, height: 8, borderRadius: "50%", background: d.fill }} />{d.name}: {d.value}%</div>
                     ))}
                   </div>
@@ -261,26 +351,25 @@ export default function AssetAllocation() {
             </Card>
           </div>
 
-          {/* Comparativo */}
           {selProfile && selAllocation && (
             <Card>
               <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Comparativo: Modelo vs Real — Gaps</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
-                {ASSET_CLASSES.map((k, i) => {
-                  const modelo = Number(selProfile[k] || 0);
-                  const real = Number(selAllocation[k] || 0);
+              <div style={{ display: "grid", gridTemplateColumns: `repeat(${classes.length}, 1fr)`, gap: 10 }}>
+                {classes.map((c, i) => {
+                  const modelo = getAllocValue(selProfile, c.id);
+                  const real = getAllocValue(selAllocation, c.id);
                   const gap = real - modelo;
                   const isOk = Math.abs(gap) <= 3;
                   return (
-                    <div key={k} style={{ background: isOk ? "#f0fdf4" : gap > 0 ? "#fef2f2" : "#fffbeb", border: `1px solid ${isOk ? "#bbf7d0" : gap > 0 ? "#fecaca" : "#fde68a"}`, borderRadius: 8, padding: "12px", textAlign: "center" }}>
-                      <div style={{ width: 10, height: 10, borderRadius: "50%", background: ASSET_COLORS[i], margin: "0 auto 6px" }} />
-                      <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>{ASSET_LABELS[k]}</div>
+                    <div key={c.id} style={{ background: isOk ? "#f0fdf4" : gap > 0 ? "#fef2f2" : "#fffbeb", border: `1px solid ${isOk ? "#bbf7d0" : gap > 0 ? "#fecaca" : "#fde68a"}`, borderRadius: 8, padding: "12px", textAlign: "center" }}>
+                      <div style={{ width: 10, height: 10, borderRadius: "50%", background: c.color, margin: "0 auto 6px" }} />
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>{c.nome}</div>
                       <div style={{ fontSize: 11, color: B.gray }}>Modelo: {modelo}%</div>
                       <div style={{ fontSize: 11, color: B.gray }}>Real: {real}%</div>
                       <div style={{ fontSize: 14, fontWeight: 800, color: isOk ? "#16a34a" : gap > 0 ? "#dc2626" : "#92400e", marginTop: 4 }}>
                         {isOk ? "OK" : gap > 0 ? `+${gap.toFixed(1)}%` : `${gap.toFixed(1)}%`}
                       </div>
-                      {!isOk && (
+                      {!isOk && pl > 0 && (
                         <div style={{ fontSize: 10, color: gap > 0 ? "#dc2626" : "#92400e", marginTop: 2 }}>
                           {gap > 0 ? `Reduzir ${money(pl * gap / 100)}` : `Aportar ${money(pl * Math.abs(gap) / 100)}`}
                         </div>
@@ -306,24 +395,13 @@ export default function AssetAllocation() {
             <button onClick={() => setNewModal(false)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: B.gray }}>×</button>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, marginBottom: 16 }}>
-            <Inp label="Nome do Perfil *" value={newForm.nome} onChange={(e) => setNewForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Ex: Ultra Conservador" />
+            <Inp label="Nome do Perfil *" value={newForm.nome || ""} onChange={(e) => setNewForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Ex: Ultra Conservador" />
             <div>
               <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Cor</label>
-              <input type="color" value={newForm.color} onChange={(e) => setNewForm((f) => ({ ...f, color: e.target.value }))} style={{ width: 44, height: 36, border: `1px solid ${B.border}`, borderRadius: 6, cursor: "pointer", padding: 2 }} />
+              <input type="color" value={newForm.color || "#2563eb"} onChange={(e) => setNewForm((f) => ({ ...f, color: e.target.value }))} style={{ width: 44, height: 36, border: `1px solid ${B.border}`, borderRadius: 6, cursor: "pointer", padding: 2 }} />
             </div>
           </div>
-          {ASSET_CLASSES.map((k, i) => (
-            <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <div style={{ width: 10, height: 10, borderRadius: "50%", background: ASSET_COLORS[i], flexShrink: 0 }} />
-              <span style={{ fontSize: 12, color: B.navy, width: 120 }}>{ASSET_LABELS[k]}</span>
-              <input type="number" value={newForm[k] || ""} onChange={(e) => setNewForm((f) => ({ ...f, [k]: e.target.value }))} style={{ width: 70, padding: "4px 8px", border: `1px solid ${B.border}`, borderRadius: 5, fontSize: 13, color: B.navy, outline: "none", textAlign: "right" }} />
-              <span style={{ fontSize: 11, color: B.gray }}>%</span>
-            </div>
-          ))}
-          <div style={{ marginTop: 8, padding: "8px 12px", background: Math.abs(totalNewForm - 100) <= 0.5 ? "#f0fdf4" : "#fef2f2", border: `1px solid ${Math.abs(totalNewForm - 100) <= 0.5 ? "#bbf7d0" : "#fecaca"}`, borderRadius: 8, display: "flex", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: Math.abs(totalNewForm - 100) <= 0.5 ? "#16a34a" : "#dc2626" }}>Total: {totalNewForm.toFixed(1)}%</span>
-            {Math.abs(totalNewForm - 100) > 0.5 && <span style={{ fontSize: 11, color: "#dc2626" }}>Deve ser 100%</span>}
-          </div>
+          <AllocationInputs values={newForm} onChange={(id, v) => setNewForm((f) => ({ ...f, [id]: v }))} total={totalNewForm} />
           <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
             <button onClick={() => setNewModal(false)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>
             <button onClick={saveNewProfile} style={{ flex: 2, padding: "10px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>CRIAR PERFIL</button>
@@ -331,7 +409,7 @@ export default function AssetAllocation() {
         </div>
       </Modal>
 
-      {/* Modal Confirmar Exclusão */}
+      {/* Modal Confirmar Exclusão Perfil */}
       <Modal open={!!delConf} onClose={() => setDelConf(null)}>
         <div style={{ padding: "26px 30px" }}>
           <h3 style={{ margin: "0 0 10px", color: "#dc2626", fontSize: 16, fontWeight: 700 }}>Remover perfil?</h3>
@@ -339,6 +417,40 @@ export default function AssetAllocation() {
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => setDelConf(null)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>
             <button onClick={() => deleteProfile(delConf)} style={{ flex: 1, padding: "10px", background: "#fee2e2", border: "1px solid #fecaca", color: "#dc2626", borderRadius: 7, cursor: "pointer", fontWeight: 700 }}>Remover</button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal Novo Produto */}
+      <Modal open={classModal} onClose={() => setClassModal(false)}>
+        <div style={{ padding: "26px 30px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: B.navy }}>Novo Produto / Classe</h3>
+            <button onClick={() => setClassModal(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: B.gray }}>×</button>
+          </div>
+          <Inp label="Nome *" value={newClassForm.nome} onChange={(e) => setNewClassForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Ex: Previdência, Imóveis…" />
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 6 }}>Cor</label>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <input type="color" value={newClassForm.color} onChange={(e) => setNewClassForm((f) => ({ ...f, color: e.target.value }))} style={{ width: 44, height: 36, border: `1px solid ${B.border}`, borderRadius: 6, cursor: "pointer", padding: 2 }} />
+              <span style={{ fontSize: 12, color: B.muted }}>{newClassForm.color}</span>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={() => setClassModal(false)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.muted, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>
+            <button onClick={saveNewClass} style={{ flex: 2, padding: "10px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700 }}>ADICIONAR</button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Confirmar remoção produto */}
+      <Modal open={!!delClassConf} onClose={() => setDelClassConf(null)}>
+        <div style={{ padding: "26px 30px" }}>
+          <h3 style={{ margin: "0 0 10px", color: "#dc2626", fontSize: 16, fontWeight: 700 }}>Remover produto?</h3>
+          <p style={{ color: B.gray, fontSize: 13, marginBottom: 22 }}>Os valores deste produto nos perfis e alocações dos clientes serão perdidos.</p>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={() => setDelClassConf(null)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>
+            <button onClick={() => confirmDeleteClass(delClassConf)} style={{ flex: 1, padding: "10px", background: "#fee2e2", border: "1px solid #fecaca", color: "#dc2626", borderRadius: 7, cursor: "pointer", fontWeight: 700 }}>Remover</button>
           </div>
         </div>
       </Modal>

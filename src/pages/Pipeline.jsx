@@ -4,7 +4,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useData } from "../hooks/useData";
-import { B, LEAD_ETAPAS, LEAD_ETAPAS_MAIN, LEAD_ETAPAS_EXIT, LEAD_ETAPA_COLORS, LEAD_ORIGENS, EMPTY_LEAD, LEAD_TEMPERATURAS, TIPO_REUNIAO } from "../utils/constants";
+import { B, LEAD_ETAPA_COLORS, LEAD_ORIGENS, EMPTY_LEAD, LEAD_TEMPERATURAS, TIPO_REUNIAO } from "../utils/constants";
 import { money, fmtDate } from "../utils/formatters";
 import { huid, today, daysSince } from "../utils/helpers";
 import Card from "../components/ui/Card";
@@ -92,9 +92,9 @@ function DraggableLeadCard({ lead, openEdit, moveEtapa }) {
 }
 
 /* ─── Column (droppable) ─── */
-function PipelineColumn({ etapa, leads, openEdit, moveEtapa }) {
+function PipelineColumn({ etapa, leads, openEdit, moveEtapa, colorMap }) {
   const { setNodeRef, isOver } = useDroppable({ id: etapa });
-  const ec = LEAD_ETAPA_COLORS[etapa];
+  const ec = (colorMap || LEAD_ETAPA_COLORS)[etapa] || LEAD_ETAPA_COLORS[etapa] || { color: "#1D3557", bg: "#f0f4ff", border: "#d5ddf5" };
   const totalPatrimonio = leads.reduce((s, l) => s + Number(l.patrimonio_estimado || 0), 0);
   const staleCount = leads.filter((l) => {
     const d = daysSince(l.data_ultima_interacao);
@@ -166,9 +166,9 @@ function PipelineColumn({ etapa, leads, openEdit, moveEtapa }) {
 }
 
 /* ─── Exit Column — mesma estrutura da PipelineColumn, visual atenuado ─── */
-function ExitColumn({ etapa, leads, openEdit, moveEtapa }) {
+function ExitColumn({ etapa, leads, openEdit, moveEtapa, colorMap }) {
   const { setNodeRef, isOver } = useDroppable({ id: etapa });
-  const ec = LEAD_ETAPA_COLORS[etapa];
+  const ec = (colorMap || LEAD_ETAPA_COLORS)[etapa] || LEAD_ETAPA_COLORS[etapa] || { color: "#854d0e", bg: "#fefce8", border: "#fde047" };
   const totalPatrimonio = leads.reduce((s, l) => s + Number(l.patrimonio_estimado || 0), 0);
 
   return (
@@ -278,7 +278,18 @@ function PipelineSummaryBar({ leads }) {
 
 /* ═══════════════════════════════════════════ */
 export default function Pipeline() {
-  const { leads, saveLead, deleteLead, setToast } = useData();
+  const { leads, saveLead, deleteLead, pipelineStages, setToast } = useData();
+
+  // Derived stage lists from DB (fallback to constants if not yet loaded)
+  const stagesMain = pipelineStages.filter((s) => s.tipo === "main");
+  const stagesExit = pipelineStages.filter((s) => s.tipo === "exit");
+  const allStages = [...stagesMain, ...stagesExit];
+  const allStageNames = allStages.map((s) => s.nome);
+  // Build color map merging DB colors with hardcoded fallbacks
+  const stageColorMap = allStages.reduce((acc, s) => ({
+    ...acc,
+    [s.nome]: { color: s.color, bg: s.bg || "#f0f4ff", border: s.border_color || "#d5ddf5" },
+  }), { ...LEAD_ETAPA_COLORS });
   const [modal, setModal] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(EMPTY_LEAD);
@@ -294,7 +305,7 @@ export default function Pipeline() {
     const { active, over } = e;
     if (!over) return;
     const lead = leads.find((l) => l.id === active.id);
-    if (!lead || !LEAD_ETAPAS.includes(over.id) || lead.etapa === over.id) return;
+    if (!lead || !allStageNames.includes(over.id) || lead.etapa === over.id) return;
     moveEtapa(active.id, over.id);
   };
 
@@ -365,7 +376,7 @@ export default function Pipeline() {
           <select value={etapaFilter} onChange={(e) => setEtapaFilter(e.target.value)}
             style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 600, color: B.navy, outline: "none", cursor: "pointer" }}>
             <option value="todas">Todas ({leads.length})</option>
-            {LEAD_ETAPAS.map((e) => (<option key={e} value={e}>{e} ({leads.filter((l) => l.etapa === e).length})</option>))}
+            {allStageNames.map((e) => (<option key={e} value={e}>{e} ({leads.filter((l) => l.etapa === e).length})</option>))}
           </select>
         </div>
       )}
@@ -377,19 +388,20 @@ export default function Pipeline() {
           <div style={{ overflowX: "auto", paddingBottom: 8 }}>
             <div style={{
               display: "grid",
-              gridTemplateColumns: `repeat(${LEAD_ETAPAS_MAIN.length}, minmax(170px, 1fr)) 2px repeat(${LEAD_ETAPAS_EXIT.length}, minmax(170px, 1fr))`,
+              gridTemplateColumns: `repeat(${stagesMain.length}, minmax(170px, 1fr)) 2px repeat(${stagesExit.length}, minmax(170px, 1fr))`,
               gap: "0 10px",
               alignItems: "start",
               minWidth: 1100,
             }}>
               {/* Etapas principais */}
-              {LEAD_ETAPAS_MAIN.map((etapa) => (
+              {stagesMain.map(({ nome: etapa }) => (
                 <PipelineColumn
                   key={etapa}
                   etapa={etapa}
                   leads={leads.filter((l) => l.etapa === etapa)}
                   openEdit={openEdit}
                   moveEtapa={moveEtapa}
+                  colorMap={stageColorMap}
                 />
               ))}
 
@@ -397,13 +409,14 @@ export default function Pipeline() {
               <div style={{ alignSelf: "stretch", background: B.border, borderRadius: 2, margin: "0 2px" }} />
 
               {/* Etapas de saída — mesmo nível, visual atenuado */}
-              {LEAD_ETAPAS_EXIT.map((etapa) => (
+              {stagesExit.map(({ nome: etapa }) => (
                 <ExitColumn
                   key={etapa}
                   etapa={etapa}
                   leads={leads.filter((l) => l.etapa === etapa)}
                   openEdit={openEdit}
                   moveEtapa={moveEtapa}
+                  colorMap={stageColorMap}
                 />
               ))}
             </div>
@@ -428,7 +441,7 @@ export default function Pipeline() {
               <tbody>
                 {filtered.length === 0 && <tr><td colSpan={8} style={{ padding: 40, textAlign: "center", color: B.muted }}>Nenhum lead</td></tr>}
                 {filtered.map((l, i) => {
-                  const ec = LEAD_ETAPA_COLORS[l.etapa] || {};
+                  const ec = stageColorMap[l.etapa] || LEAD_ETAPA_COLORS[l.etapa] || {};
                   const tc = l.temperatura ? TEMP_MAP[l.temperatura] : null;
                   const dias = daysSince(l.data_ultima_interacao);
                   return (
@@ -493,7 +506,7 @@ export default function Pipeline() {
             <Inp label="E-mail" value={form.email || ""} onChange={F("email")} />
             <Sel label="Origem" value={form.origem || "Indicação"} onChange={F("origem")} opts={LEAD_ORIGENS.map((o) => ({ v: o, l: o }))} />
             <Inp label="Patrimônio Estimado (R$)" type="number" value={form.patrimonio_estimado || ""} onChange={F("patrimonio_estimado")} />
-            <Sel label="Etapa" value={form.etapa || "Lead"} onChange={F("etapa")} opts={LEAD_ETAPAS.map((e) => ({ v: e, l: e }))} />
+            <Sel label="Etapa" value={form.etapa || "Lead"} onChange={F("etapa")} opts={allStageNames.map((e) => ({ v: e, l: e }))} />
             <div style={{ gridColumn: "1/-1" }}><Tarea label="Notas" value={form.notas || ""} onChange={F("notas")} placeholder="Registre tudo sobre o lead..." /></div>
           </div>
           <div style={{ display: "flex", gap: 10, marginTop: 10 }}>

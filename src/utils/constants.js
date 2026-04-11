@@ -83,7 +83,6 @@ export const NAV_ITEMS = [
   { id: "evolucao", label: "Evolução Patrimonial", icon: "BarChart2" },
   { id: "allocation", label: "Alocação", icon: "PieChart" },
   { id: "repasse", label: "Repasse", icon: "DollarSign" },
-  { id: "reports", label: "Relatórios", icon: "TrendingUp" },
   { id: "noticias", label: "Notícias", icon: "Newspaper" },
   { id: "seguro", label: "Seguro de Vida", icon: "Shield" },
   { id: "backup", label: "Back-Up", icon: "HardDrive" },

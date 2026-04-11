@@ -3,6 +3,8 @@ import { useData } from "../hooks/useData";
 import { B, CURVA_MAP } from "../utils/constants";
 import { money } from "../utils/formatters";
 import { getCurva, getCurrentPL } from "../utils/helpers";
+import Modal from "../components/ui/Modal";
+import { Inp, Sel } from "../components/ui/FormFields";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -31,13 +33,32 @@ function VarBadge({ pct }) {
   );
 }
 
+function lastDayOfMonth(yearMonth) {
+  // yearMonth = "YYYY-MM"
+  const [y, m] = yearMonth.split("-").map(Number);
+  return new Date(y, m, 0).toISOString().slice(0, 10);
+}
+
 export default function EvolucaoPatrimonial() {
-  const { clients, history } = useData();
+  const { clients, history, addHistory, setToast } = useData();
   const [periodo, setPeriodo] = useState("12");
   const [showValues, setShowValues] = useState(false);
   const [selectedClient, setSelectedClient] = useState("all");
 
+  // Modal lançar PL
+  const [plModal, setPlModal] = useState(false);
+  const [plForm, setPlForm] = useState({ client_id: "", mes: new Date().toISOString().slice(0, 7), patrimonio: "" });
+
   const active = useMemo(() => clients.filter((c) => c.status === "ativo"), [clients]);
+
+  const savePL = async () => {
+    if (!plForm.client_id) { setToast({ type: "error", text: "Selecione um cliente." }); return; }
+    if (!plForm.patrimonio) { setToast({ type: "error", text: "Informe o valor do PL." }); return; }
+    const data = lastDayOfMonth(plForm.mes);
+    await addHistory({ client_id: plForm.client_id, data, patrimonio: Number(plForm.patrimonio) });
+    setPlModal(false);
+    setToast({ type: "success", text: `PL lançado para ${data}.` });
+  };
 
   // All history sorted by date
   const sortedHistory = useMemo(
@@ -141,7 +162,13 @@ export default function EvolucaoPatrimonial() {
 
   return (
     <>
-      <SecH eyebrow="Patrimônio" title="Evolução Patrimonial" desc="Acompanhe a evolução do patrimônio da carteira ao longo do tempo." />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+        <SecH eyebrow="Patrimônio" title="Evolução Patrimonial" desc="Acompanhe a evolução do patrimônio da carteira ao longo do tempo." />
+        <button
+          onClick={() => { setPlForm({ client_id: "", mes: new Date().toISOString().slice(0, 7), patrimonio: "" }); setPlModal(true); }}
+          style={{ padding: "8px 18px", background: B.brand, color: "white", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}
+        >+ Lançar PL</button>
+      </div>
 
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
@@ -272,6 +299,50 @@ export default function EvolucaoPatrimonial() {
           </div>
         )}
       </Card>
+
+      {/* Modal Lançar PL */}
+      <Modal open={plModal} onClose={() => setPlModal(false)}>
+        <div style={{ padding: "26px 30px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: B.navy }}>Lançar PL Mensal</h3>
+            <button onClick={() => setPlModal(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: B.gray }}>×</button>
+          </div>
+          <p style={{ fontSize: 12, color: B.muted, marginBottom: 16, marginTop: 0 }}>
+            A data de referência será automaticamente o último dia do mês selecionado.
+          </p>
+          <Sel
+            label="Cliente *"
+            value={plForm.client_id}
+            onChange={(e) => setPlForm((f) => ({ ...f, client_id: e.target.value }))}
+            opts={[{ v: "", l: "Selecione..." }, ...active.map((c) => ({ v: c.id, l: c.nome }))]}
+          />
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 4 }}>Mês de Referência *</label>
+            <input
+              type="month"
+              value={plForm.mes}
+              onChange={(e) => setPlForm((f) => ({ ...f, mes: e.target.value }))}
+              style={{ width: "100%", padding: "8px 12px", border: `1px solid ${B.border}`, borderRadius: 7, fontSize: 13, color: B.navy, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }}
+            />
+            {plForm.mes && (
+              <div style={{ fontSize: 11, color: B.muted, marginTop: 4 }}>
+                Data de fechamento: <strong>{lastDayOfMonth(plForm.mes)}</strong>
+              </div>
+            )}
+          </div>
+          <Inp
+            label="Patrimônio / PL (R$) *"
+            type="number"
+            value={plForm.patrimonio}
+            onChange={(e) => setPlForm((f) => ({ ...f, patrimonio: e.target.value }))}
+            placeholder="0"
+          />
+          <div style={{ display: "flex", gap: 10, marginTop: 6 }}>
+            <button onClick={() => setPlModal(false)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.muted, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>
+            <button onClick={savePL} style={{ flex: 2, padding: "10px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700 }}>LANÇAR</button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }

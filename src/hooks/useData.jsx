@@ -14,6 +14,8 @@ export function DataProvider({ children }) {
   const [leads, setLeadsRaw] = useState([]);
   const [radar, setRadarRaw] = useState([]);
   const [relEnvios, setRelEnviosRaw] = useState({});
+  const [pipelineStages, setPipelineStagesRaw] = useState([]);
+  const [assetClasses, setAssetClassesRaw] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [toast, setToast] = useState(null);
 
@@ -27,7 +29,7 @@ export function DataProvider({ children }) {
   // Load all data on mount
   useEffect(() => {
     const load = async () => {
-      const [c, h, r, a, rh, td, ld, rd, re] = await Promise.all([
+      const [c, h, r, a, rh, td, ld, rd, re, ps, ac] = await Promise.all([
         supabase.from("clients").select("*"),
         supabase.from("history").select("*"),
         supabase.from("repasse").select("*"),
@@ -37,6 +39,8 @@ export function DataProvider({ children }) {
         supabase.from("leads").select("*").order("created_at", { ascending: false }),
         supabase.from("radar").select("*"),
         supabase.from("rel_envios").select("*"),
+        supabase.from("pipeline_stages").select("*").order("ordem"),
+        supabase.from("asset_classes").select("*").order("ordem"),
       ]);
 
       if (c.error) console.error("Load clients error:", c.error);
@@ -49,6 +53,8 @@ export function DataProvider({ children }) {
       setTodosRaw(td.data || []);
       setLeadsRaw(ld.data || []);
       setRadarRaw(rd.data || []);
+      setPipelineStagesRaw(ps.data || []);
+      setAssetClassesRaw(ac.data || []);
 
       // Converter rel_envios de array para map {client_id: mes_envio}
       const envMap = {};
@@ -246,6 +252,38 @@ export function DataProvider({ children }) {
     setRadarRaw((p) => p.filter((r) => r.id !== id));
   }, []);
 
+  // ─── PIPELINE STAGES ───
+  const savePipelineStage = useCallback(async (entry, isNew = false) => {
+    if (isNew) {
+      const { data } = await supabase.from("pipeline_stages").insert(entry).select();
+      if (data) setPipelineStagesRaw((p) => [...p, data[0]].sort((a, b) => a.ordem - b.ordem));
+    } else {
+      await supabase.from("pipeline_stages").update(entry).eq("id", entry.id);
+      setPipelineStagesRaw((p) => p.map((s) => s.id === entry.id ? { ...s, ...entry } : s));
+    }
+  }, []);
+
+  const deletePipelineStage = useCallback(async (id) => {
+    await supabase.from("pipeline_stages").delete().eq("id", id);
+    setPipelineStagesRaw((p) => p.filter((s) => s.id !== id));
+  }, []);
+
+  // ─── ASSET CLASSES ───
+  const saveAssetClass = useCallback(async (entry, isNew = false) => {
+    if (isNew) {
+      const { data } = await supabase.from("asset_classes").insert(entry).select();
+      if (data) setAssetClassesRaw((p) => [...p, data[0]].sort((a, b) => a.ordem - b.ordem));
+    } else {
+      await supabase.from("asset_classes").update(entry).eq("id", entry.id);
+      setAssetClassesRaw((p) => p.map((c) => c.id === entry.id ? { ...c, ...entry } : c));
+    }
+  }, []);
+
+  const deleteAssetClass = useCallback(async (id) => {
+    await supabase.from("asset_classes").delete().eq("id", id);
+    setAssetClassesRaw((p) => p.filter((c) => c.id !== id));
+  }, []);
+
   // ─── REL ENVIOS ───
   const setRelEnvios = useCallback(async (clientId, mesEnvio) => {
     if (mesEnvio) {
@@ -263,7 +301,8 @@ export function DataProvider({ children }) {
 
   const value = {
     // Data
-    clients, history, repasse, aportes, reunioes, todos, leads, radar, relEnvios, loaded, toast,
+    clients, history, repasse, aportes, reunioes, todos, leads, radar, relEnvios,
+    pipelineStages, assetClasses, loaded, toast,
     // Setters
     setClients, setHistory, setRepasse, setAportes, setReunioes, setTodos, setLeads, setRadar,
     // CRUD operations
@@ -276,6 +315,8 @@ export function DataProvider({ children }) {
     saveLead, deleteLead,
     saveRadar, deleteRadar,
     setRelEnvios,
+    savePipelineStage, deletePipelineStage,
+    saveAssetClass, deleteAssetClass,
     setToast,
   };
 
