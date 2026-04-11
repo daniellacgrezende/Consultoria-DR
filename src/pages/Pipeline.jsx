@@ -4,6 +4,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useData } from "../hooks/useData";
+import { supabase } from "../lib/supabase";
 import { B, LEAD_ETAPA_COLORS, LEAD_ORIGENS, EMPTY_LEAD, LEAD_TEMPERATURAS, TIPO_REUNIAO } from "../utils/constants";
 import { money, fmtDate } from "../utils/formatters";
 import { huid, today, daysSince } from "../utils/helpers";
@@ -11,6 +12,19 @@ import Card from "../components/ui/Card";
 import Avatar from "../components/ui/Avatar";
 import Modal from "../components/ui/Modal";
 import { Inp, Sel, Tarea, SecH } from "../components/ui/FormFields";
+
+/* Etapas que exigem agendamento de reunião */
+const ETAPAS_REUNIAO = ["Reunião", "Diagnóstico/Proposta"];
+
+function buildOutlookUrl({ title, start, end, location, body }) {
+  const p = new URLSearchParams();
+  p.set("subject", title);
+  p.set("startdt", new Date(start).toISOString());
+  p.set("enddt", new Date(end).toISOString());
+  if (location) p.set("location", location);
+  if (body) p.set("body", body);
+  return `https://outlook.office.com/calendar/0/deeplink/compose?path=%2Fcalendar%2Faction%2Fcompose&${p.toString()}`;
+}
 
 /* ─── Temperature config ─── */
 const TEMP_MAP = {
@@ -297,6 +311,17 @@ export default function Pipeline() {
   const [etapaFilter, setEtapaFilter] = useState("todas");
   const [activeDragLead, setActiveDragLead] = useState(null);
 
+  // ─── Modal Agendamento ───
+  const [reuniaoModal, setReuniaoModal] = useState(false);
+  const [reuniaoLead, setReuniaoLead] = useState(null);
+  const [reuniaoEtapa, setReuniaoEtapa] = useState("");
+  const todayStr = today();
+  const [reuniaoForm, setReuniaoForm] = useState({
+    data: todayStr, horaInicio: "09:00", horaFim: "10:00",
+    tipo: "presencial", local: "", notas: "",
+  });
+  const RF = (k) => (e) => setReuniaoForm((f) => ({ ...f, [k]: e.target.value }));
+
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const handleDragStart = (e) => { const l = leads.find((x) => x.id === e.active.id); if (l) setActiveDragLead(l); };
@@ -323,12 +348,53 @@ export default function Pipeline() {
     setToast({ type: "success", text: "Lead removido." });
   };
 
-  const moveEtapa = async (id, etapa) => {
+  const moveEtapa = (id, etapa) => {
+    const lead = leads.find((l) => l.id === id);
+    if (!lead) return;
+    if (ETAPAS_REUNIAO.includes(etapa)) {
+      setReuniaoLead(lead);
+      setReuniaoEtapa(etapa);
+      setReuniaoForm({ data: todayStr, horaInicio: "09:00", horaFim: "10:00", tipo: "presencial", local: "", notas: "" });
+      setReuniaoModal(true);
+      return;
+    }
     const updates = { etapa, data_ultima_interacao: today() };
     if (etapa === "Cliente") updates.convertido_em = today();
-    const lead = leads.find((l) => l.id === id);
-    await saveLead({ ...lead, ...updates }, false);
+    saveLead({ ...lead, ...updates }, false);
     setToast({ type: "success", text: `Movido para ${etapa}` });
+  };
+
+  const confirmReuniao = async () => {
+    if (!reuniaoLead) return;
+    const start = `${reuniaoForm.data}T${reuniaoForm.horaInicio}:00`;
+    const end   = `${reuniaoForm.data}T${reuniaoForm.horaFim}:00`;
+    const title = `Reunião com ${reuniaoLead.nome}`;
+    // Salva no calendário
+    await supabase.from("calendar_events").insert({
+      id: huid(),
+      title,
+      description: reuniaoForm.notas || "",
+      start_at: start,
+      end_at: end,
+      type: "reuniao",
+      location: reuniaoForm.local || "",
+      color: "#2563eb",
+      guests: reuniaoLead.email || "",
+    });
+    // Atualiza o lead
+    const updates = {
+      etapa: reuniaoEtapa,
+      data_ultima_interacao: today(),
+      tipo_reuniao: reuniaoForm.tipo,
+    };
+    if (reuniaoEtapa === "Reunião" && !reuniaoLead.data_primeira_reuniao) {
+      updates.data_primeira_reuniao = reuniaoForm.data;
+    }
+    await saveLead({ ...reuniaoLead, ...updates }, false);
+    setReuniaoModal(false);
+    const outlookUrl = buildOutlookUrl({ title, start, end, location: reuniaoForm.local, body: reuniaoForm.notas });
+    setToast({ type: "success", text: `Reunião agendada e salva no calendário!` });
+    setTimeout(() => window.open(outlookUrl, "_blank"), 400);
   };
 
   const openNew = () => { setEditId(null); setForm({ ...EMPTY_LEAD, data_ultima_interacao: today() }); setModal(true); };
@@ -492,6 +558,62 @@ export default function Pipeline() {
           </div>
         </Card>
       )}
+
+      {/* ═══ MODAL AGENDAMENTO DE REUNIÃO ═══ */}
+      <Modal open={reuniaoModal} onClose={() => setReuniaoModal(false)}>
+        <div style={{ padding: "26px 30px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: B.navy }}>Agendar Reunião</h3>
+            <button onClick={() => setReuniaoModal(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: B.gray }}>×</button>
+          </div>
+          {reuniaoLead && (
+            <div style={{ fontSize: 12, color: B.muted, marginBottom: 18 }}>
+              Movendo <strong style={{ color: B.navy }}>{reuniaoLead.nome}</strong> para <strong style={{ color: B.navy }}>{reuniaoEtapa}</strong>
+            </div>
+          )}
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" }}>
+            <div style={{ gridColumn: "1/-1" }}>
+              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 4 }}>Data *</label>
+              <input type="date" value={reuniaoForm.data} onChange={RF("data")}
+                style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: `1px solid ${B.border}`, borderRadius: 7, fontSize: 13, color: B.navy, fontFamily: "inherit", outline: "none" }} />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 4 }}>Hora início *</label>
+              <input type="time" value={reuniaoForm.horaInicio} onChange={RF("horaInicio")}
+                style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: `1px solid ${B.border}`, borderRadius: 7, fontSize: 13, color: B.navy, fontFamily: "inherit", outline: "none" }} />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 4 }}>Hora fim *</label>
+              <input type="time" value={reuniaoForm.horaFim} onChange={RF("horaFim")}
+                style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: `1px solid ${B.border}`, borderRadius: 7, fontSize: 13, color: B.navy, fontFamily: "inherit", outline: "none" }} />
+            </div>
+            <Sel label="Tipo" value={reuniaoForm.tipo} onChange={RF("tipo")}
+              opts={[{ v: "presencial", l: "Presencial" }, { v: "online", l: "Online" }, { v: "telefone", l: "Telefone" }]} />
+            <div style={{ gridColumn: "1/-1" }}>
+              <Inp label="Local / Link" value={reuniaoForm.local} onChange={RF("local")} placeholder="Endereço ou link da reunião" />
+            </div>
+            <div style={{ gridColumn: "1/-1" }}>
+              <Tarea label="Observações" value={reuniaoForm.notas} onChange={RF("notas")} placeholder="Pauta, tópicos a discutir..." />
+            </div>
+          </div>
+
+          <div style={{ marginTop: 4, padding: "10px 12px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, fontSize: 11, color: "#1d4ed8" }}>
+            Ao confirmar, a reunião será salva no <strong>Calendário</strong> e o Outlook será aberto para adicionar ao seu calendário.
+          </div>
+
+          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+            <button onClick={() => setReuniaoModal(false)}
+              style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.muted, borderRadius: 7, cursor: "pointer", fontWeight: 600 }}>
+              Cancelar
+            </button>
+            <button onClick={confirmReuniao}
+              style={{ flex: 2, padding: "10px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+              CONFIRMAR E ABRIR OUTLOOK
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {/* ═══ MODAL LEAD ═══ */}
       <Modal open={modal} onClose={() => setModal(false)} wide>
