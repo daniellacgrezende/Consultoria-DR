@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo } from "react";
 import { supabase } from "../lib/supabase";
 import { useData } from "../hooks/useData";
 import { B } from "../utils/constants";
@@ -32,7 +32,6 @@ export default function Calendar() {
   const [syncUrl, setSyncUrl] = useState(localStorage.getItem("outlook_ics_url") || "");
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState(null);
-  const fileRef = useRef(null);
 
   // Load events
   useState(() => {
@@ -141,22 +140,6 @@ export default function Calendar() {
     setEvents((p) => [...p, ...(data || toInsert)]);
     setSyncResult({ type: "success", text: `${toInsert.length} evento(s) importado(s) com sucesso! (${parsed.length - newEvents.length} duplicados ignorados)` });
     if (setToast) setToast({ type: "success", text: `${toInsert.length} eventos importados do Outlook!` });
-  };
-
-  const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setSyncing(true);
-    setSyncResult(null);
-    try {
-      const text = await file.text();
-      const parsed = parseICS(text);
-      await importEvents(parsed);
-    } catch (err) {
-      setSyncResult({ type: "error", text: `Erro ao ler arquivo: ${err.message}` });
-    }
-    setSyncing(false);
-    if (fileRef.current) fileRef.current.value = "";
   };
 
   const handleUrlSync = async () => {
@@ -278,35 +261,10 @@ export default function Calendar() {
             </div>
           )}
 
-          {/* Opção 1: Upload de arquivo */}
-          <div style={{ background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 12, padding: 20, marginBottom: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-              <span style={{ background: "#e1effe", color: "#0078d4", fontWeight: 800, fontSize: 11, padding: "3px 10px", borderRadius: 999 }}>OPÇÃO 1</span>
-              <span style={{ fontWeight: 700, fontSize: 13, color: B.navy }}>Upload de arquivo .ics</span>
-            </div>
-            <p style={{ fontSize: 11, color: B.gray, margin: "0 0 12px" }}>
-              Exporte o calendário do Outlook como arquivo .ics e faça upload aqui.
-            </p>
-            <div style={{ fontSize: 11, color: B.gray, background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: 12, marginBottom: 12 }}>
-              <strong style={{ color: B.navy }}>Como exportar do Outlook:</strong>
-              <ol style={{ margin: "6px 0 0", paddingLeft: 18, lineHeight: 1.8 }}>
-                <li>Abra o <strong>Outlook Web</strong> (outlook.office.com)</li>
-                <li>Vá em <strong>Configurações</strong> (engrenagem) → <strong>Calendário</strong> → <strong>Calendários compartilhados</strong></li>
-                <li>Em <strong>"Publicar um calendário"</strong>, selecione seu calendário e clique <strong>"Publicar"</strong></li>
-                <li>Clique no link <strong>ICS</strong> e faça download do arquivo</li>
-              </ol>
-            </div>
-            <input ref={fileRef} type="file" accept=".ics,.ical,.ifb,.icalendar" onChange={handleFileUpload} style={{ display: "none" }} />
-            <button onClick={() => fileRef.current?.click()} disabled={syncing} style={{ padding: "10px 20px", background: syncing ? "#94a3b8" : "#0078d4", color: "white", border: "none", borderRadius: 8, cursor: syncing ? "wait" : "pointer", fontWeight: 700, fontSize: 13, width: "100%" }}>
-              {syncing ? "⏳ Importando..." : "📂 Selecionar arquivo .ics"}
-            </button>
-          </div>
-
-          {/* Opção 2: URL de sync */}
+          {/* Sync via URL */}
           <div style={{ background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 12, padding: 20 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-              <span style={{ background: "#f0fdf4", color: "#16a34a", fontWeight: 800, fontSize: 11, padding: "3px 10px", borderRadius: 999 }}>OPÇÃO 2</span>
-              <span style={{ fontWeight: 700, fontSize: 13, color: B.navy }}>Sincronizar via URL (automático)</span>
+              <span style={{ fontWeight: 700, fontSize: 13, color: B.navy }}>Sincronizar via URL do calendário</span>
             </div>
             <p style={{ fontSize: 11, color: B.gray, margin: "0 0 12px" }}>
               Cole a URL ICS do calendário publicado. A URL fica salva para sincronizações futuras.
