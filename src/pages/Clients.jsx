@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
+import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import { useData } from "../hooks/useData";
 import { B, PERFIL_MAP, EMPTY_CLIENT, LEAD_ORIGENS, PERIOD_OPTIONS } from "../utils/constants";
@@ -67,6 +68,87 @@ export default function Clients() {
   const openNew = () => { setEditId(null); setForm({ ...EMPTY_CLIENT }); setModal(true); };
   const openEdit = (c) => { setEditId(c.id); setForm({ ...c }); setModal(true); };
 
+  const importRef = useRef(null);
+
+  const COLS = [
+    { h: "Nome", f: "nome" }, { h: "Data Nascimento", f: "data_nascimento" },
+    { h: "Cidade", f: "cidade" }, { h: "UF", f: "uf" },
+    { h: "Estado Civil", f: "estado_civil" }, { h: "Filhos", f: "filhos" },
+    { h: "Cônjuge", f: "conjuge" }, { h: "Profissão", f: "profissao" },
+    { h: "Hobbies", f: "hobbies" }, { h: "Status", f: "status" },
+    { h: "Perfil", f: "perfil" }, { h: "PL Inicial (R$)", f: "pl_inicial" },
+    { h: "Aporte Mensal (R$)", f: "aporte_mensal" }, { h: "Meta Patrimônio (R$)", f: "meta_patrimonio" },
+    { h: "Liquidez Desejada (R$)", f: "liquidez_desejada" }, { h: "Taxa Contratada", f: "taxa_contratada" },
+    { h: "Receita Mensal (R$)", f: "receita_mensal" }, { h: "Forma Pagamento", f: "forma_pagamento" },
+    { h: "Declaração IR", f: "declaracao_ir" }, { h: "Corretoras", f: "corretoras" },
+    { h: "Origem", f: "origem_cliente" }, { h: "Grupo", f: "grupo_nome" },
+    { h: "Seguro de Vida", f: "seguro_vida" }, { h: "PGBL", f: "pgbl" },
+    { h: "VGBL", f: "vgbl" }, { h: "IPS Enviada", f: "envio_ips" },
+    { h: "Sucessão", f: "sucessao" }, { h: "Desbalanceado", f: "cliente_desbalanceado" },
+    { h: "Início Carteira", f: "inicio_carteira" }, { h: "Última Reunião", f: "ultima_reuniao" },
+    { h: "Próxima Reunião", f: "proxima_reuniao" }, { h: "Último Relatório", f: "ultimo_relatorio" },
+    { h: "Periodicidade Reunião", f: "periodicidade_reuniao" }, { h: "Periodicidade Relatório", f: "periodicidade_relatorio" },
+    { h: "Observação Rápida", f: "observacao_rapida" }, { h: "Planejamento", f: "planejamento" },
+    { h: "Observações", f: "observacoes" }, { h: "Link Rebalanceamento", f: "link_rebalanceamento" },
+  ];
+
+  const exportXlsx = () => {
+    const wb = XLSX.utils.book_new();
+    const rows = [
+      COLS.map((c) => c.h),
+      ...clients.map((cl) => COLS.map((c) => {
+        const v = cl[c.f] ?? cl[Object.keys(EMPTY_CLIENT).find((k) => k.replace(/_([a-z])/g, (_, l) => l.toUpperCase()) === c.f.replace(/_([a-z])/g, (_, l) => l.toUpperCase()))] ?? "";
+        if (typeof v === "boolean") return v ? "Sim" : "Não";
+        return v ?? "";
+      })),
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"] = COLS.map(() => ({ wch: 20 }));
+    XLSX.utils.book_append_sheet(wb, ws, "Clientes");
+    XLSX.writeFile(wb, "clientes.xlsx");
+    setToast({ type: "success", text: `${clients.length} clientes exportados.` });
+  };
+
+  const importXlsx = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      try {
+        const wb = XLSX.read(ev.target.result, { type: "binary" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+        if (data.length < 2) { setToast({ type: "error", text: "Planilha vazia." }); return; }
+        const headers = data[0];
+        const colIdx = {};
+        COLS.forEach((c) => { const i = headers.indexOf(c.h); if (i >= 0) colIdx[c.f] = i; });
+        let count = 0;
+        for (const row of data.slice(1)) {
+          if (!row[colIdx["nome"]]) continue;
+          const entry = { ...EMPTY_CLIENT };
+          COLS.forEach((c) => {
+            if (colIdx[c.f] === undefined) return;
+            const val = row[colIdx[c.f]];
+            if (["seguro_vida", "pgbl", "vgbl", "envio_ips", "sucessao", "cliente_desbalanceado"].includes(c.f)) {
+              entry[c.f] = val === "Sim" || val === true;
+            } else {
+              entry[c.f] = val ?? "";
+            }
+          });
+          entry.id = cuid();
+          entry.status = entry.status || "ativo";
+          await saveClient(entry, true);
+          count++;
+        }
+        setToast({ type: "success", text: `${count} clientes importados.` });
+      } catch {
+        setToast({ type: "error", text: "Erro ao ler planilha." });
+      }
+    };
+    reader.readAsBinaryString(file);
+    e.target.value = "";
+  };
+
   const SortIcon = ({ col }) => {
     if (sortCol !== col) return null;
     return <span style={{ color: B.navy, fontSize: 10 }}>{sortDir === "asc" ? "▲" : "▼"}</span>;
@@ -76,7 +158,12 @@ export default function Clients() {
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
         <SecH eyebrow="Carteira" title="Clientes" desc="Gestão completa da sua carteira." />
-        <button onClick={openNew} style={{ padding: "8px 18px", background: B.brand, color: "white", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Novo Cliente</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input ref={importRef} type="file" accept=".xlsx,.xls" style={{ display: "none" }} onChange={importXlsx} />
+          <button onClick={() => importRef.current?.click()} style={{ padding: "8px 14px", background: "white", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>↑ Importar</button>
+          <button onClick={exportXlsx} style={{ padding: "8px 14px", background: "white", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>↓ Exportar</button>
+          <button onClick={openNew} style={{ padding: "8px 18px", background: B.brand, color: "white", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Novo Cliente</button>
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 18 }}>
@@ -187,11 +274,7 @@ export default function Clients() {
 
             <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Origem</div>
             <div style={{ gridColumn: "1/-1" }}>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
-                {LEAD_ORIGENS.map((o) => (
-                  <button key={o} type="button" onClick={() => setForm((f) => ({ ...f, origem_cliente: o }))} style={{ padding: "5px 14px", borderRadius: 999, border: "1px solid", fontSize: 11, fontWeight: 700, cursor: "pointer", background: (form.origem_cliente || form.origemCliente) === o ? B.navy : "white", color: (form.origem_cliente || form.origemCliente) === o ? "white" : "#8899bb", borderColor: (form.origem_cliente || form.origemCliente) === o ? B.navy : "#dde4f5" }}>{o}</button>
-                ))}
-              </div>
+              <Sel label="Origem" value={form.origem_cliente || form.origemCliente || ""} onChange={F("origem_cliente")} opts={[{ v: "", l: "—" }, ...LEAD_ORIGENS.map((o) => ({ v: o, l: o }))]} />
             </div>
 
             <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Datas</div>
@@ -201,18 +284,8 @@ export default function Clients() {
             <Inp label="Último Relatório" value={form.ultimo_relatorio ?? form.ultimoRelatorio ?? ""} onChange={F("ultimo_relatorio")} type="date" />
 
             <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Reuniões e Relatórios</div>
-            <div>
-              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 4 }}>Periodicidade Reunião</label>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
-                {PERIOD_OPTIONS.map((o) => <button key={o} type="button" onClick={() => setForm((f) => ({ ...f, periodicidade_reuniao: o }))} style={{ padding: "5px 12px", borderRadius: 999, border: "1px solid", fontSize: 11, fontWeight: 700, cursor: "pointer", background: (form.periodicidade_reuniao || form.periodicidadeReuniao) === o ? B.navy : "white", color: (form.periodicidade_reuniao || form.periodicidadeReuniao) === o ? "white" : "#8899bb", borderColor: (form.periodicidade_reuniao || form.periodicidadeReuniao) === o ? B.navy : "#dde4f5" }}>{o}</button>)}
-              </div>
-            </div>
-            <div>
-              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 4 }}>Periodicidade Relatório</label>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
-                {PERIOD_OPTIONS.map((o) => <button key={o} type="button" onClick={() => setForm((f) => ({ ...f, periodicidade_relatorio: o }))} style={{ padding: "5px 12px", borderRadius: 999, border: "1px solid", fontSize: 11, fontWeight: 700, cursor: "pointer", background: (form.periodicidade_relatorio || form.periodicidadeRelatorio) === o ? B.navy : "white", color: (form.periodicidade_relatorio || form.periodicidadeRelatorio) === o ? "white" : "#8899bb", borderColor: (form.periodicidade_relatorio || form.periodicidadeRelatorio) === o ? B.navy : "#dde4f5" }}>{o}</button>)}
-              </div>
-            </div>
+            <Sel label="Periodicidade Reunião" value={form.periodicidade_reuniao || form.periodicidadeReuniao || "Trimestral"} onChange={F("periodicidade_reuniao")} opts={PERIOD_OPTIONS.map((o) => ({ v: o, l: o }))} />
+            <Sel label="Periodicidade Relatório" value={form.periodicidade_relatorio || form.periodicidadeRelatorio || ""} onChange={F("periodicidade_relatorio")} opts={[{ v: "", l: "—" }, ...PERIOD_OPTIONS.map((o) => ({ v: o, l: o }))]} />
 
             <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Atributos</div>
             <div style={{ gridColumn: "1/-1", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0 16px" }}>
