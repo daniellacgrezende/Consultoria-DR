@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useData } from "../hooks/useData";
 import { B } from "../utils/constants";
 import { fmtDate, fmtDaysUntil } from "../utils/formatters";
-import { daysSince, daysUntil, getPeriodDays, getReuniaoStatusDynamic, today } from "../utils/helpers";
+import { daysSince, daysUntil, getPeriodDays, getReuniaoStatusDynamic, today, slugify } from "../utils/helpers";
 import Card from "../components/ui/Card";
 import MiniStat from "../components/ui/MiniStat";
 import Avatar from "../components/ui/Avatar";
@@ -101,7 +101,7 @@ export default function Meetings() {
                     <td style={{ padding: "11px 14px" }}><span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700, background: st.bg, color: st.color }}>{st.label}</span></td>
                     <td style={{ padding: "11px 14px" }}>
                       <div style={{ display: "flex", gap: 5 }}>
-                        <button onClick={() => navigate(`/clients/${c.id}`)} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Ficha</button>
+                        <button onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Ficha</button>
                         {!isAvisado && c.diasSem !== null && c.diasSem > Math.round(c.periodDays * 0.83) && (
                           <button onClick={() => markAvisado(c)} style={{ background: "#ecfeff", color: "#0891B2", border: "1px solid #a5f3fc", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Avisei</button>
                         )}
@@ -141,7 +141,7 @@ export default function Meetings() {
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: B.navy }}>{fmtDate(r.data)}</div>
-                    <button onClick={() => navigate(`/clients/${cl?.id}`)} style={{ fontSize: 10, color: "#2563eb", background: "none", border: "none", cursor: "pointer", fontWeight: 600, marginTop: 2 }}>Ver ficha →</button>
+                    <button onClick={() => cl && navigate(`/clients/${slugify(cl.nome)}`)} style={{ fontSize: 10, color: "#2563eb", background: "none", border: "none", cursor: "pointer", fontWeight: 600, marginTop: 2 }}>Ver ficha →</button>
                   </div>
                 </div>
                 <p style={{ margin: 0, fontSize: 12, color: "#445566", lineHeight: 1.7, whiteSpace: "pre-wrap", background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 8, padding: "10px 12px" }}>{r.texto}</p>

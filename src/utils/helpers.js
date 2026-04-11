@@ -1,5 +1,6 @@
 export const huid = () => `h-${Math.random().toString(36).slice(2, 9)}`;
 export const cuid = () => `c-${Math.random().toString(36).slice(2, 8)}-${Date.now().toString(36)}`;
+export const slugify = (nome) => (nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 export const today = () => new Date().toISOString().slice(0, 10);
 
 export const daysSince = (d) => {

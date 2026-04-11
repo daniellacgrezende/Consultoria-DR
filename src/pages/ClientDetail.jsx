@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useData } from "../hooks/useData";
 import { B, PERFIL_MAP, EMPTY_CLIENT, LEAD_ORIGENS, PERIOD_OPTIONS } from "../utils/constants";
 import { money, fmtDate } from "../utils/formatters";
-import { getCurva, getCurrentPL, calcIdade, daysSince, getPeriodDays, getReuniaoStatusDynamic, getLiquidezAtual, huid, today } from "../utils/helpers";
+import { getCurva, getCurrentPL, calcIdade, daysSince, getPeriodDays, getReuniaoStatusDynamic, getLiquidezAtual, huid, today, slugify } from "../utils/helpers";
 import Card from "../components/ui/Card";
 import Avatar from "../components/ui/Avatar";
 import Modal from "../components/ui/Modal";
@@ -12,11 +12,12 @@ import { InlineText, InlineDate } from "../components/ui/InlineEdit";
 import { SecH, Inp, Sel, Tarea, Chk } from "../components/ui/FormFields";
 
 export default function ClientDetail() {
-  const { id } = useParams();
+  const { slug } = useParams();
   const navigate = useNavigate();
   const { clients, history, aportes, reunioes, saveClient, deleteClient, saveReuniao, deleteReuniao, saveAporte, setToast } = useData();
 
-  const client = clients.find((c) => c.id === id);
+  const client = clients.find((c) => slugify(c.nome) === slug || c.id === slug);
+  const id = client?.id;
 
   // ─── Edit modal ───
   const [editModal, setEditModal] = useState(false);
@@ -161,7 +162,7 @@ export default function ClientDetail() {
             <div style={{ fontWeight: 700, fontSize: 12, color: "#7c3aed", marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid #ddd6fe" }}>Contas vinculadas — {grupoNome}</div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               {[client, ...grupoMembers].map((c) => (
-                <div key={c.id} onClick={() => c.id !== id && navigate(`/clients/${c.id}`)} style={{ background: "white", border: "1px solid #ddd6fe", borderRadius: 9, padding: "10px 14px", cursor: c.id !== id ? "pointer" : "default", flex: 1, minWidth: 160 }}>
+                <div key={c.id} onClick={() => c.id !== id && navigate(`/clients/${slugify(c.nome)}`)} style={{ background: "white", border: "1px solid #ddd6fe", borderRadius: 9, padding: "10px 14px", cursor: c.id !== id ? "pointer" : "default", flex: 1, minWidth: 160 }}>
                   <div style={{ fontWeight: 700, fontSize: 12, color: "#7c3aed" }}>{c.nome}{c.id === id && <span style={{ fontSize: 10, color: "#a78bfa", marginLeft: 6 }}>(esta)</span>}</div>
                   <div style={{ fontSize: 11, color: "#6b7280" }}>{c.profissao || "—"}</div>
                 </div>

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useData } from "../hooks/useData";
 import { B, PERFIL_MAP, EMPTY_CLIENT, LEAD_ORIGENS, PERIOD_OPTIONS } from "../utils/constants";
 import { money, fmtDate } from "../utils/formatters";
-import { getCurva, getCurrentPL, daysSince, cuid } from "../utils/helpers";
+import { getCurva, getCurrentPL, daysSince, cuid, slugify } from "../utils/helpers";
 import Card from "../components/ui/Card";
 import MiniStat from "../components/ui/MiniStat";
 import Avatar from "../components/ui/Avatar";
@@ -72,7 +72,7 @@ export default function Clients() {
     const newId = await saveClient(form, isNew);
     setModal(false);
     setToast({ type: "success", text: isNew ? "Cadastrado." : "Atualizado." });
-    if (isNew && newId) navigate(`/clients/${newId}`);
+    if (isNew && newId) navigate(`/clients/${slugify(form.nome)}`);
   };
 
   const openNew = () => { setEditId(null); setForm({ ...EMPTY_CLIENT }); setModal(true); };
@@ -256,7 +256,7 @@ export default function Clients() {
                 const hasSeguro = c.seguro_vida || c.seguroVida;
                 const grupoNome = c.grupo_nome || c.grupoNome;
                 return (
-                  <tr key={c.id} onClick={() => navigate(`/clients/${c.id}`)} style={{ cursor: "pointer", borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
+                  <tr key={c.id} onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ cursor: "pointer", borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
                     <td style={{ padding: "10px 12px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <Avatar nome={c.nome} size={32} />

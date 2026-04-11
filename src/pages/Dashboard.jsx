@@ -4,7 +4,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { useData } from "../hooks/useData";
 import { B, PERFIL_MAP, CURVA_MAP } from "../utils/constants";
 import { money } from "../utils/formatters";
-import { getCurva, getCurrentPL, daysSince, getPeriodDays } from "../utils/helpers";
+import { getCurva, getCurrentPL, daysSince, getPeriodDays, slugify } from "../utils/helpers";
 import { supabase } from "../lib/supabase";
 import Card from "../components/ui/Card";
 import MiniStat from "../components/ui/MiniStat";
@@ -96,7 +96,7 @@ export default function Dashboard() {
           <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Top 10 por Patrimônio</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {top10.map((c, i) => (
-              <div key={c.id} onClick={() => navigate(`/clients/${c.id}`)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, cursor: "pointer", background: i === 0 ? "#fef3c7" : i === 1 ? "#f1f5f9" : i === 2 ? "#fef9ef" : "white", border: `1px solid ${i < 3 ? "#e8dfc8" : B.border}` }}>
+              <div key={c.id} onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, cursor: "pointer", background: i === 0 ? "#fef3c7" : i === 1 ? "#f1f5f9" : i === 2 ? "#fef9ef" : "white", border: `1px solid ${i < 3 ? "#e8dfc8" : B.border}` }}>
                 <span style={{ fontSize: 13, fontWeight: 700, color: i === 0 ? "#b45309" : i === 1 ? "#475569" : i === 2 ? "#92400e" : B.gray, width: 20, textAlign: "center" }}>{i + 1}</span>
                 <Avatar nome={c.nome} size={32} />
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -173,7 +173,7 @@ export default function Dashboard() {
                 {ufFilter && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
                     {cls.map((c) => (
-                      <span key={c.id} onClick={() => navigate(`/clients/${c.id}`)} style={{ fontSize: 10, fontWeight: 600, background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 999, padding: "1px 8px", cursor: "pointer" }}>{c.nome.split(" ")[0]}</span>
+                      <span key={c.id} onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 10, fontWeight: 600, background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 999, padding: "1px 8px", cursor: "pointer" }}>{c.nome.split(" ")[0]}</span>
                     ))}
                   </div>
                 )}

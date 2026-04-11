@@ -38,7 +38,7 @@ function AppRoutes() {
         <Route path="calendar" element={<Calendar />} />
         <Route path="tasks" element={<Tasks />} />
         <Route path="clients" element={<Clients />} />
-        <Route path="clients/:id" element={<ClientDetail />} />
+        <Route path="clients/:slug" element={<ClientDetail />} />
         <Route path="evolucao" element={<EvolucaoPatrimonial />} />
         <Route path="meetings" element={<Meetings />} />
         <Route path="allocation" element={<AssetAllocation />} />
