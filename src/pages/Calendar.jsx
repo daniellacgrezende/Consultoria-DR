@@ -257,33 +257,42 @@ export default function Calendar() {
         </div>
       </Card>
 
-      {/* Eventos do mês */}
-      {monthEvents.length > 0 && (
-        <Card style={{ marginTop: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>📋 Eventos de {monthName}</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {monthEvents.sort((a, b) => a.start_at.localeCompare(b.start_at)).map((ev) => {
-              const t = EVENT_TYPES.find((t) => t.v === ev.type);
-              const cl = ev.client_id ? clients.find((c) => c.id === ev.client_id) : null;
-              const isOutlook = !!ev.outlook_event_id;
-              return (
-                <div key={ev.id} onClick={() => openEdit(ev)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, border: `1px solid ${B.border}`, cursor: "pointer", borderLeft: `3px solid ${t?.color || "#2563eb"}` }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, display: "flex", alignItems: "center", gap: 6 }}>
-                      {isOutlook && <span style={{ fontSize: 10, background: "#e1effe", color: "#0078d4", padding: "1px 6px", borderRadius: 4, fontWeight: 600 }}>Outlook</span>}
-                      {ev.title}
+      {/* Próximos 7 dias */}
+      {(() => {
+        const now = new Date();
+        const in7 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        const upcoming = events.filter((e) => {
+          const d = new Date(e.start_at);
+          return d >= now && d <= in7;
+        }).sort((a, b) => a.start_at.localeCompare(b.start_at));
+        if (!upcoming.length) return null;
+        return (
+          <Card style={{ marginTop: 16 }}>
+            <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Próximos eventos (7 dias)</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {upcoming.map((ev) => {
+                const t = EVENT_TYPES.find((t) => t.v === ev.type);
+                const cl = ev.client_id ? clients.find((c) => c.id === ev.client_id) : null;
+                const isOutlook = !!ev.outlook_event_id;
+                return (
+                  <div key={ev.id} onClick={() => openEdit(ev)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, border: `1px solid ${B.border}`, cursor: "pointer", borderLeft: `3px solid ${t?.color || "#2563eb"}` }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, display: "flex", alignItems: "center", gap: 6 }}>
+                        {isOutlook && <span style={{ fontSize: 10, background: "#e1effe", color: "#0078d4", padding: "1px 6px", borderRadius: 4, fontWeight: 600 }}>Outlook</span>}
+                        {ev.title}
+                      </div>
+                      <div style={{ fontSize: 11, color: B.gray }}>{new Date(ev.start_at).toLocaleString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })} {ev.location && `· ${ev.location}`}</div>
                     </div>
-                    <div style={{ fontSize: 11, color: B.gray }}>{new Date(ev.start_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })} {ev.location && `· ${ev.location}`}</div>
+                    {cl && <div style={{ display: "flex", alignItems: "center", gap: 6 }}><Avatar nome={cl.nome} size={24} /><span style={{ fontSize: 11, color: B.navy }}>{cl.nome.split(" ")[0]}</span></div>}
+                    <span style={{ fontSize: 10, fontWeight: 700, color: t?.color, background: `${t?.color}15`, padding: "2px 8px", borderRadius: 999 }}>{t?.l || ev.type}</span>
+                    <button onClick={(e) => { e.stopPropagation(); setDelConf(ev.id); }} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "4px 8px", fontSize: 10, cursor: "pointer" }}>🗑</button>
                   </div>
-                  {cl && <div style={{ display: "flex", alignItems: "center", gap: 6 }}><Avatar nome={cl.nome} size={24} /><span style={{ fontSize: 11, color: B.navy }}>{cl.nome.split(" ")[0]}</span></div>}
-                  <span style={{ fontSize: 10, fontWeight: 700, color: t?.color, background: `${t?.color}15`, padding: "2px 8px", borderRadius: 999 }}>{t?.l?.split(" ")[1] || ev.type}</span>
-                  <button onClick={(e) => { e.stopPropagation(); setDelConf(ev.id); }} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "4px 8px", fontSize: 10, cursor: "pointer" }}>🗑</button>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      )}
+                );
+              })}
+            </div>
+          </Card>
+        );
+      })()}
 
       {/* ═══ MODAL SYNC OUTLOOK ═══ */}
       <Modal open={syncModal} onClose={() => { setSyncModal(false); setSyncResult(null); }} wide>
