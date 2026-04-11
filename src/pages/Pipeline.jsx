@@ -29,7 +29,7 @@ function DaysBadge({ date }) {
   const bg    = crit ? "#FEF2F2" : warn ? "#FFFBEB" : "#F0FDF4";
   const color = crit ? "#DC2626" : warn ? "#B45309" : "#15803D";
   return (
-    <span style={{ fontSize: 10, fontWeight: 700, background: bg, color, borderRadius: 999, padding: "2px 7px" }}>
+    <span style={{ fontSize: 9, fontWeight: 700, background: bg, color, borderRadius: 999, padding: "1px 5px", whiteSpace: "nowrap" }}>
       {d === 0 ? "hoje" : `${d}d`}
     </span>
   );
@@ -60,8 +60,8 @@ function DraggableLeadCard({ lead, openEdit, moveEtapa }) {
           background: "white",
           border: `1px solid ${stale ? "#FDE68A" : B.border}`,
           borderLeft: `3px solid ${tc ? tc.dot : B.border}`,
-          borderRadius: 8,
-          padding: "12px 13px",
+          borderRadius: 7,
+          padding: "8px 10px",
           cursor: "pointer",
           boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
           transition: "box-shadow 0.15s",
@@ -70,33 +70,30 @@ function DraggableLeadCard({ lead, openEdit, moveEtapa }) {
         onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)")}
       >
         {/* Row 1: name + days */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 6, marginBottom: 6 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
-            <Avatar nome={lead.nome} size={26} />
-            <span style={{ fontWeight: 700, fontSize: 12.5, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {lead.nome}
-            </span>
-          </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 4, marginBottom: 4 }}>
+          <span style={{ fontWeight: 700, fontSize: 11, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1 }}>
+            {lead.nome}
+          </span>
           <DaysBadge date={lead.data_ultima_interacao} />
         </div>
 
         {/* Row 2: patrimônio */}
         {patrimonio > 0 && (
-          <div style={{ fontSize: 14, fontWeight: 800, color: "#15803D", marginBottom: 5, letterSpacing: "-0.4px" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#15803D", marginBottom: 4 }}>
             {money(patrimonio)}
           </div>
         )}
 
         {/* Row 3: origem + temperatura */}
-        <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", marginBottom: !isExit ? 8 : 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap", marginBottom: !isExit ? 6 : 0 }}>
           {lead.origem && (
-            <span style={{ fontSize: 10, color: B.muted, background: "#F8FAFF", border: `1px solid ${B.border}`, borderRadius: 4, padding: "1px 6px" }}>
+            <span style={{ fontSize: 9, color: B.muted, background: "#F8FAFF", border: `1px solid ${B.border}`, borderRadius: 4, padding: "1px 5px" }}>
               {lead.origem}
             </span>
           )}
           {tc && (
-            <span style={{ fontSize: 10, fontWeight: 700, background: tc.bg, color: tc.color, borderRadius: 999, padding: "1px 7px", display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ width: 5, height: 5, borderRadius: "50%", background: tc.dot, display: "inline-block" }} />
+            <span style={{ fontSize: 9, fontWeight: 700, background: tc.bg, color: tc.color, borderRadius: 999, padding: "1px 6px", display: "flex", alignItems: "center", gap: 3 }}>
+              <span style={{ width: 4, height: 4, borderRadius: "50%", background: tc.dot, display: "inline-block" }} />
               {tc.label}
             </span>
           )}
@@ -104,18 +101,18 @@ function DraggableLeadCard({ lead, openEdit, moveEtapa }) {
 
         {/* Row 4: quick actions */}
         {!isExit && (
-          <div style={{ display: "flex", gap: 4, marginTop: 2 }}>
+          <div style={{ display: "flex", gap: 3, marginTop: 1 }}>
             <button
               onClick={(e) => { e.stopPropagation(); moveEtapa(lead.id, "Cliente"); }}
-              style={{ flex: 1, fontSize: 9.5, fontWeight: 700, background: "#F0FDF4", color: "#15803D", border: "1px solid #BBF7D0", borderRadius: 5, padding: "4px 0", cursor: "pointer" }}
+              style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#F0FDF4", color: "#15803D", border: "1px solid #BBF7D0", borderRadius: 4, padding: "3px 0", cursor: "pointer" }}
             >✓ Converter</button>
             <button
               onClick={(e) => { e.stopPropagation(); moveEtapa(lead.id, "Perdido"); }}
-              style={{ flex: 1, fontSize: 9.5, fontWeight: 700, background: "#FFF1F2", color: "#BE123C", border: "1px solid #FECDD3", borderRadius: 5, padding: "4px 0", cursor: "pointer" }}
+              style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#FFF1F2", color: "#BE123C", border: "1px solid #FECDD3", borderRadius: 4, padding: "3px 0", cursor: "pointer" }}
             >✕ Perdido</button>
             <button
               onClick={(e) => { e.stopPropagation(); moveEtapa(lead.id, "Nutrição"); }}
-              style={{ flex: 1, fontSize: 9.5, fontWeight: 700, background: "#FEFCE8", color: "#92400E", border: "1px solid #FDE68A", borderRadius: 5, padding: "4px 0", cursor: "pointer" }}
+              style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#FEFCE8", color: "#92400E", border: "1px solid #FDE68A", borderRadius: 4, padding: "3px 0", cursor: "pointer" }}
             >↻ Nutrir</button>
           </div>
         )}
