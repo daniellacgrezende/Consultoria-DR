@@ -320,7 +320,7 @@ export default function Pipeline() {
     setToast({ type: "success", text: `Movido para ${etapa}` });
   };
 
-  const openNew = () => { setEditId(null); setForm({ ...EMPTY_LEAD, data_primeira_reuniao: today(), data_ultima_interacao: today() }); setModal(true); };
+  const openNew = () => { setEditId(null); setForm({ ...EMPTY_LEAD, data_ultima_interacao: today() }); setModal(true); };
   const openEdit = (l) => { setEditId(l.id); setForm({ ...l }); setModal(true); };
   const F = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const fmtPhone = (v) => {
@@ -493,14 +493,7 @@ export default function Pipeline() {
             <Inp label="E-mail" value={form.email || ""} onChange={F("email")} />
             <Sel label="Origem" value={form.origem || "Indicação"} onChange={F("origem")} opts={LEAD_ORIGENS.map((o) => ({ v: o, l: o }))} />
             <Inp label="Patrimônio Estimado (R$)" type="number" value={form.patrimonio_estimado || ""} onChange={F("patrimonio_estimado")} />
-            <Sel label="Temperatura" value={form.temperatura || "morna"} onChange={F("temperatura")} opts={LEAD_TEMPERATURAS.map((t) => ({ v: t.v, l: t.l }))} />
-            <Sel label="Tipo Reunião" value={form.tipo_reuniao || ""} onChange={F("tipo_reuniao")} opts={[{ v: "", l: "—" }, ...TIPO_REUNIAO.map((t) => ({ v: t.v, l: t.l }))]} />
             <Sel label="Etapa" value={form.etapa || "Lead"} onChange={F("etapa")} opts={LEAD_ETAPAS.map((e) => ({ v: e, l: e }))} />
-            <Inp label="Data 1ª Reunião" type="date" value={form.data_primeira_reuniao || ""} onChange={F("data_primeira_reuniao")} />
-            <Inp label="Última Interação" type="date" value={form.data_ultima_interacao || ""} onChange={F("data_ultima_interacao")} />
-            {(form.etapa === "Perdido" || form.etapa === "Nutrição") && (
-              <div style={{ gridColumn: "1/-1" }}><Inp label="Motivo" value={form.motivo_negativa || ""} onChange={F("motivo_negativa")} /></div>
-            )}
             <div style={{ gridColumn: "1/-1" }}><Tarea label="Notas" value={form.notas || ""} onChange={F("notas")} placeholder="Registre tudo sobre o lead..." /></div>
           </div>
           <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
