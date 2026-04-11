@@ -1,4 +1,8 @@
 import { useState } from "react";
+import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, closestCenter } from "@dnd-kit/core";
+import { useSortable } from "@dnd-kit/sortable";
+import { useDroppable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import { useData } from "../hooks/useData";
 import { B, LEAD_ETAPAS, LEAD_ETAPA_COLORS, LEAD_ORIGENS, EMPTY_LEAD, LEAD_TEMPERATURAS, TIPO_REUNIAO } from "../utils/constants";
 import { money, fmtDate } from "../utils/formatters";
@@ -10,6 +14,64 @@ import Modal from "../components/ui/Modal";
 import { TempBadge } from "../components/ui/Badge";
 import { Inp, Sel, Tarea, SecH } from "../components/ui/FormFields";
 
+/* ─── Draggable Lead Card ─── */
+function DraggableLeadCard({ lead, openEdit, moveEtapa }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: lead.id, data: { lead } });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    background: "white",
+    border: `1px solid ${B.border}`,
+    borderRadius: 9,
+    padding: "10px 12px",
+    cursor: "grab",
+    touchAction: "none",
+  };
+  const etapa = lead.etapa;
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={() => openEdit(lead)}>
+      <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 3 }}>{lead.nome}</div>
+      {lead.origem && <div style={{ fontSize: 10, color: B.gray, marginBottom: 4 }}>📍 {lead.origem}</div>}
+      {lead.patrimonio_estimado > 0 && <div style={{ fontSize: 11, fontWeight: 600, color: "#16a34a", marginBottom: 4 }}>{money(lead.patrimonio_estimado)}</div>}
+      {etapa !== "Convertido" && etapa !== "Perdido" && (
+        <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
+          <button onClick={(e) => { e.stopPropagation(); moveEtapa(lead.id, "Convertido"); }} style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 6, padding: "4px", cursor: "pointer" }}>✅</button>
+          <button onClick={(e) => { e.stopPropagation(); moveEtapa(lead.id, "Perdido"); }} style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "4px", cursor: "pointer" }}>❌</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Droppable Column ─── */
+function DroppableColumn({ etapa, children }) {
+  const { setNodeRef, isOver } = useDroppable({ id: etapa });
+  const ec = LEAD_ETAPA_COLORS[etapa];
+  return (
+    <div ref={setNodeRef} style={{ background: isOver ? "#eef2ff" : "#f8faff", border: `1px solid ${isOver ? "#818cf8" : B.border}`, borderRadius: 12, padding: 12, minHeight: 200, transition: "all 0.2s" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <span style={{ fontSize: 10, fontWeight: 800, color: ec.color, background: ec.bg, border: `1px solid ${ec.border}`, borderRadius: 999, padding: "3px 10px" }}>{etapa}</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: B.gray }}>{children?.length || 0}</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Overlay Card (shown while dragging) ─── */
+function OverlayCard({ lead }) {
+  return (
+    <div style={{ background: "white", border: `2px solid ${B.brand}`, borderRadius: 9, padding: "10px 12px", boxShadow: "0 8px 24px rgba(0,0,0,0.15)", width: 200 }}>
+      <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 3 }}>{lead.nome}</div>
+      {lead.origem && <div style={{ fontSize: 10, color: B.gray }}>📍 {lead.origem}</div>}
+      {lead.patrimonio_estimado > 0 && <div style={{ fontSize: 11, fontWeight: 600, color: "#16a34a" }}>{money(lead.patrimonio_estimado)}</div>}
+    </div>
+  );
+}
+
 export default function Pipeline() {
   const { leads, saveLead, deleteLead, radar, saveRadar, deleteRadar, setLeads, setToast } = useData();
   const [modal, setModal] = useState(false);
@@ -18,6 +80,25 @@ export default function Pipeline() {
   const [view, setView] = useState("pipeline");
   const [etapaFilter, setEtapaFilter] = useState("todas");
   const [subTab, setSubTab] = useState("pipeline");
+  const [activeDragLead, setActiveDragLead] = useState(null);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  const handleDragStart = (event) => {
+    const lead = leads.find((l) => l.id === event.active.id);
+    if (lead) setActiveDragLead(lead);
+  };
+
+  const handleDragEnd = (event) => {
+    setActiveDragLead(null);
+    const { active, over } = event;
+    if (!over) return;
+    const leadId = active.id;
+    const targetEtapa = over.id;
+    const lead = leads.find((l) => l.id === leadId);
+    if (!lead || !LEAD_ETAPAS.includes(targetEtapa) || lead.etapa === targetEtapa) return;
+    moveEtapa(leadId, targetEtapa);
+  };
 
   // ─── Radar state ───
   const [radarModal, setRadarModal] = useState(false);
@@ -131,36 +212,22 @@ export default function Pipeline() {
           </div>
 
           {view === "pipeline" ? (
-            <div style={{ display: "grid", gridTemplateColumns: `repeat(${LEAD_ETAPAS.length}, 1fr)`, gap: 12, alignItems: "start" }}>
-              {LEAD_ETAPAS.map((etapa) => {
-                const ec = LEAD_ETAPA_COLORS[etapa];
-                const etapaLeads = leads.filter((l) => l.etapa === etapa);
-                return (
-                  <div key={etapa} style={{ background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 12, padding: 12, minHeight: 200 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: ec.color, background: ec.bg, border: `1px solid ${ec.border}`, borderRadius: 999, padding: "3px 10px" }}>{etapa}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: B.gray }}>{etapaLeads.length}</span>
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+              <div style={{ display: "grid", gridTemplateColumns: `repeat(${LEAD_ETAPAS.length}, 1fr)`, gap: 12, alignItems: "start" }}>
+                {LEAD_ETAPAS.map((etapa) => {
+                  const etapaLeads = leads.filter((l) => l.etapa === etapa);
+                  return (
+                    <DroppableColumn key={etapa} etapa={etapa}>
                       {etapaLeads.map((l) => (
-                        <div key={l.id} onClick={() => openEdit(l)} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 9, padding: "10px 12px", cursor: "pointer" }}>
-                          <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 3 }}>{l.nome}</div>
-                          {l.origem && <div style={{ fontSize: 10, color: B.gray, marginBottom: 4 }}>📍 {l.origem}</div>}
-                          {l.patrimonio_estimado > 0 && <div style={{ fontSize: 11, fontWeight: 600, color: "#16a34a", marginBottom: 4 }}>{money(l.patrimonio_estimado)}</div>}
-                          {etapa !== "Convertido" && etapa !== "Perdido" && (
-                            <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
-                              <button onClick={(e) => { e.stopPropagation(); moveEtapa(l.id, "Convertido"); }} style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 6, padding: "4px", cursor: "pointer" }}>✅</button>
-                              <button onClick={(e) => { e.stopPropagation(); moveEtapa(l.id, "Perdido"); }} style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "4px", cursor: "pointer" }}>❌</button>
-                            </div>
-                          )}
-                        </div>
+                        <DraggableLeadCard key={l.id} lead={l} openEdit={openEdit} moveEtapa={moveEtapa} />
                       ))}
                       {etapaLeads.length === 0 && <div style={{ padding: "20px 0", textAlign: "center", color: "#c4c9d4", fontSize: 11 }}>Nenhum lead</div>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                    </DroppableColumn>
+                  );
+                })}
+              </div>
+              <DragOverlay>{activeDragLead ? <OverlayCard lead={activeDragLead} /> : null}</DragOverlay>
+            </DndContext>
           ) : (
             <Card style={{ padding: 0, overflow: "hidden" }}>
               <div style={{ overflowX: "auto" }}>
