@@ -9,6 +9,7 @@ import Card from "../components/ui/Card";
 import Avatar from "../components/ui/Avatar";
 import SearchBox from "../components/ui/SearchBox";
 import { PBadge } from "../components/ui/Badge";
+import Modal from "../components/ui/Modal";
 import { Inp, SecH } from "../components/ui/FormFields";
 
 const ASSET_CLASSES = ["renda_fixa", "renda_variavel", "multimercado", "internacional", "alternativos"];

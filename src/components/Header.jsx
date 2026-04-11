@@ -21,8 +21,6 @@ export default function Header() {
       borderBottom: `1px solid ${B.border}`, position: "sticky", top: 0, zIndex: 40,
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
-        <span style={{ color: B.muted }}>CRM 360</span>
-        <span style={{ color: B.muted }}>›</span>
         <span style={{ color: B.black, fontWeight: 600 }}>{pageName}</span>
       </div>
       <button onClick={signOut} style={{

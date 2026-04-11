@@ -74,26 +74,20 @@ export const DOCUMENT_TYPES = [
 ];
 
 export const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: "Home", group: null },
-  { id: "pipeline", label: "Pipeline", icon: "Target", group: "vendas" },
-  { id: "calendar", label: "Calendário", icon: "Calendar", group: "vendas" },
-  { id: "tasks", label: "Tarefas", icon: "CheckSquare", group: "vendas" },
-  { id: "repasse", label: "Repasse", icon: "DollarSign", group: "vendas" },
-  { id: "clients", label: "Clientes", icon: "Users", group: "clientes" },
-  { id: "meetings", label: "Reuniões", icon: "ClipboardList", group: "clientes" },
-  { id: "seguro", label: "Seguro de Vida", icon: "Shield", group: "clientes" },
-  { id: "allocation", label: "Alocação", icon: "PieChart", group: "clientes" },
-  { id: "reports", label: "Relatórios", icon: "TrendingUp", group: "relatorios" },
-  { id: "backup", label: "Back-Up", icon: "HardDrive", group: "config" },
-  { id: "settings", label: "Configurações", icon: "Settings", group: "config" },
+  { id: "dashboard", label: "Dashboard", icon: "Home" },
+  { id: "pipeline", label: "Pipeline", icon: "Target" },
+  { id: "tasks", label: "Tarefas", icon: "CheckSquare" },
+  { id: "calendar", label: "Calendário", icon: "Calendar" },
+  { id: "meetings", label: "Reuniões", icon: "ClipboardList" },
+  { id: "clients", label: "Clientes", icon: "Users" },
+  { id: "allocation", label: "Alocação", icon: "PieChart" },
+  { id: "repasse", label: "Repasse", icon: "DollarSign" },
+  { id: "reports", label: "Relatórios", icon: "TrendingUp" },
+  { id: "noticias", label: "Notícias", icon: "Newspaper" },
+  { id: "seguro", label: "Seguro de Vida", icon: "Shield" },
+  { id: "backup", label: "Back-Up", icon: "HardDrive" },
+  { id: "settings", label: "Configurações", icon: "Settings" },
 ];
-
-export const NAV_GROUPS = {
-  vendas: "MEU PAINEL",
-  clientes: "CLIENTES",
-  relatorios: "RELATÓRIOS",
-  config: "CONFIGURAÇÕES",
-};
 
 export const EMPTY_CLIENT = {
   nome: "", dataNascimento: "", cidade: "", uf: "", estadoCivil: "", filhos: "", conjuge: "",

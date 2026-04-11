@@ -1,21 +1,16 @@
-import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { B, NAV_ITEMS, NAV_GROUPS } from "../utils/constants";
+import { B, NAV_ITEMS } from "../utils/constants";
 import { useAuth } from "../contexts/AuthContext";
 import Avatar from "./ui/Avatar";
-import { Home, Target, Calendar, CheckSquare, DollarSign, Users, ClipboardList, Shield, PieChart, TrendingUp, HardDrive, Settings } from "lucide-react";
+import { Home, Target, Calendar, CheckSquare, DollarSign, Users, ClipboardList, Shield, PieChart, TrendingUp, HardDrive, Settings, Newspaper } from "lucide-react";
 
-const ICON_MAP = { Home, Target, Calendar, CheckSquare, DollarSign, Users, ClipboardList, Shield, PieChart, TrendingUp, HardDrive, Settings };
+const ICON_MAP = { Home, Target, Calendar, CheckSquare, DollarSign, Users, ClipboardList, Shield, PieChart, TrendingUp, HardDrive, Settings, Newspaper };
 
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
   const current = location.pathname.replace("/", "") || "dashboard";
-  const [groups, setGroups] = useState({ vendas: true, clientes: true, relatorios: true, config: true });
-
-  const standalone = NAV_ITEMS.filter((i) => !i.group);
-  const grouped = Object.entries(NAV_GROUPS);
 
   const itemStyle = (active) => ({
     display: "flex", alignItems: "center", gap: 10, width: "100%",
@@ -49,7 +44,7 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: "0 8px", display: "flex", flexDirection: "column", gap: 1 }}>
-        {standalone.map((item) => (
+        {NAV_ITEMS.map((item) => (
           <button key={item.id} onClick={() => navigate(`/${item.id === "dashboard" ? "" : item.id}`)}
             style={itemStyle(current === item.id)}
             onMouseEnter={(e) => { if (current !== item.id) { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "rgba(255,255,255,0.92)"; } }}
@@ -57,33 +52,6 @@ export default function Sidebar() {
           >
             {renderIcon(item.icon, current === item.id)}{item.label}
           </button>
-        ))}
-
-        <div style={{ height: 1, background: "rgba(255,255,255,0.10)", margin: "8px 8px" }} />
-
-        {grouped.map(([key, label]) => (
-          <div key={key} style={{ marginBottom: 2 }}>
-            <button onClick={() => setGroups((g) => ({ ...g, [key]: !g[key] }))} style={{
-              width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "6px 16px", background: "none", border: "none", cursor: "pointer",
-              color: "rgba(255,255,255,0.40)", fontSize: 9, fontWeight: 700,
-              letterSpacing: "2px", textTransform: "uppercase", fontFamily: "inherit",
-            }}>
-              <span>{label}</span>
-              <span style={{ fontSize: 8, transition: "transform 0.2s", transform: groups[key] ? "rotate(0)" : "rotate(-90deg)" }}>▼</span>
-            </button>
-            <div style={{ overflow: "hidden", maxHeight: groups[key] ? 500 : 0, transition: "max-height 0.25s ease" }}>
-              {NAV_ITEMS.filter((i) => i.group === key).map((item) => (
-                <button key={item.id} onClick={() => navigate(`/${item.id}`)}
-                  style={itemStyle(current === item.id)}
-                  onMouseEnter={(e) => { if (current !== item.id) { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "rgba(255,255,255,0.92)"; } }}
-                  onMouseLeave={(e) => { if (current !== item.id) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,0.65)"; } }}
-                >
-                  {renderIcon(item.icon, current === item.id)}{item.label}
-                </button>
-              ))}
-            </div>
-          </div>
         ))}
       </nav>
 

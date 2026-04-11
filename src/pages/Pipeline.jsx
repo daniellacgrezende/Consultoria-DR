@@ -187,27 +187,15 @@ export default function Pipeline() {
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
-        <SecH eyebrow="Pipeline & Radar" title="Gestão de Leads" desc="Funil de leads e radar de prospecção." />
+        <SecH eyebrow="Vendas" title="Pipeline" desc="Funil de leads e gestão comercial." />
         <div style={{ display: "flex", gap: 8 }}>
-          {subTab === "pipeline" && (
-            <>
-              <button onClick={() => setView((v) => (v === "pipeline" ? "lista" : "pipeline"))} style={{ padding: "8px 14px", background: "white", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{view === "pipeline" ? "Lista" : "Pipeline"}</button>
-              <button onClick={openNew} style={{ padding: "8px 18px", background: B.brand, color: "white", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Novo Lead</button>
-            </>
-          )}
-          {subTab === "radar" && <button onClick={openRadarNew} style={{ padding: "8px 18px", background: "#7c3aed", color: "white", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Adicionar ao Radar</button>}
+          <button onClick={() => setView((v) => (v === "pipeline" ? "lista" : "pipeline"))} style={{ padding: "8px 14px", background: "white", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{view === "pipeline" ? "Lista" : "Pipeline"}</button>
+          <button onClick={openNew} style={{ padding: "8px 18px", background: B.brand, color: "white", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Novo Lead</button>
         </div>
       </div>
 
-      {/* Sub tabs */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 20, background: "rgba(6,24,65,0.07)", borderRadius: 10, padding: 4, width: "fit-content" }}>
-        {[{ id: "pipeline", label: "Funil de Leads" }, { id: "radar", label: "Radar" }].map((t) => (
-          <button key={t.id} onClick={() => setSubTab(t.id)} style={{ padding: "7px 18px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: subTab === t.id ? B.navy : "transparent", color: subTab === t.id ? "white" : "#8899bb" }}>{t.label}</button>
-        ))}
-      </div>
-
-      {/* ═══ PIPELINE TAB ═══ */}
-      {subTab === "pipeline" && (
+      {/* ═══ PIPELINE ═══ */}
+      {(
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 12, marginBottom: 20 }}>
             <MiniStat label="Total" value={leads.length} sub="cadastrados" />
@@ -294,47 +282,6 @@ export default function Pipeline() {
       )}
 
       {/* ═══ RADAR TAB ═══ */}
-      {subTab === "radar" && (
-        <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
-            <MiniStat label="No Radar" value={radar.length} sub="potenciais a abordar" />
-            <MiniStat label="Alta Prioridade" value={radar.filter((r) => r.prioridade === "Alta").length} warn={radar.filter((r) => r.prioridade === "Alta").length > 0} />
-            <MiniStat label="AUC Mapeado" value={money(radar.reduce((s, r) => s + Number(r.patrimonio_estimado || 0), 0))} sub="patrimônio estimado" />
-          </div>
-          <Card style={{ padding: 0, overflow: "hidden" }}>
-            <div style={{ padding: "14px 18px", borderBottom: `1px solid ${B.border}` }}><span style={{ fontWeight: 700, fontSize: 13, color: B.navy }}>Prospects ({radar.length})</span></div>
-            {radarSorted.length === 0 ? <div style={{ padding: 40, textAlign: "center", color: B.gray }}>Nenhum prospect. Clique em "+ Adicionar ao Radar".</div> : (
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                  <thead><tr style={{ background: "#f5f7ff" }}>{["Nome", "Origem", "AUC", "Prioridade", "Mapeado em", ""].map((h) => (<th key={h} style={{ padding: "11px 14px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}` }}>{h}</th>))}</tr></thead>
-                  <tbody>
-                    {radarSorted.map((r, i) => {
-                      const pc = priorColors[r.prioridade] || priorColors["Média"];
-                      return (
-                        <tr key={r.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
-                          <td style={{ padding: "11px 14px" }}><div style={{ display: "flex", alignItems: "center", gap: 8 }}><Avatar nome={r.nome} size={28} /><div><div style={{ fontWeight: 700, color: B.navy }}>{r.nome}</div>{r.telefone && <div style={{ fontSize: 10, color: B.gray }}>{r.telefone}</div>}</div></div></td>
-                          <td style={{ padding: "11px 14px", color: B.gray, fontSize: 12 }}>{r.origem || "—"}</td>
-                          <td style={{ padding: "11px 14px", fontWeight: 700, color: "#7c3aed" }}>{r.patrimonio_estimado ? money(r.patrimonio_estimado) : "—"}</td>
-                          <td style={{ padding: "11px 14px" }}><span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700, background: pc.bg, color: pc.color, border: `1px solid ${pc.border}` }}>{r.prioridade}</span></td>
-                          <td style={{ padding: "11px 14px", color: B.gray, fontSize: 12 }}>{fmtDate(r.data_mapeamento)}</td>
-                          <td style={{ padding: "11px 14px" }}>
-                            <div style={{ display: "flex", gap: 6 }}>
-                              <button onClick={() => moveRadarToLead(r)} style={{ background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>→ Funil</button>
-                              <button onClick={() => openRadarEdit(r)} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer" }}>Editar</button>
-                              <button onClick={() => setRadarDelConf(r.id)} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer" }}>Remover</button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Card>
-        </>
-      )}
-
       {/* ═══ MODAL LEAD ═══ */}
       <Modal open={modal} onClose={() => setModal(false)} wide>
         <div style={{ padding: "26px 30px" }}>
@@ -364,51 +311,6 @@ export default function Pipeline() {
         </div>
       </Modal>
 
-      {/* ═══ MODAL RADAR ═══ */}
-      <Modal open={radarModal} onClose={() => setRadarModal(false)}>
-        <div style={{ padding: "26px 30px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-            <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: B.navy }}>{radarEditId ? "Editar Prospect" : "Adicionar ao Radar"}</h3>
-            <button onClick={() => setRadarModal(false)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: B.gray }}>×</button>
-          </div>
-          <Inp label="Nome *" value={radarForm.nome} onChange={(e) => setRadarForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Nome do prospect" />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Inp label="E-mail" value={radarForm.email || ""} onChange={(e) => setRadarForm((f) => ({ ...f, email: e.target.value }))} />
-            <Inp label="Telefone" value={radarForm.telefone || ""} onChange={(e) => setRadarForm((f) => ({ ...f, telefone: e.target.value }))} />
-          </div>
-          <Inp label="Origem" value={radarForm.origem || ""} onChange={(e) => setRadarForm((f) => ({ ...f, origem: e.target.value }))} />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Inp label="Patrimônio Estimado" type="number" value={radarForm.patrimonio_estimado || ""} onChange={(e) => setRadarForm((f) => ({ ...f, patrimonio_estimado: e.target.value }))} />
-            <Inp label="Data Mapeamento" type="date" value={radarForm.data_mapeamento || ""} onChange={(e) => setRadarForm((f) => ({ ...f, data_mapeamento: e.target.value }))} />
-          </div>
-          <div style={{ marginBottom: 13 }}>
-            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 6 }}>Prioridade</label>
-            <div style={{ display: "flex", gap: 8 }}>
-              {["Alta", "Média", "Baixa"].map((p) => {
-                const colors = { "Alta": ["#fef2f2", "#dc2626", "#fecaca"], "Média": ["#fffbeb", "#92400e", "#fde68a"], "Baixa": ["#f0fdf4", "#16a34a", "#bbf7d0"] }[p];
-                return <button key={p} type="button" onClick={() => setRadarForm((f) => ({ ...f, prioridade: p }))} style={{ flex: 1, padding: "9px", border: `2px solid ${radarForm.prioridade === p ? colors[2] : "#dde4f5"}`, borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13, background: radarForm.prioridade === p ? colors[0] : "white", color: radarForm.prioridade === p ? colors[1] : "#8899bb" }}>{p}</button>;
-              })}
-            </div>
-          </div>
-          <Tarea label="Observações" value={radarForm.observacoes || ""} onChange={(e) => setRadarForm((f) => ({ ...f, observacoes: e.target.value }))} />
-          <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={() => setRadarModal(false)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
-            <button onClick={saveRadarEntry} style={{ flex: 2, padding: "10px", background: "#7c3aed", color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>{radarEditId ? "SALVAR" : "ADICIONAR"}</button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Confirm delete radar */}
-      <Modal open={!!radarDelConf} onClose={() => setRadarDelConf(null)}>
-        <div style={{ padding: "26px 30px" }}>
-          <h3 style={{ margin: "0 0 10px", color: "#dc2626", fontSize: 16, fontWeight: 700 }}>Remover do Radar?</h3>
-          <p style={{ color: B.gray, fontSize: 13, marginBottom: 22 }}>Esta ação não pode ser desfeita.</p>
-          <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={() => setRadarDelConf(null)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>
-            <button onClick={() => delRadarEntry(radarDelConf)} style={{ flex: 1, padding: "10px", background: "#fee2e2", border: "1px solid #fecaca", color: "#dc2626", borderRadius: 7, cursor: "pointer", fontWeight: 700 }}>Remover</button>
-          </div>
-        </div>
-      </Modal>
     </>
   );
 }
