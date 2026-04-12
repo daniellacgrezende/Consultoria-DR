@@ -50,7 +50,7 @@ export const LEAD_ORIGENS = [
   "Grupo Primo - Campanhas",
 ];
 
-export const PERIOD_OPTIONS = ["Mensal", "Bimestral", "Trimestral", "Semestral", "Anual"];
+export const PERIOD_OPTIONS = ["Mensal", "Trimestral", "Quadrimestral", "Semestral", "Anual"];
 
 export const LEAD_TEMPERATURAS = [
   { v: "fria", l: "Fria", color: "#3b82f6" },
@@ -77,13 +77,13 @@ export const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: "Home" },
   { id: "pipeline", label: "Pipeline", icon: "Target" },
   { id: "tasks", label: "Tarefas", icon: "CheckSquare" },
-  { id: "calendar", label: "Calendário", icon: "Calendar" },
   { id: "meetings", label: "Reuniões", icon: "ClipboardList" },
   { id: "relatorios", label: "Relatórios", icon: "FileText" },
   { id: "clients", label: "Clientes", icon: "Users" },
   { id: "evolucao", label: "Evolução Patrimonial", icon: "BarChart2" },
   { id: "allocation", label: "Alocação", icon: "PieChart" },
   { id: "repasse", label: "Repasse", icon: "DollarSign" },
+  { id: "calendar", label: "Calendário", icon: "Calendar" },
   { id: "noticias", label: "Notícias", icon: "Newspaper" },
 
   { id: "backup", label: "Back-Up", icon: "HardDrive" },
