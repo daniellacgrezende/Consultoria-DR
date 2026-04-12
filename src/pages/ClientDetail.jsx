@@ -45,6 +45,8 @@ export default function ClientDetail() {
   // ─── Aporte modal ───
   const [aptModal, setAptModal] = useState(false);
   const [aptForm, setAptForm] = useState({ client_id: "", data: "", tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false });
+  const [aptHistOpen, setAptHistOpen] = useState(false);
+  const [aptYearFilter, setAptYearFilter] = useState("todos");
 
   if (!client) return (
     <div style={{ padding: 40, textAlign: "center", color: B.gray }}>
@@ -87,6 +89,17 @@ export default function ClientDetail() {
   const clientAportes = aportes.filter((a) => a.client_id === id).sort((a, b) => b.data.localeCompare(a.data));
   const totalAp = clientAportes.filter((a) => a.tipo === "aporte").reduce((s, a) => s + Number(a.valor || 0), 0);
   const totalRe = clientAportes.filter((a) => a.tipo === "resgate").reduce((s, a) => s + Number(a.valor || 0), 0);
+  const liquido = totalAp - totalRe;
+  const aporteYears = [...new Set(clientAportes.map((a) => a.data?.slice(0, 4)).filter(Boolean))].sort((a, b) => b - a);
+  // Média mensal: distribuída pelo intervalo entre primeiro e último aporte
+  const aptDatas = clientAportes.map((a) => a.data).filter(Boolean).sort();
+  const mediaMes = (() => {
+    if (aptDatas.length === 0) return 0;
+    const first = new Date(aptDatas[0] + "T12:00:00");
+    const last = new Date(aptDatas[aptDatas.length - 1] + "T12:00:00");
+    const months = Math.max(1, (last.getFullYear() - first.getFullYear()) * 12 + (last.getMonth() - first.getMonth()) + 1);
+    return totalAp / months;
+  })();
 
   const clientReunioes = reunioes.filter((r) => r.client_id === id).sort((a, b) => b.data.localeCompare(a.data));
 
@@ -174,25 +187,11 @@ export default function ClientDetail() {
           </div>
         </Card>
 
-        {/* Status e Perfil */}
-        <Card>
-          <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Status e Perfil</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Status</div>
-              <InlineSelect value={client.status || "ativo"} onSave={(v) => updateField("status", v)} opts={[{ v: "ativo", l: "Ativo" }, { v: "inativo", l: "Inativo" }]} />
-            </div>
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Perfil</div>
-              <InlineSelect value={client.perfil || "moderado"} onSave={(v) => updateField("perfil", v)} opts={Object.entries(PERFIL_MAP).map(([k, v]) => ({ v: k, l: v.label }))} />
-            </div>
-          </div>
-        </Card>
-
         {/* Financeiro */}
-        <Card>
+        <Card style={{ gridColumn: "1/-1" }}>
           <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Financeiro</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Perfil</div><InlineSelect value={client.perfil || "moderado"} onSave={(v) => updateField("perfil", v)} opts={Object.entries(PERFIL_MAP).map(([k, v]) => ({ v: k, l: v.label }))} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>PL Inicial</div><InlineText value={client.pl_inicial} onSave={(v) => updateField("pl_inicial", v)} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Aporte Mensal</div><InlineText value={client.aporte_mensal} onSave={(v) => updateField("aporte_mensal", v)} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Meta Patrimonial</div><InlineText value={client.meta_patrimonio} onSave={(v) => updateField("meta_patrimonio", v)} /></div>
@@ -290,25 +289,100 @@ export default function ClientDetail() {
           <span>Aportes e Resgates</span>
           <button onClick={() => { setAptForm({ client_id: id, data: today(), tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false }); setAptModal(true); }} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Registrar</button>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 12 }}>
-          <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "10px 12px" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Aportado</div><div style={{ fontSize: 14, fontWeight: 700, color: "#16a34a" }}>{money(totalAp)}</div></div>
-          <div style={{ background: "#fff5f5", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 12px" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Resgatado</div><div style={{ fontSize: 14, fontWeight: 700, color: "#dc2626" }}>{money(totalRe)}</div></div>
-          <div style={{ background: "#f0f4ff", border: `1px solid ${B.border}`, borderRadius: 8, padding: "10px 12px" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Reserva</div><div style={{ fontSize: 14, fontWeight: 700, color: B.navy }}>{money(liqAtual)}</div></div>
-        </div>
-        {clientAportes.length === 0 ? <div style={{ padding: 12, textAlign: "center", color: B.gray, fontSize: 12 }}>Nenhuma movimentação.</div> : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {clientAportes.slice(0, 10).map((a) => (
-              <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", borderRadius: 6, background: a.tipo === "aporte" ? "#f0fdf4" : "#fff5f5", border: `1px solid ${a.tipo === "aporte" ? "#dcfce7" : "#fee2e2"}` }}>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "+" : "−"}</span>
-                  <span style={{ fontSize: 11, color: B.gray }}>{fmtDate(a.data)}</span>
-                  {a.observacao && <span style={{ fontSize: 10, color: "#9baabf", fontStyle: "italic" }}>{a.observacao}</span>}
-                </div>
-                <span style={{ fontSize: 12, fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "+" : "-"}{money(a.valor)}</span>
-              </div>
-            ))}
+
+        {/* Stats principais */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 12 }}>
+          <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "10px 12px" }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Aportado</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#16a34a" }}>{money(totalAp)}</div>
           </div>
-        )}
+          <div style={{ background: "#fff5f5", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 12px" }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Resgatado</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#dc2626" }}>{money(totalRe)}</div>
+          </div>
+          <div style={{ background: liquido >= 0 ? "#f0fdf4" : "#fff5f5", border: `1px solid ${liquido >= 0 ? "#bbf7d0" : "#fecaca"}`, borderRadius: 8, padding: "10px 12px" }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Líquido</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: liquido >= 0 ? "#16a34a" : "#dc2626" }}>{liquido >= 0 ? "+" : ""}{money(liquido)}</div>
+          </div>
+          <div style={{ background: "#f5f3ff", border: "1px solid #ddd6fe", borderRadius: 8, padding: "10px 12px" }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Média/Mês</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#7c3aed" }}>{money(mediaMes)}</div>
+          </div>
+        </div>
+
+        {/* Liquidez definida x atual */}
+        {(client.liquidez_desejada || liqAtual > 0) && (() => {
+          const desejada = Number(client.liquidez_desejada || 0);
+          const pct = desejada > 0 ? Math.min(100, Math.round((liqAtual / desejada) * 100)) : null;
+          const ok = liqAtual >= desejada;
+          return (
+            <div style={{ background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 8, padding: "10px 14px", marginBottom: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase" }}>Liquidez</span>
+                {pct !== null && <span style={{ fontSize: 10, fontWeight: 700, color: ok ? "#16a34a" : "#c2410c" }}>{pct}%</span>}
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <div style={{ fontSize: 9, color: "#8899bb", textTransform: "uppercase", marginBottom: 2 }}>Definida</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: B.navy }}>{desejada > 0 ? money(desejada) : "—"}</div>
+                </div>
+                <div style={{ fontSize: 16, color: B.border }}>→</div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 9, color: "#8899bb", textTransform: "uppercase", marginBottom: 2 }}>Atual</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: liqAtual > 0 ? (ok ? "#16a34a" : "#c2410c") : B.gray }}>{liqAtual > 0 ? money(liqAtual) : "—"}</div>
+                </div>
+              </div>
+              {pct !== null && (
+                <div style={{ marginTop: 8, background: "#e5e7eb", borderRadius: 999, height: 5, overflow: "hidden" }}>
+                  <div style={{ width: `${pct}%`, height: "100%", background: ok ? "#16a34a" : "#f59e0b", borderRadius: 999, transition: "width 0.3s" }} />
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* Histórico colapsável */}
+        <div>
+          <button onClick={() => setAptHistOpen((o) => !o)}
+            style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: "4px 0", fontSize: 11, fontWeight: 600, color: B.navy }}>
+            <span style={{ fontSize: 10 }}>{aptHistOpen ? "▼" : "▶"}</span>
+            Ver histórico ({clientAportes.length} registro{clientAportes.length !== 1 ? "s" : ""})
+          </button>
+
+          {aptHistOpen && (
+            <div style={{ marginTop: 10 }}>
+              {/* Filtro por ano */}
+              {aporteYears.length > 1 && (
+                <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+                  {["todos", ...aporteYears].map((y) => (
+                    <button key={y} onClick={() => setAptYearFilter(y)}
+                      style={{ padding: "3px 12px", borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${aptYearFilter === y ? B.navy : B.border}`, background: aptYearFilter === y ? B.navy : "white", color: aptYearFilter === y ? "white" : B.gray }}>
+                      {y === "todos" ? "Todos" : y}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {/* Lista */}
+              {clientAportes.filter((a) => aptYearFilter === "todos" || a.data?.startsWith(aptYearFilter)).length === 0
+                ? <div style={{ padding: 12, textAlign: "center", color: B.gray, fontSize: 12 }}>Nenhuma movimentação.</div>
+                : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {clientAportes.filter((a) => aptYearFilter === "todos" || a.data?.startsWith(aptYearFilter)).map((a) => (
+                      <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", borderRadius: 6, background: a.tipo === "aporte" ? "#f0fdf4" : "#fff5f5", border: `1px solid ${a.tipo === "aporte" ? "#dcfce7" : "#fee2e2"}` }}>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "+" : "−"}</span>
+                          <span style={{ fontSize: 11, color: B.gray }}>{fmtDate(a.data)}</span>
+                          {a.observacao && <span style={{ fontSize: 10, color: "#9baabf", fontStyle: "italic" }}>{a.observacao}</span>}
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "+" : "-"}{money(a.valor)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )
+              }
+            </div>
+          )}
+        </div>
       </Card>
 
       {/* Reuniões */}
