@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useData } from "../hooks/useData";
 import { B } from "../utils/constants";
 import { fmtDate } from "../utils/formatters";
-import { daysSince, getPeriodDays, daysUntil, today, slugify } from "../utils/helpers";
+import { daysSince, getPeriodDays, daysUntil, today, slugify, addDays } from "../utils/helpers";
 import Card from "../components/ui/Card";
 import MiniStat from "../components/ui/MiniStat";
 import Avatar from "../components/ui/Avatar";
@@ -66,8 +66,10 @@ export default function Relatorios() {
   }).length;
 
   const marcarEnviado = async (c) => {
-    await saveClient({ ...c, ultimo_relatorio: today() }, false);
-    setToast({ type: "success", text: `Relatório de ${c.nome.split(" ")[0]} marcado como enviado hoje.` });
+    const period = getPeriodDays(c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal");
+    const proximoRelatorio = addDays(today(), period);
+    await saveClient({ ...c, ultimo_relatorio: today(), proximo_relatorio: proximoRelatorio }, false);
+    setToast({ type: "success", text: `Relatório de ${c.nome.split(" ")[0]} marcado como enviado. Próximo: ${proximoRelatorio.split("-").reverse().join("/")}` });
   };
 
   const toggleSort = (col) => {

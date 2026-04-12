@@ -49,7 +49,7 @@ export const getLiquidezAtual = (client, aportes) => {
 
 export const getPeriodDays = (p) => {
   if (!p) return 90;
-  const m = { mensal: 30, bimestral: 60, trimestral: 90, semestral: 180, anual: 365 };
+  const m = { mensal: 30, bimestral: 60, trimestral: 90, quadrimestral: 120, semestral: 180, anual: 365 };
   if (m[p?.toLowerCase()]) return m[p.toLowerCase()];
   const n = parseInt(p);
   return isNaN(n) ? 90 : n;

@@ -49,6 +49,13 @@ export default function Meetings() {
 
   const toggleSort = (col) => { if (sortCol === col) setSortDir((d) => d === "asc" ? "desc" : "asc"); else { setSortCol(col); setSortDir(col === "diasSem" ? "desc" : "asc"); } };
 
+  const markRealizada = async (c) => {
+    const period = getPeriodDays(c.periodicidade_reuniao || c.periodicidadeReuniao);
+    const proximaReuniao = addDays(today(), period);
+    await saveClient({ ...c, ultima_reuniao: today(), proxima_reuniao: proximaReuniao, avisado_em: "" }, false);
+    setToast({ type: "success", text: `Reunião com ${c.nome.split(" ")[0]} realizada. Próxima: ${proximaReuniao.split("-").reverse().join("/")}` });
+  };
+
   const markAvisado = async (c) => {
     await saveClient({ ...c, avisado_em: today() }, false);
     setToast({ type: "success", text: `${c.nome.split(" ")[0]} marcado como avisado.` });
@@ -152,6 +159,7 @@ export default function Meetings() {
                     <td style={{ padding: "11px 14px" }}>
                       <div style={{ display: "flex", gap: 5 }}>
                         <button onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Ficha</button>
+                        <button onClick={() => markRealizada(c)} style={{ background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Realizada</button>
                         {!isAvisado && c.diasSem !== null && c.diasSem > Math.round(c.periodDays * 0.83) && (
                           <button onClick={() => markAvisado(c)} style={{ background: "#ecfeff", color: "#0891B2", border: "1px solid #a5f3fc", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Avisei</button>
                         )}
