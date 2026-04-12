@@ -29,6 +29,9 @@ export default function ClientDetail() {
     await saveClient({ ...editForm, id: client.id }, false);
     setEditModal(false);
     setToast({ type: "success", text: "Cadastro atualizado." });
+    // Se o nome mudou, o slug mudou — redireciona para a URL correta
+    const newSlug = slugify(editForm.nome);
+    if (newSlug !== slug) navigate(`/clients/${newSlug}`, { replace: true });
   };
 
   // ─── Reunião modal ───
