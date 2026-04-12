@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useData } from "../hooks/useData";
 import { B, PERFIL_MAP, EMPTY_CLIENT, LEAD_ORIGENS, PERIOD_OPTIONS, STATUS_MAP } from "../utils/constants";
 import { money, fmtDate } from "../utils/formatters";
-import { getCurva, getCurrentPL, calcIdade, daysSince, getPeriodDays, getReuniaoStatusDynamic, getLiquidezAtual, huid, today, slugify } from "../utils/helpers";
+import { getCurva, getCurrentPL, calcIdade, daysSince, getPeriodDays, getReuniaoStatusDynamic, getLiquidezAtual, huid, today, slugify, addDays } from "../utils/helpers";
 import Card from "../components/ui/Card";
 import Avatar from "../components/ui/Avatar";
 import Modal from "../components/ui/Modal";
@@ -26,7 +26,10 @@ export default function ClientDetail() {
   const EF = (k) => (e) => setEditForm((f) => ({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
   const saveEdit = async () => {
     if (!editForm.nome?.trim()) { setToast({ type: "error", text: "Informe o nome." }); return; }
-    await saveClient({ ...editForm, id: client.id }, false);
+    const f = { ...editForm, id: client.id };
+    if (f.ultima_reuniao) f.proxima_reuniao = addDays(f.ultima_reuniao, getPeriodDays(f.periodicidade_reuniao || "Trimestral"));
+    if (f.ultimo_relatorio) f.proximo_relatorio = addDays(f.ultimo_relatorio, getPeriodDays(f.periodicidade_relatorio || "Mensal"));
+    await saveClient(f, false);
     setEditModal(false);
     setToast({ type: "success", text: "Cadastro atualizado." });
     // Se o nome mudou, o slug mudou — redireciona para a URL correta
@@ -50,7 +53,27 @@ export default function ClientDetail() {
   );
 
   const updateField = async (field, value) => {
-    await saveClient({ ...client, [field]: value }, false);
+    const updates = { [field]: value };
+    // Auto-calcular próxima reunião
+    if (field === "ultima_reuniao" && value) {
+      const pDays = getPeriodDays(client.periodicidade_reuniao || client.periodicidadeReuniao);
+      updates.proxima_reuniao = addDays(value, pDays);
+    }
+    // Recalcular quando periodicidade muda e já tem última reunião
+    if (field === "periodicidade_reuniao" && (client.ultima_reuniao || client.ultimaReuniao)) {
+      const base = client.ultima_reuniao || client.ultimaReuniao;
+      updates.proxima_reuniao = addDays(base, getPeriodDays(value));
+    }
+    // Auto-calcular próximo relatório
+    if (field === "ultimo_relatorio" && value) {
+      const pDays = getPeriodDays(client.periodicidade_relatorio || client.periodicidadeRelatorio || "Mensal");
+      updates.proximo_relatorio = addDays(value, pDays);
+    }
+    if (field === "periodicidade_relatorio" && (client.ultimo_relatorio || client.ultimoRelatorio)) {
+      const base = client.ultimo_relatorio || client.ultimoRelatorio;
+      updates.proximo_relatorio = addDays(base, getPeriodDays(value || "Mensal"));
+    }
+    await saveClient({ ...client, ...updates }, false);
   };
 
   const pl = getCurrentPL(client, history);

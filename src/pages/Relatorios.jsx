@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useData } from "../hooks/useData";
 import { B } from "../utils/constants";
 import { fmtDate } from "../utils/formatters";
-import { daysSince, getPeriodDays, today, slugify } from "../utils/helpers";
+import { daysSince, getPeriodDays, daysUntil, today, slugify } from "../utils/helpers";
 import Card from "../components/ui/Card";
 import MiniStat from "../components/ui/MiniStat";
 import Avatar from "../components/ui/Avatar";
@@ -88,6 +88,55 @@ export default function Relatorios() {
         <MiniStat label="Em Dia" value={emDia} />
         <MiniStat label="Clientes Ativos" value={active.length} />
       </div>
+
+      {/* Alertas */}
+      {(() => {
+        const pendentes = rows.filter((c) => c.diasSem === null || c.diasSem > c.periodDays).slice(0, 5);
+        const proximos = rows.filter((c) => {
+          const d = daysUntil(c.proximo_relatorio || c.proximoRelatorio);
+          return d !== null && d >= 0 && d <= 7;
+        }).slice(0, 5);
+        if (pendentes.length === 0 && proximos.length === 0) return null;
+        return (
+          <div style={{ display: "grid", gridTemplateColumns: proximos.length > 0 && pendentes.length > 0 ? "1fr 1fr" : "1fr", gap: 12, marginBottom: 18 }}>
+            {pendentes.length > 0 && (
+              <div style={{ background: "#fff5f5", border: "1px solid #fecaca", borderRadius: 10, padding: "14px 16px" }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "#dc2626", textTransform: "uppercase", marginBottom: 10 }}>Relatório pendente</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {pendentes.map((c) => (
+                    <div key={c.id} onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "6px 8px", borderRadius: 7, background: "white", border: "1px solid #fecaca" }}>
+                      <Avatar nome={c.nome} size={26} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
+                        <div style={{ fontSize: 10, color: "#dc2626", fontWeight: 600 }}>{c.diasSem === null ? "Nunca enviado" : `${c.diasSem}d sem relatório`} · {c.periodicidade_relatorio || "Mensal"}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {proximos.length > 0 && (
+              <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "14px 16px" }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "#1d4ed8", textTransform: "uppercase", marginBottom: 10 }}>Próximos relatórios (7 dias)</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {proximos.map((c) => {
+                    const d = daysUntil(c.proximo_relatorio || c.proximoRelatorio);
+                    return (
+                      <div key={c.id} onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "6px 8px", borderRadius: 7, background: "white", border: "1px solid #bfdbfe" }}>
+                        <Avatar nome={c.nome} size={26} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
+                          <div style={{ fontSize: 10, color: "#1d4ed8", fontWeight: 600 }}>{fmtDate(c.proximo_relatorio || c.proximoRelatorio)} · em {d}d</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Filtro por cliente */}
       <div style={{ display: "flex", gap: 10, marginBottom: 14, alignItems: "center" }}>
