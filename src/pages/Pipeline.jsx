@@ -317,6 +317,7 @@ export default function Pipeline() {
   const [reuniaoModal, setReuniaoModal] = useState(false);
   const [reuniaoLead, setReuniaoLead] = useState(null);
   const [reuniaoEtapa, setReuniaoEtapa] = useState("");
+  const [reuniaoRecusou, setReuniaoRecusou] = useState(false);
   const todayStr = today();
   const [reuniaoForm, setReuniaoForm] = useState({
     data: todayStr, horaInicio: "09:00", horaFim: "10:00",
@@ -357,6 +358,7 @@ export default function Pipeline() {
     if (ETAPAS_REUNIAO_KEYS.some((k) => etapaNorm.includes(k))) {
       setReuniaoLead(lead);
       setReuniaoEtapa(etapa);
+      setReuniaoRecusou(false);
       setReuniaoForm({ data: todayStr, horaInicio: "09:00", horaFim: "10:00", tipo: "presencial", local: "", notas: "", email: lead.email || "" });
       setReuniaoModal(true);
       return;
@@ -369,6 +371,15 @@ export default function Pipeline() {
 
   const confirmReuniao = async () => {
     if (!reuniaoLead) return;
+
+    if (reuniaoRecusou) {
+      // Apenas move o lead sem criar evento
+      await saveLead({ ...reuniaoLead, etapa: reuniaoEtapa, data_ultima_interacao: today() }, false);
+      setReuniaoModal(false);
+      setToast({ type: "success", text: `${reuniaoLead.nome.split(" ")[0]} movido para ${reuniaoEtapa} — sem agendamento.` });
+      return;
+    }
+
     const start = `${reuniaoForm.data}T${reuniaoForm.horaInicio}:00`;
     const end   = `${reuniaoForm.data}T${reuniaoForm.horaFim}:00`;
     const title = `Reunião com ${reuniaoLead.nome}`;
@@ -572,7 +583,7 @@ export default function Pipeline() {
             <button onClick={() => setReuniaoModal(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: B.gray }}>×</button>
           </div>
           {reuniaoLead && (
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 8, marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 8, marginBottom: 12 }}>
               <Avatar nome={reuniaoLead.nome} size={32} />
               <div>
                 <div style={{ fontWeight: 700, fontSize: 13, color: B.navy }}>{reuniaoLead.nome}</div>
@@ -584,7 +595,15 @@ export default function Pipeline() {
             </div>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" }}>
+          {/* Toggle: cliente recusou */}
+          <label style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer", padding: "9px 12px", borderRadius: 8, background: reuniaoRecusou ? "#fef2f2" : "#f8faff", border: `1px solid ${reuniaoRecusou ? "#fecaca" : B.border}`, marginBottom: 14, userSelect: "none" }}>
+            <input type="checkbox" checked={reuniaoRecusou} onChange={(e) => setReuniaoRecusou(e.target.checked)} style={{ accentColor: "#dc2626", width: 15, height: 15 }} />
+            <span style={{ fontSize: 12, fontWeight: 600, color: reuniaoRecusou ? "#dc2626" : B.gray }}>
+              Cliente não quer se reunir — mover sem agendar
+            </span>
+          </label>
+
+          {!reuniaoRecusou && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" }}>
             {/* Email — pré-preenchido do cadastro do lead */}
             <div style={{ gridColumn: "1/-1" }}>
               <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 4 }}>
@@ -627,11 +646,13 @@ export default function Pipeline() {
             <div style={{ gridColumn: "1/-1" }}>
               <Tarea label="Pauta / Observações" value={reuniaoForm.notas} onChange={RF("notas")} placeholder="Tópicos a discutir, contexto da reunião..." />
             </div>
-          </div>
+          </div>}
 
-          <div style={{ marginTop: 12, padding: "10px 12px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, fontSize: 11, color: "#1d4ed8" }}>
-            Ao confirmar, o agendamento será salvo no <strong>Calendário</strong> e o Outlook abrirá com o convite pronto{reuniaoForm.email ? ` para ${reuniaoForm.email}` : ""}.
-          </div>
+          {!reuniaoRecusou && (
+            <div style={{ marginTop: 12, padding: "10px 12px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, fontSize: 11, color: "#1d4ed8" }}>
+              Ao confirmar, o agendamento será salvo no <strong>Calendário</strong> e o Outlook abrirá com o convite pronto{reuniaoForm.email ? ` para ${reuniaoForm.email}` : ""}.
+            </div>
+          )}
 
           <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
             <button onClick={() => setReuniaoModal(false)}
@@ -639,8 +660,8 @@ export default function Pipeline() {
               Cancelar
             </button>
             <button onClick={confirmReuniao}
-              style={{ flex: 2, padding: "10px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
-              CONFIRMAR E ABRIR OUTLOOK
+              style={{ flex: 2, padding: "10px", background: reuniaoRecusou ? "#dc2626" : B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+              {reuniaoRecusou ? "MOVER SEM AGENDAR" : "CONFIRMAR E ABRIR OUTLOOK"}
             </button>
           </div>
         </div>

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useData } from "../hooks/useData";
 import { B } from "../utils/constants";
 import { fmtDate, fmtDaysUntil } from "../utils/formatters";
-import { daysSince, daysUntil, getPeriodDays, getReuniaoStatusDynamic, today, slugify } from "../utils/helpers";
+import { daysSince, daysUntil, getPeriodDays, getReuniaoStatusDynamic, today, slugify, addDays } from "../utils/helpers";
 import Card from "../components/ui/Card";
 import MiniStat from "../components/ui/MiniStat";
 import Avatar from "../components/ui/Avatar";
@@ -52,6 +52,13 @@ export default function Meetings() {
   const markAvisado = async (c) => {
     await saveClient({ ...c, avisado_em: today() }, false);
     setToast({ type: "success", text: `${c.nome.split(" ")[0]} marcado como avisado.` });
+  };
+
+  const markRecusou = async (c) => {
+    const period = getPeriodDays(c.periodicidade_reuniao || c.periodicidadeReuniao);
+    const novaProxima = addDays(today(), period);
+    await saveClient({ ...c, avisado_em: "", proxima_reuniao: novaProxima }, false);
+    setToast({ type: "success", text: `${c.nome.split(" ")[0]} recusou — próxima reunião reagendada.` });
   };
 
   // Histórico filtrado
@@ -147,6 +154,9 @@ export default function Meetings() {
                         <button onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Ficha</button>
                         {!isAvisado && c.diasSem !== null && c.diasSem > Math.round(c.periodDays * 0.83) && (
                           <button onClick={() => markAvisado(c)} style={{ background: "#ecfeff", color: "#0891B2", border: "1px solid #a5f3fc", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Avisei</button>
+                        )}
+                        {(isAvisado || (c.diasSem !== null && c.diasSem > c.periodDays)) && (
+                          <button onClick={() => markRecusou(c)} style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Recusou</button>
                         )}
                       </div>
                     </td>
