@@ -44,10 +44,11 @@ export default function AssetAllocation() {
   // Gerenciar produtos
   const [classModal, setClassModal] = useState(false);
   const [newClassForm, setNewClassForm] = useState({ nome: "", color: "#6b7280" });
+  const [editClassModal, setEditClassModal] = useState(false);
+  const [editClassForm, setEditClassForm] = useState({ id: "", nome: "", color: "" });
   const [delClassConf, setDelClassConf] = useState(null);
 
   const classes = assetClasses.length > 0 ? assetClasses : FALLBACK_CLASSES;
-  const FIXED_CLASS_IDS = ["renda_fixa", "renda_variavel", "multimercado", "internacional", "alternativos"];
 
   useEffect(() => {
     Promise.all([
@@ -181,6 +182,18 @@ export default function AssetAllocation() {
     setToast({ type: "success", text: "Produto adicionado." });
   };
 
+  const openEditClass = (c) => {
+    setEditClassForm({ id: c.id, nome: c.nome, color: c.color });
+    setEditClassModal(true);
+  };
+
+  const saveEditClass = async () => {
+    if (!editClassForm.nome?.trim()) { setToast({ type: "error", text: "Informe o nome." }); return; }
+    await saveAssetClass({ ...editClassForm, ordem: classes.find((c) => c.id === editClassForm.id)?.ordem || 1 }, false);
+    setEditClassModal(false);
+    setToast({ type: "success", text: "Produto atualizado." });
+  };
+
   const confirmDeleteClass = async (id) => {
     await deleteAssetClass(id);
     setDelClassConf(null);
@@ -219,14 +232,13 @@ export default function AssetAllocation() {
         </div>
 
         {/* Legenda dos produtos */}
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
           {classes.map((c) => (
-            <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: B.gray, background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 999, padding: "2px 8px" }}>
-              <div style={{ width: 7, height: 7, borderRadius: "50%", background: c.color }} />
+            <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: B.navy, background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 999, padding: "4px 10px" }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: c.color, flexShrink: 0 }} />
               {c.nome}
-              {!FIXED_CLASS_IDS.includes(c.id) && (
-                <button onClick={() => setDelClassConf(c.id)} style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 10, padding: "0 0 0 2px", lineHeight: 1 }}>×</button>
-              )}
+              <button onClick={() => openEditClass(c)} style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer", fontSize: 10, padding: "0 2px", lineHeight: 1, fontWeight: 600 }} title="Editar">✎</button>
+              <button onClick={() => setDelClassConf(c.id)} style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 10, padding: "0 2px", lineHeight: 1 }} title="Remover">×</button>
             </div>
           ))}
         </div>
@@ -439,6 +451,28 @@ export default function AssetAllocation() {
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => setClassModal(false)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.muted, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>
             <button onClick={saveNewClass} style={{ flex: 2, padding: "10px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700 }}>ADICIONAR</button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal Editar Produto */}
+      <Modal open={editClassModal} onClose={() => setEditClassModal(false)}>
+        <div style={{ padding: "26px 30px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: B.navy }}>Editar Produto / Classe</h3>
+            <button onClick={() => setEditClassModal(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: B.gray }}>×</button>
+          </div>
+          <Inp label="Nome *" value={editClassForm.nome} onChange={(e) => setEditClassForm((f) => ({ ...f, nome: e.target.value }))} />
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 6 }}>Cor</label>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <input type="color" value={editClassForm.color} onChange={(e) => setEditClassForm((f) => ({ ...f, color: e.target.value }))} style={{ width: 44, height: 36, border: `1px solid ${B.border}`, borderRadius: 6, cursor: "pointer", padding: 2 }} />
+              <span style={{ fontSize: 12, color: B.muted }}>{editClassForm.color}</span>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={() => setEditClassModal(false)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.muted, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>
+            <button onClick={saveEditClass} style={{ flex: 2, padding: "10px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700 }}>SALVAR</button>
           </div>
         </div>
       </Modal>
