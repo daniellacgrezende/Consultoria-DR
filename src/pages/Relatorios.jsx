@@ -1,9 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase";
 import { useData } from "../hooks/useData";
 import { B } from "../utils/constants";
 import { fmtDate } from "../utils/formatters";
-import { daysSince, getPeriodDays, daysUntil, today, slugify, addDays } from "../utils/helpers";
+import { daysSince, getPeriodDays, daysUntil, today, slugify, huid } from "../utils/helpers";
 import Card from "../components/ui/Card";
 import MiniStat from "../components/ui/MiniStat";
 import Avatar from "../components/ui/Avatar";
@@ -18,6 +19,21 @@ function getRelStatus(diasSem, periodDays) {
   return { label: "Em Dia", color: "#16a34a", bg: "#f0fdf4" };
 }
 
+// Calcula o 5o dia útil do mês (seg-sex)
+function get5thBusinessDay(year, month) {
+  let count = 0;
+  let day = 0;
+  while (count < 5) {
+    day++;
+    const d = new Date(year, month, day);
+    const dow = d.getDay();
+    if (dow !== 0 && dow !== 6) count++;
+  }
+  return day;
+}
+
+const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
 const TH = { padding: "10px 14px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: "1px solid rgba(10,8,9,0.06)", background: "#f5f7ff" };
 
 export default function Relatorios() {
@@ -29,7 +45,59 @@ export default function Relatorios() {
   const [showSug, setShowSug] = useState(false);
   const [filterClient, setFilterClient] = useState(null);
 
+  // ─── Checklist mensal ───
+  const [checklist, setChecklist] = useState([]);
+  const [checklistLoaded, setChecklistLoaded] = useState(false);
+
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const bd5 = get5thBusinessDay(now.getFullYear(), now.getMonth());
+  const bd5Date = new Date(now.getFullYear(), now.getMonth(), bd5);
+  const isPastBd5 = now >= bd5Date;
+
+  const loadChecklist = useCallback(async () => {
+    const { data } = await supabase.from("report_checklist").select("*").eq("month", currentMonth);
+    setChecklist(data || []);
+    setChecklistLoaded(true);
+  }, [currentMonth]);
+
+  useEffect(() => { loadChecklist(); }, [loadChecklist]);
+
   const active = useMemo(() => clients.filter((c) => c.status === "ativo"), [clients]);
+
+  const monthlyClients = useMemo(() =>
+    active.filter((c) => {
+      const p = (c.periodicidade_relatorio || c.periodicidadeRelatorio || "").toLowerCase();
+      return p === "mensal";
+    }).sort((a, b) => a.nome.localeCompare(b.nome)),
+  [active]);
+
+  const checkedMap = useMemo(() => {
+    const m = {};
+    checklist.forEach((r) => { m[r.client_id] = r; });
+    return m;
+  }, [checklist]);
+
+  const checkedCount = monthlyClients.filter((c) => checkedMap[c.id]?.checked).length;
+
+  const toggleCheck = async (clientId) => {
+    const existing = checkedMap[clientId];
+    if (existing) {
+      const newChecked = !existing.checked;
+      await supabase.from("report_checklist").update({ checked: newChecked, checked_at: newChecked ? new Date().toISOString() : null }).eq("id", existing.id);
+      setChecklist((p) => p.map((r) => r.id === existing.id ? { ...r, checked: newChecked, checked_at: newChecked ? new Date().toISOString() : null } : r));
+      if (newChecked) {
+        const cl = clients.find((c) => c.id === clientId);
+        if (cl) await saveClient({ ...cl, ultimo_relatorio: today() }, false);
+      }
+    } else {
+      const entry = { id: huid(), client_id: clientId, month: currentMonth, checked: true, checked_at: new Date().toISOString() };
+      const { data } = await supabase.from("report_checklist").insert(entry).select();
+      if (data) setChecklist((p) => [...p, data[0]]);
+      const cl = clients.find((c) => c.id === clientId);
+      if (cl) await saveClient({ ...cl, ultimo_relatorio: today() }, false);
+    }
+  };
 
   const rows = useMemo(() => {
     let r = active.map((c) => ({
@@ -66,10 +134,8 @@ export default function Relatorios() {
   }).length;
 
   const marcarEnviado = async (c) => {
-    const period = getPeriodDays(c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal");
-    const proximoRelatorio = addDays(today(), period);
-    await saveClient({ ...c, ultimo_relatorio: today(), proximo_relatorio: proximoRelatorio }, false);
-    setToast({ type: "success", text: `Relatório de ${c.nome.split(" ")[0]} marcado como enviado. Próximo: ${proximoRelatorio.split("-").reverse().join("/")}` });
+    await saveClient({ ...c, ultimo_relatorio: today() }, false);
+    setToast({ type: "success", text: `Relatório de ${c.nome.split(" ")[0]} marcado como enviado hoje.` });
   };
 
   const toggleSort = (col) => {
@@ -90,6 +156,62 @@ export default function Relatorios() {
         <MiniStat label="Em Dia" value={emDia} />
         <MiniStat label="Clientes Ativos" value={active.length} />
       </div>
+
+      {/* ═══ CHECKLIST MENSAL ═══ */}
+      {monthlyClients.length > 0 && (
+        <Card style={{ marginBottom: 18 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${B.border}` }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 14, color: B.navy }}>Envio Mensal — {MONTH_NAMES[now.getMonth()]} {now.getFullYear()}</div>
+              <div style={{ fontSize: 11, color: B.gray, marginTop: 2 }}>
+                Prazo: 5º dia útil ({bd5}/{String(now.getMonth() + 1).padStart(2, "0")})
+                {isPastBd5 && checkedCount < monthlyClients.length && (
+                  <span style={{ color: "#dc2626", fontWeight: 700, marginLeft: 8 }}>Prazo atingido</span>
+                )}
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: checkedCount === monthlyClients.length ? "#16a34a" : B.navy }}>
+                {checkedCount}/{monthlyClients.length}
+              </div>
+              <div style={{ width: 120, height: 8, background: "#e5e7eb", borderRadius: 999, overflow: "hidden" }}>
+                <div style={{ width: `${monthlyClients.length > 0 ? (checkedCount / monthlyClients.length) * 100 : 0}%`, height: "100%", background: checkedCount === monthlyClients.length ? "#16a34a" : "#2563eb", borderRadius: 999, transition: "width 0.3s" }} />
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {monthlyClients.map((c) => {
+              const isChecked = checkedMap[c.id]?.checked;
+              const checkedAt = checkedMap[c.id]?.checked_at;
+              return (
+                <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, border: `1px solid ${isChecked ? "#bbf7d0" : B.border}`, background: isChecked ? "#f0fdf4" : "white", cursor: "pointer", transition: "all 0.15s" }} onClick={() => toggleCheck(c.id)}>
+                  <div style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${isChecked ? "#16a34a" : "#cbd5e1"}`, background: isChecked ? "#16a34a" : "white", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}>
+                    {isChecked && <span style={{ color: "white", fontSize: 13, fontWeight: 700, lineHeight: 1 }}>✓</span>}
+                  </div>
+                  <Avatar nome={c.nome} size={28} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: isChecked ? "#16a34a" : B.navy, textDecoration: isChecked ? "line-through" : "none", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
+                    <div style={{ fontSize: 10, color: B.gray }}>{c.profissao || "—"}</div>
+                  </div>
+                  {isChecked && checkedAt && (
+                    <span style={{ fontSize: 10, color: "#16a34a", fontWeight: 600, whiteSpace: "nowrap" }}>
+                      Enviado {new Date(checkedAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
+                    </span>
+                  )}
+                  <button onClick={(e) => { e.stopPropagation(); navigate(`/clients/${slugify(c.nome)}`); }} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>Ficha</button>
+                </div>
+              );
+            })}
+          </div>
+
+          {checkedCount === monthlyClients.length && monthlyClients.length > 0 && (
+            <div style={{ marginTop: 12, padding: "10px 14px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, textAlign: "center", fontSize: 13, fontWeight: 700, color: "#16a34a" }}>
+              Todos os relatórios mensais foram enviados!
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Alertas */}
       {(() => {
