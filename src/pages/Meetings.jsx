@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useData } from "../hooks/useData";
 import { B } from "../utils/constants";
@@ -6,6 +6,7 @@ import { fmtDate } from "../utils/formatters";
 import { daysSince, daysUntil, getPeriodDays, today, slugify, addDays } from "../utils/helpers";
 import Card from "../components/ui/Card";
 import Avatar from "../components/ui/Avatar";
+import Modal from "../components/ui/Modal";
 import SearchBox from "../components/ui/SearchBox";
 import { SecH } from "../components/ui/FormFields";
 
@@ -57,6 +58,16 @@ export default function Meetings() {
   const [rhSearch, setRhSearch] = useState("");
   const [rhShowSug, setRhShowSug] = useState(false);
 
+  // Modal de confirmação de data
+  const [actionModal, setActionModal] = useState(null); // { type, client, date }
+  // Barra de desfazer
+  const [undoBar, setUndoBar] = useState(null); // { label, snapshot }
+  useEffect(() => {
+    if (!undoBar) return;
+    const t = setTimeout(() => setUndoBar(null), 6000);
+    return () => clearTimeout(t);
+  }, [undoBar]);
+
   const active = useMemo(() => clients.filter((c) => c.status === "ativo"), [clients]);
 
   /* ─── Enriched rows ─── */
@@ -92,25 +103,42 @@ export default function Meetings() {
   };
 
   /* ─── Actions ─── */
-  const markRealizada = async (c) => {
-    const period = getPeriodDays(c.periodicidade_reuniao || c.periodicidadeReuniao);
-    const proxima = addDays(today(), period);
-    await saveClient({ ...c, ultima_reuniao: today(), proxima_reuniao: proxima, avisado_em: "" }, false);
-    setToast({ type: "success", text: `Reunião realizada. Próxima: ${fmtDate(proxima)}` });
+  const openAction = (type, c) => setActionModal({ type, client: c, date: today() });
+
+  const confirmAction = async () => {
+    const { type, client: c, date } = actionModal;
+    // Snapshot para desfazer
+    const snapshot = {
+      ultima_reuniao: c.ultima_reuniao,
+      proxima_reuniao: c.proxima_reuniao,
+      avisado_em: c.avisado_em,
+    };
+
+    if (type === "realizada") {
+      const period = getPeriodDays(c.periodicidade_reuniao || c.periodicidadeReuniao);
+      const proxima = addDays(date, period);
+      await saveClient({ ...c, ultima_reuniao: date, proxima_reuniao: proxima, avisado_em: "" }, false);
+      setToast({ type: "success", text: `Reunião realizada em ${fmtDate(date)}. Próxima: ${fmtDate(proxima)}` });
+      setUndoBar({ label: `Desfazer "Realizada" — ${c.nome.split(" ")[0]}`, snapshot: { ...c, ...snapshot } });
+    } else if (type === "chamei") {
+      await saveClient({ ...c, avisado_em: date }, false);
+      setToast({ type: "success", text: `Registrado: chamou ${c.nome.split(" ")[0]} em ${fmtDate(date)}.` });
+      setUndoBar({ label: `Desfazer "Chamei" — ${c.nome.split(" ")[0]}`, snapshot: { ...c, ...snapshot } });
+    } else if (type === "recusou") {
+      const period = getPeriodDays(c.periodicidade_reuniao || c.periodicidadeReuniao);
+      const proxima = addDays(date, period);
+      await saveClient({ ...c, avisado_em: date, proxima_reuniao: proxima }, false);
+      setToast({ type: "success", text: `${c.nome.split(" ")[0]} não quis — próxima data ajustada.` });
+      setUndoBar({ label: `Desfazer "Não quis" — ${c.nome.split(" ")[0]}`, snapshot: { ...c, ...snapshot } });
+    }
+    setActionModal(null);
   };
 
-  // Chamei o cliente para reunião (independente de ele aceitar ou não)
-  const markChamei = async (c) => {
-    await saveClient({ ...c, avisado_em: today() }, false);
-    setToast({ type: "success", text: `Registrado: você chamou ${c.nome.split(" ")[0]} hoje.` });
-  };
-
-  // Cliente não quis reunião: registra a tentativa e avança a próxima data pelo período
-  const markRecusou = async (c) => {
-    const period = getPeriodDays(c.periodicidade_reuniao || c.periodicidadeReuniao);
-    const proxima = addDays(today(), period);
-    await saveClient({ ...c, avisado_em: today(), proxima_reuniao: proxima }, false);
-    setToast({ type: "success", text: `${c.nome.split(" ")[0]} não quis reunião — tentativa registrada, próxima data ajustada.` });
+  const handleUndo = async () => {
+    if (!undoBar) return;
+    await saveClient(undoBar.snapshot, false);
+    setToast({ type: "success", text: "Ação desfeita." });
+    setUndoBar(null);
   };
 
   /* ─── Alertas rápidos ─── */
@@ -191,7 +219,7 @@ export default function Meetings() {
                       </div>
                     </div>
                     <button
-                      onClick={() => markChamei(c)}
+                      onClick={() => openAction("chamei", c)}
                       style={{ fontSize: 9.5, fontWeight: 700, background: "#ECFEFF", color: "#0891B2", border: "1px solid #A5F3FC", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}
                     >Chamei</button>
                   </div>
@@ -314,22 +342,20 @@ export default function Meetings() {
                         >Ficha</button>
 
                         <button
-                          onClick={() => markRealizada(c)}
+                          onClick={() => openAction("realizada", c)}
                           style={{ fontSize: 10, fontWeight: 600, background: "#F0FDF4", color: "#16A34A", border: "1px solid #BBF7D0", borderRadius: 5, padding: "4px 9px", cursor: "pointer" }}
                         >Realizada</button>
 
-                        {/* Mostrar "Chamei" quando ainda não chamou ou chamou há muito tempo */}
                         {!chameiRecentemente && (
                           <button
-                            onClick={() => markChamei(c)}
+                            onClick={() => openAction("chamei", c)}
                             style={{ fontSize: 10, fontWeight: 600, background: "#ECFEFF", color: "#0891B2", border: "1px solid #A5F3FC", borderRadius: 5, padding: "4px 9px", cursor: "pointer" }}
                           >Chamei</button>
                         )}
 
-                        {/* Mostrar "Não quis" quando já chamou recentemente */}
                         {chameiRecentemente && c.st.key !== "emdia" && (
                           <button
-                            onClick={() => markRecusou(c)}
+                            onClick={() => openAction("recusou", c)}
                             style={{ fontSize: 10, fontWeight: 600, background: "#FFF1F2", color: "#BE123C", border: "1px solid #FECDD3", borderRadius: 5, padding: "4px 9px", cursor: "pointer" }}
                           >Não quis</button>
                         )}
@@ -401,6 +427,64 @@ export default function Meetings() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ─── Modal confirmação de data ─── */}
+      <Modal open={!!actionModal} onClose={() => setActionModal(null)}>
+        {actionModal && (
+          <div style={{ padding: "24px 28px", minWidth: 320 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: B.navy }}>
+                {actionModal.type === "realizada" ? "Reunião Realizada" : actionModal.type === "chamei" ? "Registrar Contato" : "Não Quis Reunião"}
+              </h3>
+              <button onClick={() => setActionModal(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: B.muted }}>×</button>
+            </div>
+
+            {/* Cliente */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 8, marginBottom: 16 }}>
+              <Avatar nome={actionModal.client.nome} size={28} />
+              <div style={{ fontSize: 13, fontWeight: 600, color: B.navy }}>{actionModal.client.nome}</div>
+            </div>
+
+            {/* Data */}
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 6 }}>
+              {actionModal.type === "realizada" ? "Data da reunião" : "Data do contato"}
+            </label>
+            <input
+              type="date"
+              value={actionModal.date}
+              max={today()}
+              onChange={(e) => setActionModal((m) => ({ ...m, date: e.target.value }))}
+              style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", border: `1px solid ${B.border}`, borderRadius: 7, fontSize: 14, color: B.navy, fontFamily: "inherit", outline: "none", marginBottom: 18 }}
+            />
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setActionModal(null)}
+                style={{ flex: 1, padding: "9px", background: "white", border: `1px solid ${B.border}`, color: B.muted, borderRadius: 7, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+                Cancelar
+              </button>
+              <button onClick={confirmAction}
+                style={{ flex: 2, padding: "9px", background: actionModal.type === "realizada" ? "#16a34a" : actionModal.type === "chamei" ? "#0891B2" : "#BE123C", color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+                {actionModal.type === "realizada" ? "Confirmar Realizada" : actionModal.type === "chamei" ? "Confirmar Contato" : "Confirmar Não Quis"}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* ─── Barra de desfazer ─── */}
+      {undoBar && (
+        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", background: B.navy, color: "white", borderRadius: 10, padding: "12px 20px", display: "flex", alignItems: "center", gap: 16, boxShadow: "0 4px 20px rgba(0,0,0,0.2)", zIndex: 1000, fontSize: 13, fontWeight: 500 }}>
+          <span>{undoBar.label}</span>
+          <button onClick={handleUndo}
+            style={{ background: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.3)", color: "white", borderRadius: 6, padding: "5px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+            Desfazer
+          </button>
+          <button onClick={() => setUndoBar(null)}
+            style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 16, cursor: "pointer", padding: 0, lineHeight: 1 }}>
+            ×
+          </button>
         </div>
       )}
     </>
