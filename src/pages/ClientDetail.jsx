@@ -235,20 +235,24 @@ export default function ClientDetail() {
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Corretoras</div><InlineText value={client.corretoras} onSave={(v) => updateField("corretoras", v)} /></div>
             <div style={{ gridColumn: "1/-1" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Produtos da Reserva / Liquidez</div><InlineText value={client.liquidez_produtos} onSave={(v) => updateField("liquidez_produtos", v)} placeholder="Ex: Tesouro Selic, CDB..." /></div>
           </div>
-          {hasPgbl && rendaBruta > 0 && (
-            <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${B.border}` }}>
+          {hasPgbl && (
+            <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${B.border}`, background: "#f5f3ff", borderRadius: 8, padding: "10px 12px", marginTop: 10 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase" }}>PGBL — Limite anual (12% renda bruta tributável)</div>
-                <span style={{ fontSize: 10, fontWeight: 700, color: pgblPct !== null && pgblPct >= 100 ? "#16a34a" : "#c2410c" }}>{pgblPct !== null ? `${pgblPct}%` : "—"}</span>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase" }}>PGBL — Limite anual (12% renda bruta tributável)</div>
+                {pgblPct !== null && <span style={{ fontSize: 11, fontWeight: 700, color: pgblPct >= 100 ? "#16a34a" : "#c2410c" }}>{pgblPct}%</span>}
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 5 }}>
-                <span style={{ color: B.gray }}>Aportado em {anoAtual}: <strong style={{ color: B.navy }}>{money(pgblAnoAtual)}</strong></span>
-                <span style={{ color: B.gray }}>Limite: <strong style={{ color: B.navy }}>{money(pgblLimite)}</strong></span>
-              </div>
-              {pgblPct !== null && (
-                <div style={{ background: "#e5e7eb", borderRadius: 999, height: 5, overflow: "hidden" }}>
-                  <div style={{ width: `${pgblPct}%`, height: "100%", background: pgblPct >= 100 ? "#16a34a" : "#6366f1", borderRadius: 999, transition: "width 0.3s" }} />
-                </div>
+              {rendaBruta > 0 ? (
+                <>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 6 }}>
+                    <span style={{ color: B.gray }}>Aportado em {anoAtual}: <strong style={{ color: B.navy }}>{money(pgblAnoAtual)}</strong></span>
+                    <span style={{ color: B.gray }}>Limite: <strong style={{ color: B.navy }}>{money(pgblLimite)}</strong></span>
+                  </div>
+                  <div style={{ background: "#ddd6fe", borderRadius: 999, height: 6, overflow: "hidden" }}>
+                    <div style={{ width: `${pgblPct ?? 0}%`, height: "100%", background: pgblPct >= 100 ? "#16a34a" : "#7c3aed", borderRadius: 999, transition: "width 0.3s" }} />
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize: 11, color: "#7c3aed" }}>Preencha a Receita Mensal para calcular o limite</div>
               )}
             </div>
           )}
