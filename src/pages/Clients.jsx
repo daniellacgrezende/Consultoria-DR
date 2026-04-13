@@ -134,7 +134,9 @@ export default function Clients() {
         const headers = data[0];
         const colIdx = {};
         COLS.forEach((c) => { const i = headers.indexOf(c.h); if (i >= 0) colIdx[c.f] = i; });
-        let count = 0;
+
+        // Monta entradas da planilha
+        const entries = [];
         for (const row of data.slice(1)) {
           if (!row[colIdx["nome"]]) continue;
           const entry = { ...EMPTY_CLIENT };
@@ -147,12 +149,49 @@ export default function Clients() {
               entry[c.f] = val ?? "";
             }
           });
-          entry.id = cuid();
           entry.status = entry.status || "ativo";
-          await saveClient(entry, true);
-          count++;
+          entries.push(entry);
         }
-        setToast({ type: "success", text: `${count} clientes importados.` });
+
+        // Detecta duplicatas por nome normalizado
+        const duplicatas = entries.filter((e) =>
+          clients.some((c) => (c.nome || "").trim().toLowerCase() === (e.nome || "").trim().toLowerCase())
+        );
+
+        let acao = "criar"; // padrão: criar todos
+        if (duplicatas.length > 0) {
+          const nomes = duplicatas.slice(0, 5).map((d) => d.nome).join(", ");
+          const sufixo = duplicatas.length > 5 ? ` e mais ${duplicatas.length - 5}` : "";
+          const resp = window.confirm(
+            `${duplicatas.length} cliente(s) já existem no sistema:\n${nomes}${sufixo}\n\nOK → Sobrescrever os existentes\nCancelar → Pular duplicatas (importar só os novos)`
+          );
+          acao = resp ? "sobrescrever" : "pular";
+        }
+
+        let criados = 0, atualizados = 0, pulados = 0;
+        for (const entry of entries) {
+          const existente = clients.find(
+            (c) => (c.nome || "").trim().toLowerCase() === (entry.nome || "").trim().toLowerCase()
+          );
+          if (existente) {
+            if (acao === "sobrescrever") {
+              await saveClient({ ...entry, id: existente.id }, false);
+              atualizados++;
+            } else {
+              pulados++;
+            }
+          } else {
+            entry.id = cuid();
+            await saveClient(entry, true);
+            criados++;
+          }
+        }
+
+        const partes = [];
+        if (criados > 0) partes.push(`${criados} criados`);
+        if (atualizados > 0) partes.push(`${atualizados} sobrescritos`);
+        if (pulados > 0) partes.push(`${pulados} pulados`);
+        setToast({ type: "success", text: partes.join(" · ") + "." });
       } catch {
         setToast({ type: "error", text: "Erro ao ler planilha." });
       }
