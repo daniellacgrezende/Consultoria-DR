@@ -251,6 +251,11 @@ export default function ClientDetail() {
             </div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Última Reunião</div><InlineDate value={client.ultima_reuniao} onSave={(v) => updateField("ultima_reuniao", v)} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Próxima Reunião</div><InlineDate value={client.proxima_reuniao} onSave={(v) => updateField("proxima_reuniao", v)} /></div>
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: "#0891b2", textTransform: "uppercase", marginBottom: 3 }}>Chamei em</div>
+              <InlineDate value={client.avisado_em} onSave={(v) => updateField("avisado_em", v)} />
+              <div style={{ fontSize: 9, color: "#8899bb", marginTop: 2 }}>Registra que você chamou o cliente — remove o status "Atrasado"</div>
+            </div>
           </div>
         </Card>
         <Card>

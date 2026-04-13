@@ -11,10 +11,13 @@ import Avatar from "../components/ui/Avatar";
 import SearchBox from "../components/ui/SearchBox";
 import { SecH } from "../components/ui/FormFields";
 
+const GRACE_DAYS = 10;
+
 function getRelStatus(diasSem, periodDays) {
   if (diasSem === null) return { label: "Nunca enviado", color: "#dc2626", bg: "#fef2f2" };
+  if (diasSem > periodDays + GRACE_DAYS) return { label: "Atrasado", color: "#dc2626", bg: "#fef2f2" };
+  if (diasSem > periodDays) return { label: "Enviar", color: "#c2410c", bg: "#fff7ed" }; // margem 10 dias
   const warn = Math.round(periodDays * 0.83);
-  if (diasSem > periodDays) return { label: "Atrasado", color: "#dc2626", bg: "#fef2f2" };
   if (diasSem > warn) return { label: "Atenção", color: "#c2410c", bg: "#fff7ed" };
   return { label: "Em Dia", color: "#16a34a", bg: "#f0fdf4" };
 }

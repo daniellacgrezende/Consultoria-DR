@@ -61,7 +61,7 @@ export default function Meetings() {
 
   /* ─── Enriched rows ─── */
   const rows = useMemo(() => {
-    const STATUS_ORDER = { pendente: 0, agendar: 1, aguardando: 2, emdia: 3 };
+    const STATUS_ORDER = { atrasado: 0, agendar: 1, aguardando: 2, emdia: 3 };
     const enriched = active.map((c) => ({
       ...c,
       diasSem:    daysSince(c.ultima_reuniao || c.ultimaReuniao),
