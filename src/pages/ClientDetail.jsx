@@ -205,11 +205,13 @@ export default function ClientDetail() {
       {/* Alerta */}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-        {/* Observação */}
-        <Card style={{ gridColumn: "1/-1", background: "#fffbeb", border: `1px solid #fde68a` }}>
-          <div style={{ fontWeight: 700, fontSize: 12, color: "#92400e", marginBottom: 6 }}>Observação</div>
-          <InlineText value={client.observacao_rapida} onSave={(v) => updateField("observacao_rapida", v)} placeholder="Clique para adicionar uma observação importante sobre este cliente..." multiline style={{ width: "100%", display: "block" }} />
-        </Card>
+        {/* Observação — só aparece se preenchida */}
+        {client.observacao_rapida && (
+          <Card style={{ gridColumn: "1/-1", background: "#fffbeb", border: `1px solid #fde68a` }}>
+            <div style={{ fontWeight: 700, fontSize: 12, color: "#92400e", marginBottom: 6 }}>Observação</div>
+            <InlineText value={client.observacao_rapida} onSave={(v) => updateField("observacao_rapida", v)} placeholder="Clique para editar..." multiline style={{ width: "100%", display: "block" }} />
+          </Card>
+        )}
 
         {/* Dados Gerais */}
         <Card style={{ gridColumn: "1/-1" }}>
@@ -226,6 +228,43 @@ export default function ClientDetail() {
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Origem do Cliente</div><InlineText value={client.origem_cliente} onSave={(v) => updateField("origem_cliente", v)} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Início Carteira</div><InlineDate value={client.inicio_carteira} onSave={(v) => updateField("inicio_carteira", v)} /></div>
             {grupoNome && <div style={{ gridColumn: "1/-1" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Grupo (PJ+PF)</div><InlineText value={client.grupo_nome} onSave={(v) => updateField("grupo_nome", v)} /></div>}
+          </div>
+          {/* Atributos como badges */}
+          <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${B.border}`, display: "flex", gap: 7, flexWrap: "wrap", alignItems: "center" }}>
+            {[
+              { field: "seguro_vida", label: "Seguro de Vida", invert: false },
+              { field: "pgbl", label: "PGBL", invert: false },
+              { field: "vgbl", label: "VGBL", invert: false },
+              { field: "cliente_desbalanceado", label: "Desbalanceado", invert: true },
+            ].map(({ field, label, invert }) => {
+              const val = client[field];
+              const isTrue = val === true || val === "true";
+              const isFalse = val === false || val === "false";
+              const next = isTrue ? false : isFalse ? null : true;
+              const bg = isTrue ? (invert ? "#fee2e2" : "#dcfce7") : isFalse ? (invert ? "#dcfce7" : "#fee2e2") : "#f3f4f6";
+              const color = isTrue ? (invert ? "#dc2626" : "#16a34a") : isFalse ? (invert ? "#16a34a" : "#dc2626") : "#9E9C9E";
+              const border = isTrue ? (invert ? "#fecaca" : "#bbf7d0") : isFalse ? (invert ? "#bbf7d0" : "#fecaca") : "#e5e7eb";
+              const mark = isTrue ? "✓" : isFalse ? "✗" : "N/A";
+              return (
+                <span key={field} onClick={() => updateField(field, next)} title="Clique para alterar" style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 999, background: bg, color, fontSize: 11, fontWeight: 700, cursor: "pointer", border: `1px solid ${border}`, userSelect: "none" }}>
+                  {mark} {label}
+                </span>
+              );
+            })}
+            {/* Sucessão */}
+            {(() => {
+              const suc = typeof client.sucessao === "boolean" ? (client.sucessao ? "Sim" : "") : (client.sucessao || "");
+              if (!suc) return (
+                <span onClick={() => {}} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 999, background: "#f3f4f6", color: "#9E9C9E", fontSize: 11, fontWeight: 700, border: "1px solid #e5e7eb", userSelect: "none" }}>N/A Sucessão</span>
+              );
+              return (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 999, background: "#f0f9ff", color: "#0369a1", fontSize: 11, fontWeight: 700, border: "1px solid #bae6fd", userSelect: "none" }}>✓ Sucessão: {suc}</span>
+              );
+            })()}
+            {/* IPS lembrete */}
+            {!client.envio_ips && (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 999, background: "#fff7ed", color: "#c2410c", fontSize: 11, fontWeight: 700, border: "1px solid #fed7aa", userSelect: "none" }}>! IPS pendente</span>
+            )}
           </div>
         </Card>
 
@@ -326,26 +365,6 @@ export default function ClientDetail() {
           </div>
         </Card>
 
-        {/* Atributos */}
-        <Card style={{ gridColumn: "1/-1" }}>
-          <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Atributos</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
-            {[["envio_ips", "IPS"], ["seguro_vida", "Seguro de Vida"], ["pgbl", "PGBL"], ["vgbl", "VGBL"]].map(([field, lbl]) => (
-              <div key={field}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>{lbl}</div>
-                <InlineSelect
-                  value={client[field] ? "sim" : "nao"}
-                  onSave={(v) => updateField(field, v === "sim")}
-                  opts={[{ v: "nao", l: "Não" }, { v: "sim", l: "Sim" }]}
-                />
-              </div>
-            ))}
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Sucessão</div>
-              <InlineText value={typeof client.sucessao === "boolean" ? (client.sucessao ? "Sim" : "") : (client.sucessao || "")} onSave={(v) => updateField("sucessao", v)} placeholder="—" />
-            </div>
-          </div>
-        </Card>
 
       </div>
 
@@ -462,19 +481,25 @@ export default function ClientDetail() {
                 : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     {clientAportes.filter((a) => aptYearFilter === "todos" || a.data?.startsWith(aptYearFilter)).map((a) => (
-                      <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", borderRadius: 6, background: a.tipo === "aporte" ? "#f0fdf4" : "#fff5f5", border: `1px solid ${a.tipo === "aporte" ? "#dcfce7" : "#fee2e2"}` }}>
-                        <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1 }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "+" : "−"}</span>
-                          <span style={{ fontSize: 11, color: B.gray }}>{fmtDate(a.data)}</span>
-                          {a.is_reserva && <span style={{ fontSize: 9, background: "#e0f2fe", color: "#0369a1", borderRadius: 4, padding: "1px 5px", fontWeight: 700 }}>RESERVA</span>}
-                          {a.is_pgbl && <span style={{ fontSize: 9, background: "#f5f3ff", color: "#7c3aed", borderRadius: 4, padding: "1px 5px", fontWeight: 700 }}>PGBL</span>}
-                          {a.observacao && <span style={{ fontSize: 10, color: "#9baabf", fontStyle: "italic" }}>{a.observacao}</span>}
+                      <div key={a.id} style={{ padding: "8px 10px", borderRadius: 6, background: a.tipo === "aporte" ? "#f0fdf4" : "#fff5f5", border: `1px solid ${a.tipo === "aporte" ? "#dcfce7" : "#fee2e2"}` }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "+" : "−"}</span>
+                            <span style={{ fontSize: 11, color: B.gray }}>{fmtDate(a.data)}</span>
+                            {a.is_reserva && <span style={{ fontSize: 9, background: "#e0f2fe", color: "#0369a1", borderRadius: 4, padding: "1px 6px", fontWeight: 700 }}>RESERVA</span>}
+                            {a.is_pgbl && <span style={{ fontSize: 9, background: "#f5f3ff", color: "#7c3aed", borderRadius: 4, padding: "1px 6px", fontWeight: 700 }}>PGBL</span>}
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "+" : "−"}{money(a.valor)}</span>
+                            <button onClick={() => openAptEdit(a)} style={{ background: "white", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 5, padding: "2px 8px", fontSize: 10, cursor: "pointer" }}>Editar</button>
+                            <button onClick={() => handleDeleteAporte(a)} style={{ background: "white", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 5, padding: "2px 8px", fontSize: 10, cursor: "pointer" }}>Remover</button>
+                          </div>
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "+" : "−"}{money(a.valor)}</span>
-                          <button onClick={() => openAptEdit(a)} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 5, padding: "2px 8px", fontSize: 10, cursor: "pointer" }}>Editar</button>
-                          <button onClick={() => handleDeleteAporte(a)} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 5, padding: "2px 8px", fontSize: 10, cursor: "pointer" }}>Remover</button>
-                        </div>
+                        {a.observacao && (
+                          <div style={{ marginTop: 4, fontSize: 11, color: "#6b7280", paddingLeft: 20 }}>
+                            <span style={{ fontSize: 9, fontWeight: 700, color: "#9baabf", textTransform: "uppercase", marginRight: 4 }}>Obs:</span>{a.observacao}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -632,7 +657,7 @@ export default function ClientDetail() {
               PGBL
             </label>
           </div>
-          <Inp label="Observação" value={aptForm.observacao} onChange={(e) => setAptForm((f) => ({ ...f, observacao: e.target.value }))} />
+          <Inp label="Onde foi aportado / Observação" value={aptForm.observacao} onChange={(e) => setAptForm((f) => ({ ...f, observacao: e.target.value }))} placeholder="Ex: XP - Tesouro Selic, BTG - CDB..." />
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => setAptModal(false)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>
             <button onClick={saveAptEntry} style={{ flex: 2, padding: "10px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700 }}>{aptEditId ? "SALVAR" : "REGISTRAR"}</button>
