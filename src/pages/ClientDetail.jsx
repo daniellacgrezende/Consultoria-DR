@@ -48,6 +48,8 @@ export default function ClientDetail() {
   const [aptForm, setAptForm] = useState({ client_id: "", data: "", tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false });
   const [aptHistOpen, setAptHistOpen] = useState(false);
   const [aptFilter, setAptFilter] = useState({ mode: "todos", ano: "", de: "", ate: "" });
+  const [rhExpandedIds, setRhExpandedIds] = useState(new Set());
+  const toggleRhExpand = (rid) => setRhExpandedIds((prev) => { const n = new Set(prev); n.has(rid) ? n.delete(rid) : n.add(rid); return n; });
 
   if (!client) return (
     <div style={{ padding: 40, textAlign: "center", color: B.gray }}>
@@ -298,6 +300,12 @@ export default function ClientDetail() {
               <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 999, background: "#fff7ed", color: "#c2410c", fontSize: 11, fontWeight: 700, border: "1px solid #fed7aa", userSelect: "none" }}>! IPS pendente</span>
             )}
           </div>
+          {hasSeguro && (
+            <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${B.border}` }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Obs. Seguro de Vida</div>
+              <InlineText value={client.seguro_observacao} onSave={(v) => updateField("seguro_observacao", v)} placeholder="Ex: Portfel, seguro externo, valor..." />
+            </div>
+          )}
         </Card>
 
         {/* Financeiro */}
@@ -325,27 +333,6 @@ export default function ClientDetail() {
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Corretoras</div><InlineText value={client.corretoras} onSave={(v) => updateField("corretoras", v)} /></div>
             <div style={{ gridColumn: "1/-1" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Produtos da Reserva / Liquidez</div><InlineText value={client.liquidez_produtos} onSave={(v) => updateField("liquidez_produtos", v)} placeholder="Ex: Tesouro Selic, CDB..." /></div>
           </div>
-          {hasPgbl && (
-            <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${B.border}`, background: "#f5f3ff", borderRadius: 8, padding: "10px 12px", marginTop: 10 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase" }}>PGBL — Limite anual (12% renda bruta tributável)</div>
-                {pgblPct !== null && <span style={{ fontSize: 11, fontWeight: 700, color: pgblPct >= 100 ? "#16a34a" : "#c2410c" }}>{pgblPct}%</span>}
-              </div>
-              {rendaBruta > 0 ? (
-                <>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 6 }}>
-                    <span style={{ color: B.gray }}>Aportado em {anoAtual}: <strong style={{ color: B.navy }}>{money(pgblAnoAtual)}</strong></span>
-                    <span style={{ color: B.gray }}>Limite: <strong style={{ color: B.navy }}>{money(pgblLimite)}</strong></span>
-                  </div>
-                  <div style={{ background: "#ddd6fe", borderRadius: 999, height: 6, overflow: "hidden" }}>
-                    <div style={{ width: `${pgblPct ?? 0}%`, height: "100%", background: pgblPct >= 100 ? "#16a34a" : "#7c3aed", borderRadius: 999, transition: "width 0.3s" }} />
-                  </div>
-                </>
-              ) : (
-                <div style={{ fontSize: 11, color: "#7c3aed" }}>Preencha a Receita Mensal para calcular o limite</div>
-              )}
-            </div>
-          )}
           <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${B.border}` }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Planejamento / Metas</div>
             <InlineText value={client.planejamento} onSave={(v) => updateField("planejamento", v)} placeholder="Clique para editar..." multiline style={{ width: "100%", display: "block" }} />
@@ -368,37 +355,13 @@ export default function ClientDetail() {
           </Card>
         )}
 
-        {/* Reunião + Relatório */}
-        <Card>
-          <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Reunião</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Periodicidade</div>
-              <InlineSelect value={client.periodicidade_reuniao || "Trimestral"} onSave={(v) => updateField("periodicidade_reuniao", v)} opts={PERIOD_OPTIONS.map((o) => ({ v: o, l: o }))} />
-            </div>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Última Reunião</div><InlineDate value={client.ultima_reuniao} onSave={(v) => updateField("ultima_reuniao", v)} /></div>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Próxima Reunião</div><InlineDate value={client.proxima_reuniao} onSave={(v) => updateField("proxima_reuniao", v)} /></div>
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, color: "#0891b2", textTransform: "uppercase", marginBottom: 3 }}>Chamei em</div>
-              <InlineDate value={client.avisado_em} onSave={(v) => updateField("avisado_em", v)} />
-              <div style={{ fontSize: 9, color: "#8899bb", marginTop: 2 }}>Registra que você chamou o cliente — remove o status "Atrasado"</div>
-            </div>
-          </div>
-        </Card>
-        <Card>
-          <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Relatório</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Periodicidade</div>
-              <InlineSelect value={client.periodicidade_relatorio || ""} onSave={(v) => updateField("periodicidade_relatorio", v)} opts={[{ v: "", l: "—" }, ...PERIOD_OPTIONS.map((o) => ({ v: o, l: o }))]} />
-            </div>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Último Relatório</div><InlineDate value={client.ultimo_relatorio} onSave={(v) => updateField("ultimo_relatorio", v)} /></div>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Próximo Relatório</div><InlineDate value={client.proximo_relatorio} onSave={(v) => updateField("proximo_relatorio", v)} /></div>
-          </div>
-        </Card>
-
-
       </div>
+
+      {/* Notas Gerais — acima de Aportes */}
+      <Card style={{ marginBottom: 12, border: "2px solid #e0e7ff", background: "#fafbff" }}>
+        <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid #e0e7ff" }}>Notas Gerais</div>
+        <InlineText value={client.notas_gerais} onSave={(v) => updateField("notas_gerais", v)} placeholder="Clique para adicionar notas gerais..." multiline style={{ width: "100%", minHeight: 60 }} />
+      </Card>
 
       {/* Aportes */}
       <Card style={{ marginBottom: 12 }}>
@@ -463,58 +426,59 @@ export default function ClientDetail() {
           <InlineText value={client.link_rebalanceamento} onSave={(v) => updateField("link_rebalanceamento", v)} placeholder="https://…" />
         </div>
 
-        {/* Liquidez definida x atual */}
-        {Number(client.liquidez_desejada || 0) > 0 && (() => {
-          const liqA = Number(client.liquidez_atual || 0);
-          const desejada = Number(client.liquidez_desejada);
-          const pct = Math.min(100, Math.round((liqA / desejada) * 100));
-          const ok = liqA >= desejada;
+        {/* Reserva + PGBL — compactos, lado a lado */}
+        {(Number(client.liquidez_desejada || 0) > 0 || hasPgbl) && (() => {
+          const hasLiq = Number(client.liquidez_desejada || 0) > 0;
+          const cols = hasLiq && hasPgbl ? "1fr 1fr" : "1fr";
           return (
-            <div style={{ background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 8, padding: "10px 14px", marginBottom: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                <span style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase" }}>Reserva / Liquidez</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: ok ? "#16a34a" : "#c2410c" }}>{pct}%</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <div>
-                  <div style={{ fontSize: 9, color: "#8899bb", textTransform: "uppercase", marginBottom: 2 }}>Meta</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: B.navy }}>{money(desejada)}</div>
+            <div style={{ display: "grid", gridTemplateColumns: cols, gap: 8, marginBottom: 12 }}>
+              {hasLiq && (() => {
+                const liqA = Number(client.liquidez_atual || 0);
+                const desejada = Number(client.liquidez_desejada);
+                const pct = Math.min(100, Math.round((liqA / desejada) * 100));
+                const ok = liqA >= desejada;
+                return (
+                  <div style={{ background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 8, padding: "8px 12px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                      <span style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase" }}>Reserva / Liquidez</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: ok ? "#16a34a" : "#c2410c" }}>{pct}%</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: B.gray, marginBottom: 5 }}>
+                      <strong style={{ color: ok ? "#16a34a" : "#c2410c" }}>{money(liqA)}</strong>
+                      <span style={{ margin: "0 4px" }}>/</span>
+                      <span>{money(desejada)}</span>
+                    </div>
+                    <div style={{ background: "#e5e7eb", borderRadius: 999, height: 4, overflow: "hidden" }}>
+                      <div style={{ width: `${pct}%`, height: "100%", background: ok ? "#16a34a" : "#f59e0b", borderRadius: 999 }} />
+                    </div>
+                  </div>
+                );
+              })()}
+              {hasPgbl && (
+                <div style={{ background: "#f5f3ff", border: "1px solid #ddd6fe", borderRadius: 8, padding: "8px 12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase" }}>PGBL {anoAtual}</span>
+                    {pgblPct !== null && <span style={{ fontSize: 11, fontWeight: 700, color: pgblPct >= 100 ? "#16a34a" : "#c2410c" }}>{pgblPct}%</span>}
+                  </div>
+                  {rendaBruta > 0 ? (
+                    <>
+                      <div style={{ fontSize: 11, color: B.gray, marginBottom: 5 }}>
+                        <strong style={{ color: pgblPct >= 100 ? "#16a34a" : B.navy }}>{money(pgblAnoAtual)}</strong>
+                        <span style={{ margin: "0 4px" }}>/</span>
+                        <span>{money(pgblLimite)}</span>
+                      </div>
+                      <div style={{ background: "#ddd6fe", borderRadius: 999, height: 4, overflow: "hidden" }}>
+                        <div style={{ width: `${pgblPct ?? 0}%`, height: "100%", background: pgblPct >= 100 ? "#16a34a" : "#7c3aed", borderRadius: 999 }} />
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ fontSize: 10, color: "#7c3aed" }}>Preencha Receita Mensal</div>
+                  )}
                 </div>
-                <div style={{ fontSize: 14, color: B.border }}>→</div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 9, color: "#8899bb", textTransform: "uppercase", marginBottom: 2 }}>Atual</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: liqA > 0 ? (ok ? "#16a34a" : "#c2410c") : B.gray }}>{liqA > 0 ? money(liqA) : "—"}</div>
-                </div>
-              </div>
-              <div style={{ background: "#e5e7eb", borderRadius: 999, height: 6, overflow: "hidden" }}>
-                <div style={{ width: `${pct}%`, height: "100%", background: ok ? "#16a34a" : "#f59e0b", borderRadius: 999, transition: "width 0.3s" }} />
-              </div>
+              )}
             </div>
           );
         })()}
-
-        {/* PGBL no Aportes */}
-        {hasPgbl && (
-          <div style={{ background: "#f5f3ff", border: "1px solid #ddd6fe", borderRadius: 8, padding: "10px 14px", marginBottom: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-              <span style={{ fontSize: 9, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase" }}>PGBL — Limite anual (12% renda bruta tributável)</span>
-              {pgblPct !== null && <span style={{ fontSize: 11, fontWeight: 700, color: pgblPct >= 100 ? "#16a34a" : "#c2410c" }}>{pgblPct}%</span>}
-            </div>
-            {rendaBruta > 0 ? (
-              <>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 6 }}>
-                  <span style={{ color: B.gray }}>Aportado em {anoAtual}: <strong style={{ color: B.navy }}>{money(pgblAnoAtual)}</strong></span>
-                  <span style={{ color: B.gray }}>Limite: <strong style={{ color: B.navy }}>{money(pgblLimite)}</strong></span>
-                </div>
-                <div style={{ background: "#ddd6fe", borderRadius: 999, height: 6, overflow: "hidden" }}>
-                  <div style={{ width: `${pgblPct ?? 0}%`, height: "100%", background: pgblPct >= 100 ? "#16a34a" : "#7c3aed", borderRadius: 999, transition: "width 0.3s" }} />
-                </div>
-              </>
-            ) : (
-              <div style={{ fontSize: 11, color: "#7c3aed" }}>Preencha a Receita Mensal no card Financeiro para calcular</div>
-            )}
-          </div>
-        )}
 
         {/* Histórico colapsável — usa o mesmo filtro dos stats acima */}
         {(() => {
@@ -565,34 +529,64 @@ export default function ClientDetail() {
         })()}
       </Card>
 
-      {/* Reuniões */}
+      {/* Reunião + Relatório — penúltimo, lado a lado, compactos */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+        <Card>
+          <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${B.border}` }}>Reunião</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Periodicidade</div><InlineSelect value={client.periodicidade_reuniao || "Trimestral"} onSave={(v) => updateField("periodicidade_reuniao", v)} opts={PERIOD_OPTIONS.map((o) => ({ v: o, l: o }))} /></div>
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#0891b2", textTransform: "uppercase", marginBottom: 3 }}>Chamei em</div><InlineDate value={client.avisado_em} onSave={(v) => updateField("avisado_em", v)} /></div>
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Última Reunião</div><InlineDate value={client.ultima_reuniao} onSave={(v) => updateField("ultima_reuniao", v)} /></div>
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Próxima Reunião</div><InlineDate value={client.proxima_reuniao} onSave={(v) => updateField("proxima_reuniao", v)} /></div>
+          </div>
+          <div style={{ fontSize: 9, color: "#8899bb", marginTop: 6 }}>Chamei em: registra contato sem resposta — remove "Atrasado"</div>
+        </Card>
+        <Card>
+          <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${B.border}` }}>Relatório</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Periodicidade</div><InlineSelect value={client.periodicidade_relatorio || ""} onSave={(v) => updateField("periodicidade_relatorio", v)} opts={[{ v: "", l: "—" }, ...PERIOD_OPTIONS.map((o) => ({ v: o, l: o }))]} /></div>
+            <div />
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Último Relatório</div><InlineDate value={client.ultimo_relatorio} onSave={(v) => updateField("ultimo_relatorio", v)} /></div>
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Próximo Relatório</div><InlineDate value={client.proximo_relatorio} onSave={(v) => updateField("proximo_relatorio", v)} /></div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Histórico de Reuniões — último, conteúdo colapsável por entrada */}
       <Card style={{ marginBottom: 12 }}>
         <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between" }}>
           <span>Histórico de Reuniões ({clientReunioes.length})</span>
           <button onClick={() => { setRhEditId(null); setRhForm({ client_id: id, data: today(), texto: "" }); setRhModal(true); }} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Registrar</button>
         </div>
         {clientReunioes.length === 0 ? <div style={{ padding: 16, textAlign: "center", color: B.gray, fontSize: 12 }}>Nenhum registro.</div> : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {clientReunioes.map((r) => (
-              <div key={r.id} style={{ background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 9, padding: "12px 14px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: B.navy }}>{fmtDate(r.data)}</span>
-                  <div style={{ display: "flex", gap: 5 }}>
-                    <button onClick={() => { setRhEditId(r.id); setRhForm({ ...r }); setRhModal(true); }} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 5, padding: "3px 9px", fontSize: 10, cursor: "pointer" }}>Editar</button>
-                    <button onClick={async () => { await deleteReuniao(r.id); setToast({ type: "success", text: "Removido." }); }} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 5, padding: "3px 9px", fontSize: 10, cursor: "pointer" }}>Remover</button>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {clientReunioes.map((r) => {
+              const isExpanded = rhExpandedIds.has(r.id);
+              return (
+                <div key={r.id} style={{ background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 9, overflow: "hidden" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 14px", cursor: "pointer" }} onClick={() => toggleRhExpand(r.id)}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1, minWidth: 0 }}>
+                      <span style={{ fontSize: 10, color: B.muted }}>{isExpanded ? "▼" : "▶"}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap" }}>{fmtDate(r.data)}</span>
+                      {!isExpanded && r.texto && (
+                        <span style={{ fontSize: 11, color: B.gray, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.texto.slice(0, 80)}{r.texto.length > 80 ? "…" : ""}</span>
+                      )}
+                    </div>
+                    <div style={{ display: "flex", gap: 5, flexShrink: 0, marginLeft: 8 }} onClick={(e) => e.stopPropagation()}>
+                      <button onClick={() => { setRhEditId(r.id); setRhForm({ ...r }); setRhModal(true); }} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 5, padding: "3px 9px", fontSize: 10, cursor: "pointer" }}>Editar</button>
+                      <button onClick={async () => { await deleteReuniao(r.id); setToast({ type: "success", text: "Removido." }); }} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 5, padding: "3px 9px", fontSize: 10, cursor: "pointer" }}>Remover</button>
+                    </div>
                   </div>
+                  {isExpanded && (
+                    <div style={{ padding: "0 14px 12px", borderTop: `1px solid ${B.border}` }}>
+                      <p style={{ margin: "10px 0 0", fontSize: 12, color: "#445566", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{r.texto}</p>
+                    </div>
+                  )}
                 </div>
-                <p style={{ margin: 0, fontSize: 12, color: "#445566", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{r.texto}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
-      </Card>
-
-      {/* Notas Gerais */}
-      <Card style={{ marginBottom: 12, border: "2px solid #e0e7ff", background: "#fafbff" }}>
-        <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid #e0e7ff" }}>Notas Gerais</div>
-        <InlineText value={client.notas_gerais} onSave={(v) => updateField("notas_gerais", v)} placeholder="Clique para adicionar notas gerais..." multiline style={{ width: "100%", minHeight: 60 }} />
       </Card>
 
       {/* Actions */}
