@@ -27,6 +27,7 @@ export default function Clients() {
   const [sortCol, setSortCol] = useState("nome");
   const [sortDir, setSortDir] = useState("asc");
   const [ufFilter, setUfFilter] = useState("");
+  const [showStats, setShowStats] = useState(false);
 
   const active = useMemo(() => clients.filter((c) => c.status === "ativo"), [clients]);
   const getPL = (c) => getCurrentPL(c, history);
@@ -277,11 +278,23 @@ export default function Clients() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 18 }}>
-        <MiniStat label="Clientes Ativos" value={active.length} sub={`${rows.length} exibidos`} />
-        <div style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${B.navy}` }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 5 }}>AUM</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: B.navy }}>{money(totalAUM)}</div>
-          <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>patrimônio total</div>
+        {/* Clientes Ativos — oculto por padrão */}
+        <div style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${B.brand}`, cursor: "pointer", userSelect: "none" }} onClick={() => setShowStats((s) => !s)}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 5, display: "flex", justifyContent: "space-between" }}>
+            <span>Clientes Ativos</span>
+            <span style={{ fontSize: 10, color: B.muted }}>{showStats ? "🙈" : "👁"}</span>
+          </div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: B.navy }}>{showStats ? active.length : "••••"}</div>
+          <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>{showStats ? `${rows.length} exibidos` : "clique para revelar"}</div>
+        </div>
+        {/* AUM — oculto por padrão */}
+        <div style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${B.navy}`, cursor: "pointer", userSelect: "none" }} onClick={() => setShowStats((s) => !s)}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 5, display: "flex", justifyContent: "space-between" }}>
+            <span>AUM</span>
+            <span style={{ fontSize: 10, color: B.muted }}>{showStats ? "🙈" : "👁"}</span>
+          </div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: B.navy }}>{showStats ? money(totalAUM) : "R$ ••••••"}</div>
+          <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>{showStats ? "patrimônio total" : "clique para revelar"}</div>
         </div>
         <MiniStat label="Reunião em Atraso" value={alertas75} sub="fora da periodicidade" warn={alertas75 > 0} />
       </div>

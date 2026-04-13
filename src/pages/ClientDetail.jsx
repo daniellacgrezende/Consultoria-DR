@@ -204,7 +204,6 @@ export default function ClientDetail() {
   };
 
   const hasSeguro = client.seguro_vida || client.seguroVida;
-  const hasDesbalanceado = client.cliente_desbalanceado || client.clienteDesbalanceado;
 
   return (
     <>
@@ -223,7 +222,6 @@ export default function ClientDetail() {
               <CBadge curva={curva} />
               <span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700, background: reuniaoStatus.bg, color: reuniaoStatus.color }}>{reuniaoStatus.label}</span>
               {hasSeguro && <span style={{ fontSize: 11, fontWeight: 700, background: "rgba(255,255,255,0.12)", color: "white", padding: "2px 9px", borderRadius: 999 }}>🛡 Seguro</span>}
-              {hasDesbalanceado && <span style={{ fontSize: 11, fontWeight: 700, background: "rgba(220,38,38,0.25)", color: "#fca5a5", padding: "2px 9px", borderRadius: 999 }}>⚠ Desbalanceado</span>}
             </div>
           </div>
         </div>
@@ -265,47 +263,42 @@ export default function ClientDetail() {
           </div>
           {/* Atributos como badges */}
           <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${B.border}`, display: "flex", gap: 7, flexWrap: "wrap", alignItems: "center" }}>
-            {[
-              { field: "seguro_vida", label: "Seguro de Vida", invert: false },
-              { field: "pgbl", label: "PGBL", invert: false },
-              { field: "vgbl", label: "VGBL", invert: false },
-              { field: "cliente_desbalanceado", label: "Desbalanceado", invert: true },
-            ].map(({ field, label, invert }) => {
-              const val = client[field];
+            {/* Seguro de Vida — sempre exibido (importante saber se tem ou não) */}
+            {(() => {
+              const val = client.seguro_vida;
               const isTrue = val === true || val === "true";
               const isFalse = val === false || val === "false";
               const next = isTrue ? false : isFalse ? null : true;
-              const bg = isTrue ? (invert ? "#fee2e2" : "#dcfce7") : isFalse ? (invert ? "#dcfce7" : "#fee2e2") : "#f3f4f6";
-              const color = isTrue ? (invert ? "#dc2626" : "#16a34a") : isFalse ? (invert ? "#16a34a" : "#dc2626") : "#9E9C9E";
-              const border = isTrue ? (invert ? "#fecaca" : "#bbf7d0") : isFalse ? (invert ? "#bbf7d0" : "#fecaca") : "#e5e7eb";
-              const mark = isTrue ? "✓" : isFalse ? "✗" : "N/A";
               return (
-                <span key={field} onClick={() => updateField(field, next)} title="Clique para alterar" style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 999, background: bg, color, fontSize: 11, fontWeight: 700, cursor: "pointer", border: `1px solid ${border}`, userSelect: "none" }}>
-                  {mark} {label}
+                <span onClick={() => updateField("seguro_vida", next)} title="Clique para alterar" style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 999, background: isTrue ? "#dcfce7" : isFalse ? "#fee2e2" : "#f3f4f6", color: isTrue ? "#16a34a" : isFalse ? "#dc2626" : "#9E9C9E", fontSize: 11, fontWeight: 700, cursor: "pointer", border: `1px solid ${isTrue ? "#bbf7d0" : isFalse ? "#fecaca" : "#e5e7eb"}`, userSelect: "none" }}>
+                  {isTrue ? "✓" : isFalse ? "✗" : "N/A"} Seguro de Vida
                 </span>
               );
-            })}
-            {/* Sucessão */}
+            })()}
+            {/* Obs. Seguro — inline, logo após o badge */}
+            {hasSeguro && (
+              <span style={{ fontSize: 11, color: B.gray }}>
+                · <InlineText value={client.seguro_observacao} onSave={(v) => updateField("seguro_observacao", v)} placeholder="obs. seguro..." style={{ display: "inline" }} />
+              </span>
+            )}
+            {/* PGBL / VGBL — só exibe quando ativo */}
+            {(client.pgbl === true || client.pgbl === "true") && (
+              <span onClick={() => updateField("pgbl", false)} title="Clique para remover" style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 999, background: "#dcfce7", color: "#16a34a", fontSize: 11, fontWeight: 700, cursor: "pointer", border: "1px solid #bbf7d0", userSelect: "none" }}>✓ PGBL</span>
+            )}
+            {(client.vgbl === true || client.vgbl === "true") && (
+              <span onClick={() => updateField("vgbl", false)} title="Clique para remover" style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 999, background: "#dcfce7", color: "#16a34a", fontSize: 11, fontWeight: 700, cursor: "pointer", border: "1px solid #bbf7d0", userSelect: "none" }}>✓ VGBL</span>
+            )}
+            {/* Sucessão — só exibe quando preenchida */}
             {(() => {
               const suc = typeof client.sucessao === "boolean" ? (client.sucessao ? "Sim" : "") : (client.sucessao || "");
-              if (!suc) return (
-                <span onClick={() => {}} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 999, background: "#f3f4f6", color: "#9E9C9E", fontSize: 11, fontWeight: 700, border: "1px solid #e5e7eb", userSelect: "none" }}>N/A Sucessão</span>
-              );
-              return (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 999, background: "#f0f9ff", color: "#0369a1", fontSize: 11, fontWeight: 700, border: "1px solid #bae6fd", userSelect: "none" }}>✓ Sucessão: {suc}</span>
-              );
+              if (!suc) return null;
+              return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 999, background: "#f0f9ff", color: "#0369a1", fontSize: 11, fontWeight: 700, border: "1px solid #bae6fd", userSelect: "none" }}>✓ Sucessão: {suc}</span>;
             })()}
             {/* IPS lembrete */}
             {!client.envio_ips && (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 999, background: "#fff7ed", color: "#c2410c", fontSize: 11, fontWeight: 700, border: "1px solid #fed7aa", userSelect: "none" }}>! IPS pendente</span>
             )}
           </div>
-          {hasSeguro && (
-            <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${B.border}` }}>
-              <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Obs. Seguro de Vida</div>
-              <InlineText value={client.seguro_observacao} onSave={(v) => updateField("seguro_observacao", v)} placeholder="Ex: Portfel, seguro externo, valor..." />
-            </div>
-          )}
         </Card>
 
         {/* Financeiro */}
@@ -324,14 +317,21 @@ export default function ClientDetail() {
               </div>
             </div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Liquidez Desejada</div><InlineMoney value={client.liquidez_desejada} onSave={(v) => updateField("liquidez_desejada", v)} /></div>
+            {/* Produtos da Reserva — agrupado junto da Liquidez */}
+            <div style={{ gridColumn: "1/-1" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Produtos da Reserva / Liquidez</div><InlineText value={client.liquidez_produtos} onSave={(v) => updateField("liquidez_produtos", v)} placeholder="Ex: Tesouro Selic, CDB..." /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Aporte Mensal</div><InlineMoney value={client.aporte_mensal} onSave={(v) => updateField("aporte_mensal", v)} /></div>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Taxa</div><InlineText value={client.taxa_contratada} onSave={(v) => updateField("taxa_contratada", v)} /></div>
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Taxa (%)</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <InlineText value={client.taxa_contratada} onSave={(v) => updateField("taxa_contratada", v)} />
+                {client.taxa_contratada && !String(client.taxa_contratada).includes("%") && <span style={{ fontSize: 11, color: B.gray, fontWeight: 600 }}>%</span>}
+              </div>
+            </div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Receita Mensal</div><InlineMoney value={client.receita_mensal} onSave={(v) => updateField("receita_mensal", v)} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Pagamento</div><InlineText value={client.forma_pagamento} onSave={(v) => updateField("forma_pagamento", v)} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>IR</div><InlineText value={client.declaracao_ir} onSave={(v) => updateField("declaracao_ir", v)} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Mínimo Contrato</div><InlineMoney value={client.valor_minimo_contrato} onSave={(v) => updateField("valor_minimo_contrato", v)} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Corretoras</div><InlineText value={client.corretoras} onSave={(v) => updateField("corretoras", v)} /></div>
-            <div style={{ gridColumn: "1/-1" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Produtos da Reserva / Liquidez</div><InlineText value={client.liquidez_produtos} onSave={(v) => updateField("liquidez_produtos", v)} placeholder="Ex: Tesouro Selic, CDB..." /></div>
           </div>
           <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${B.border}` }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Planejamento / Metas</div>
@@ -356,12 +356,6 @@ export default function ClientDetail() {
         )}
 
       </div>
-
-      {/* Notas Gerais — acima de Aportes */}
-      <Card style={{ marginBottom: 12, border: "2px solid #e0e7ff", background: "#fafbff" }}>
-        <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid #e0e7ff" }}>Notas Gerais</div>
-        <InlineText value={client.notas_gerais} onSave={(v) => updateField("notas_gerais", v)} placeholder="Clique para adicionar notas gerais..." multiline style={{ width: "100%", minHeight: 60 }} />
-      </Card>
 
       {/* Aportes */}
       <Card style={{ marginBottom: 12 }}>
@@ -426,59 +420,32 @@ export default function ClientDetail() {
           <InlineText value={client.link_rebalanceamento} onSave={(v) => updateField("link_rebalanceamento", v)} placeholder="https://…" />
         </div>
 
-        {/* Reserva + PGBL — compactos, lado a lado */}
-        {(Number(client.liquidez_desejada || 0) > 0 || hasPgbl) && (() => {
-          const hasLiq = Number(client.liquidez_desejada || 0) > 0;
-          const cols = hasLiq && hasPgbl ? "1fr 1fr" : "1fr";
-          return (
-            <div style={{ display: "grid", gridTemplateColumns: cols, gap: 8, marginBottom: 12 }}>
-              {hasLiq && (() => {
-                const liqA = Number(client.liquidez_atual || 0);
-                const desejada = Number(client.liquidez_desejada);
-                const pct = Math.min(100, Math.round((liqA / desejada) * 100));
-                const ok = liqA >= desejada;
-                return (
-                  <div style={{ background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 8, padding: "8px 12px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                      <span style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase" }}>Reserva / Liquidez</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: ok ? "#16a34a" : "#c2410c" }}>{pct}%</span>
-                    </div>
-                    <div style={{ fontSize: 11, color: B.gray, marginBottom: 5 }}>
-                      <strong style={{ color: ok ? "#16a34a" : "#c2410c" }}>{money(liqA)}</strong>
-                      <span style={{ margin: "0 4px" }}>/</span>
-                      <span>{money(desejada)}</span>
-                    </div>
-                    <div style={{ background: "#e5e7eb", borderRadius: 999, height: 4, overflow: "hidden" }}>
-                      <div style={{ width: `${pct}%`, height: "100%", background: ok ? "#16a34a" : "#f59e0b", borderRadius: 999 }} />
-                    </div>
-                  </div>
-                );
-              })()}
-              {hasPgbl && (
-                <div style={{ background: "#f5f3ff", border: "1px solid #ddd6fe", borderRadius: 8, padding: "8px 12px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                    <span style={{ fontSize: 9, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase" }}>PGBL {anoAtual}</span>
-                    {pgblPct !== null && <span style={{ fontSize: 11, fontWeight: 700, color: pgblPct >= 100 ? "#16a34a" : "#c2410c" }}>{pgblPct}%</span>}
-                  </div>
-                  {rendaBruta > 0 ? (
-                    <>
-                      <div style={{ fontSize: 11, color: B.gray, marginBottom: 5 }}>
-                        <strong style={{ color: pgblPct >= 100 ? "#16a34a" : B.navy }}>{money(pgblAnoAtual)}</strong>
-                        <span style={{ margin: "0 4px" }}>/</span>
-                        <span>{money(pgblLimite)}</span>
-                      </div>
-                      <div style={{ background: "#ddd6fe", borderRadius: 999, height: 4, overflow: "hidden" }}>
-                        <div style={{ width: `${pgblPct ?? 0}%`, height: "100%", background: pgblPct >= 100 ? "#16a34a" : "#7c3aed", borderRadius: 999 }} />
-                      </div>
-                    </>
-                  ) : (
-                    <div style={{ fontSize: 10, color: "#7c3aed" }}>Preencha Receita Mensal</div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })()}
+        {/* Reserva + PGBL — badges compactos */}
+        {(Number(client.liquidez_desejada || 0) > 0 || hasPgbl) && (
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+            {Number(client.liquidez_desejada || 0) > 0 && (() => {
+              const liqA = Number(client.liquidez_atual || 0);
+              const desejada = Number(client.liquidez_desejada);
+              const pct = Math.min(100, Math.round((liqA / desejada) * 100));
+              const ok = liqA >= desejada;
+              return (
+                <span style={{ padding: "3px 12px", borderRadius: 999, fontSize: 11, fontWeight: 700, background: ok ? "#f0fdf4" : "#fff7ed", color: ok ? "#16a34a" : "#c2410c", border: `1px solid ${ok ? "#bbf7d0" : "#fed7aa"}` }}>
+                  💧 Reserva {pct}%
+                </span>
+              );
+            })()}
+            {hasPgbl && pgblPct !== null && (
+              <span style={{ padding: "3px 12px", borderRadius: 999, fontSize: 11, fontWeight: 700, background: pgblPct >= 100 ? "#f0fdf4" : "#f5f3ff", color: pgblPct >= 100 ? "#16a34a" : "#7c3aed", border: `1px solid ${pgblPct >= 100 ? "#bbf7d0" : "#ddd6fe"}` }}>
+                ⏳ PGBL {pgblPct}%
+              </span>
+            )}
+            {hasPgbl && pgblPct === null && rendaBruta === 0 && (
+              <span style={{ padding: "3px 12px", borderRadius: 999, fontSize: 11, fontWeight: 700, background: "#f5f3ff", color: "#7c3aed", border: "1px solid #ddd6fe" }}>
+                ⏳ PGBL — preencha Receita Mensal
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Histórico colapsável — usa o mesmo filtro dos stats acima */}
         {(() => {
@@ -551,6 +518,12 @@ export default function ClientDetail() {
           </div>
         </Card>
       </div>
+
+      {/* Notas Gerais — abaixo de Aportes */}
+      <Card style={{ marginBottom: 12, border: "2px solid #e0e7ff", background: "#fafbff" }}>
+        <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid #e0e7ff" }}>Notas Gerais</div>
+        <InlineText value={client.notas_gerais} onSave={(v) => updateField("notas_gerais", v)} placeholder="Clique para adicionar notas gerais..." multiline style={{ width: "100%", minHeight: 60 }} />
+      </Card>
 
       {/* Histórico de Reuniões — último, conteúdo colapsável por entrada */}
       <Card style={{ marginBottom: 12 }}>
@@ -656,9 +629,6 @@ export default function ClientDetail() {
                 onChange={(e) => { const v = e.target.value; setEditForm((f) => ({ ...f, pgbl: v === "pgbl" || v === "ambos", vgbl: v === "vgbl" || v === "ambos" })); }}
                 opts={[{ v: "nao", l: "Não" }, { v: "pgbl", l: "PGBL" }, { v: "vgbl", l: "VGBL" }, { v: "ambos", l: "PGBL e VGBL" }]} />
               <Inp label="Sucessão" value={typeof editForm.sucessao === "boolean" ? (editForm.sucessao ? "Sim" : "") : (editForm.sucessao || "")} onChange={EF("sucessao")} placeholder="Descreva o planejamento..." />
-              <Sel label="Desbalanceado" value={(editForm.cliente_desbalanceado ?? editForm.clienteDesbalanceado) ? "sim" : "nao"}
-                onChange={(e) => setEditForm((f) => ({ ...f, cliente_desbalanceado: e.target.value === "sim" }))}
-                opts={[{ v: "nao", l: "Não" }, { v: "sim", l: "Sim" }]} />
             </div>
 
           </div>
