@@ -131,6 +131,10 @@ export default function ClientDetail() {
     if (!aptForm.data || !aptForm.valor) { setToast({ type: "error", text: "Preencha data e valor." }); return; }
     const entry = { ...aptForm, client_id: id, id: huid(), valor: Number(aptForm.valor) };
     await saveAporte(entry, true);
+    if (entry.is_reserva) {
+      const delta = entry.tipo === "aporte" ? entry.valor : -entry.valor;
+      await updateField("liquidez_atual", Math.max(0, (Number(client.liquidez_atual) || 0) + delta));
+    }
     setAptModal(false);
     setToast({ type: "success", text: "Registrado." });
   };
@@ -171,10 +175,16 @@ export default function ClientDetail() {
       {/* Alerta */}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-        {/* Dados Pessoais */}
+        {/* Observação */}
+        <Card style={{ gridColumn: "1/-1", background: "#fffbeb", border: `1px solid #fde68a` }}>
+          <div style={{ fontWeight: 700, fontSize: 12, color: "#92400e", marginBottom: 6 }}>Observação</div>
+          <InlineText value={client.observacao_rapida} onSave={(v) => updateField("observacao_rapida", v)} placeholder="Clique para adicionar uma observação importante sobre este cliente..." multiline style={{ width: "100%", display: "block" }} />
+        </Card>
+
+        {/* Dados Gerais */}
         <Card style={{ gridColumn: "1/-1" }}>
           <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between" }}>
-            <span>Dados Pessoais</span>
+            <span>Dados Gerais</span>
             <span style={{ fontSize: 10, color: "#8899bb", fontWeight: 400 }}>clique para editar</span>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
@@ -183,6 +193,8 @@ export default function ClientDetail() {
             ))}
             {idade !== null && <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Idade</div><span style={{ fontSize: 12, fontWeight: 600 }}>{idade} anos</span></div>}
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Data Nascimento</div><InlineDate value={client.data_nascimento} onSave={(v) => updateField("data_nascimento", v)} /></div>
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Origem do Cliente</div><InlineText value={client.origem_cliente} onSave={(v) => updateField("origem_cliente", v)} /></div>
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Início Carteira</div><InlineDate value={client.inicio_carteira} onSave={(v) => updateField("inicio_carteira", v)} /></div>
             {grupoNome && <div style={{ gridColumn: "1/-1" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Grupo (PJ+PF)</div><InlineText value={client.grupo_nome} onSave={(v) => updateField("grupo_nome", v)} /></div>}
           </div>
         </Card>
@@ -197,9 +209,9 @@ export default function ClientDetail() {
             <div>
               <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Liquidez Atual</div>
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: liqAtual > 0 ? (liqAtual >= Number(client.liquidez_desejada || 0) ? "#16a34a" : "#c2410c") : "#9E9C9E" }}>{liqAtual > 0 ? money(liqAtual) : "—"}</span>
-                {liqAtual > 0 && Number(client.liquidez_desejada || 0) > 0 && (
-                  <span style={{ fontSize: 10, fontWeight: 700, color: liqAtual >= Number(client.liquidez_desejada) ? "#16a34a" : "#c2410c", background: liqAtual >= Number(client.liquidez_desejada) ? "#f0fdf4" : "#fff7ed", border: `1px solid ${liqAtual >= Number(client.liquidez_desejada) ? "#bbf7d0" : "#fed7aa"}`, borderRadius: 999, padding: "1px 6px" }}>{Math.min(100, Math.round((liqAtual / Number(client.liquidez_desejada)) * 100))}%</span>
+                <InlineText value={client.liquidez_atual || ""} onSave={(v) => updateField("liquidez_atual", v)} placeholder="0" />
+                {Number(client.liquidez_atual || 0) > 0 && Number(client.liquidez_desejada || 0) > 0 && (
+                  <span style={{ fontSize: 10, fontWeight: 700, color: Number(client.liquidez_atual) >= Number(client.liquidez_desejada) ? "#16a34a" : "#c2410c", background: Number(client.liquidez_atual) >= Number(client.liquidez_desejada) ? "#f0fdf4" : "#fff7ed", border: `1px solid ${Number(client.liquidez_atual) >= Number(client.liquidez_desejada) ? "#bbf7d0" : "#fed7aa"}`, borderRadius: 999, padding: "1px 6px" }}>{Math.min(100, Math.round((Number(client.liquidez_atual) / Number(client.liquidez_desejada)) * 100))}%</span>
                 )}
               </div>
             </div>
@@ -217,14 +229,6 @@ export default function ClientDetail() {
           </div>
         </Card>
 
-        {/* Origem */}
-        <Card style={{ gridColumn: "1/-1" }}>
-          <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Origem</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Origem do Cliente</div><InlineText value={client.origem_cliente} onSave={(v) => updateField("origem_cliente", v)} /></div>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Início Carteira</div><InlineDate value={client.inicio_carteira} onSave={(v) => updateField("inicio_carteira", v)} /></div>
-          </div>
-        </Card>
 
         {/* Grupo PJ+PF */}
         {grupoMembers.length > 0 && (
@@ -327,10 +331,11 @@ export default function ClientDetail() {
         </div>
 
         {/* Liquidez definida x atual */}
-        {(client.liquidez_desejada || liqAtual > 0) && (() => {
+        {(client.liquidez_desejada || Number(client.liquidez_atual || 0) > 0) && (() => {
+          const liqA = Number(client.liquidez_atual || 0);
           const desejada = Number(client.liquidez_desejada || 0);
-          const pct = desejada > 0 ? Math.min(100, Math.round((liqAtual / desejada) * 100)) : null;
-          const ok = liqAtual >= desejada;
+          const pct = desejada > 0 ? Math.min(100, Math.round((liqA / desejada) * 100)) : null;
+          const ok = liqA >= desejada;
           return (
             <div style={{ background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 8, padding: "10px 14px", marginBottom: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
@@ -345,7 +350,7 @@ export default function ClientDetail() {
                 <div style={{ fontSize: 16, color: B.border }}>→</div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 9, color: "#8899bb", textTransform: "uppercase", marginBottom: 2 }}>Atual</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: liqAtual > 0 ? (ok ? "#16a34a" : "#c2410c") : B.gray }}>{liqAtual > 0 ? money(liqAtual) : "—"}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: liqA > 0 ? (ok ? "#16a34a" : "#c2410c") : B.gray }}>{liqA > 0 ? money(liqA) : "—"}</div>
                 </div>
               </div>
               {pct !== null && (
@@ -446,7 +451,8 @@ export default function ClientDetail() {
             <button onClick={() => setEditModal(false)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: B.gray }}>×</button>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
-            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}` }}>Dados Pessoais</div>
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}` }}>Dados Gerais</div>
+            <div style={{ gridColumn: "1/-1" }}><Tarea label="Observação" value={editForm.observacao_rapida ?? editForm.observacaoRapida ?? ""} onChange={EF("observacao_rapida")} /></div>
             <div style={{ gridColumn: "1/-1" }}><Inp label="Nome completo *" value={editForm.nome || ""} onChange={EF("nome")} /></div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 70px", gap: 8 }}><Inp label="Cidade" value={editForm.cidade || ""} onChange={EF("cidade")} /><Inp label="UF" value={editForm.uf || ""} onChange={EF("uf")} /></div>
             <Inp label="Profissão" value={editForm.profissao || ""} onChange={EF("profissao")} />
@@ -456,6 +462,8 @@ export default function ClientDetail() {
             <Inp label="Data Nascimento" value={editForm.data_nascimento || editForm.dataNascimento || ""} onChange={EF("data_nascimento")} type="date" />
             <div style={{ gridColumn: "1/-1" }}><Inp label="Hobbies" value={editForm.hobbies || ""} onChange={EF("hobbies")} /></div>
             <div style={{ gridColumn: "1/-1" }}><Inp label="Grupo (PJ+PF)" value={editForm.grupo_nome ?? editForm.grupoNome ?? ""} onChange={EF("grupo_nome")} placeholder="Nome do grupo" /></div>
+            <Sel label="Origem do Cliente" value={editForm.origem_cliente || editForm.origemCliente || ""} onChange={EF("origem_cliente")} opts={[{ v: "", l: "—" }, ...LEAD_ORIGENS.map((o) => ({ v: o, l: o }))]} />
+            <Inp label="Início Carteira" value={editForm.inicio_carteira ?? editForm.inicioCarteira ?? ""} onChange={EF("inicio_carteira")} type="date" />
 
             <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Status e Perfil</div>
             <Sel label="Status" value={editForm.status || "ativo"} onChange={EF("status")} opts={[{ v: "ativo", l: "Ativo" }, { v: "inativo", l: "Inativo" }]} />
@@ -465,6 +473,7 @@ export default function ClientDetail() {
             <Inp label="PL Atual (R$)" value={editForm.pl_inicial ?? editForm.plInicial ?? ""} onChange={EF("pl_inicial")} type="number" />
             <Inp label="Aporte Mensal (R$)" value={editForm.aporte_mensal ?? editForm.aporteMensal ?? ""} onChange={EF("aporte_mensal")} type="number" />
             <Inp label="Liquidez Desejada (R$)" value={editForm.liquidez_desejada ?? editForm.liquidezDesejada ?? ""} onChange={EF("liquidez_desejada")} type="number" />
+            <Inp label="Liquidez Atual (R$)" value={editForm.liquidez_atual ?? ""} onChange={EF("liquidez_atual")} type="number" />
             <Inp label="Taxa Contratada" value={editForm.taxa_contratada ?? editForm.taxaContratada ?? ""} onChange={EF("taxa_contratada")} />
             <Inp label="Receita Mensal (R$)" value={editForm.receita_mensal ?? editForm.receitaMensal ?? ""} onChange={EF("receita_mensal")} type="number" />
             <Sel label="Forma Pagamento" value={editForm.forma_pagamento ?? editForm.formaPagamento ?? "XP"} onChange={EF("forma_pagamento")} opts={["XP", "BTG", "Boleto", "Outros"].map((v) => ({ v, l: v }))} />
@@ -473,13 +482,7 @@ export default function ClientDetail() {
             <div style={{ gridColumn: "1/-1" }}><Inp label="Link Rebalanceamento" value={editForm.link_rebalanceamento ?? editForm.linkRebalanceamento ?? ""} onChange={EF("link_rebalanceamento")} placeholder="https://…" /></div>
             <div style={{ gridColumn: "1/-1" }}><Tarea label="Planejamento / Metas" value={editForm.planejamento || ""} onChange={EF("planejamento")} /></div>
 
-            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Origem</div>
-            <div style={{ gridColumn: "1/-1" }}>
-              <Sel label="Origem" value={editForm.origem_cliente || editForm.origemCliente || ""} onChange={EF("origem_cliente")} opts={[{ v: "", l: "—" }, ...LEAD_ORIGENS.map((o) => ({ v: o, l: o }))]} />
-            </div>
-
             <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Datas</div>
-            <Inp label="Início Carteira" value={editForm.inicio_carteira ?? editForm.inicioCarteira ?? ""} onChange={EF("inicio_carteira")} type="date" />
             <Inp label="Última Reunião" value={editForm.ultima_reuniao ?? editForm.ultimaReuniao ?? ""} onChange={EF("ultima_reuniao")} type="date" />
             <Inp label="Próxima Reunião" value={editForm.proxima_reuniao ?? editForm.proximaReuniao ?? ""} onChange={EF("proxima_reuniao")} type="date" />
             <Inp label="Último Relatório" value={editForm.ultimo_relatorio ?? editForm.ultimoRelatorio ?? ""} onChange={EF("ultimo_relatorio")} type="date" />
