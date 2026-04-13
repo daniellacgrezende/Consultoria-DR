@@ -14,7 +14,7 @@ import { SecH, Inp, Sel, Tarea } from "../components/ui/FormFields";
 export default function ClientDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { clients, history, aportes, reunioes, saveClient, deleteClient, saveReuniao, deleteReuniao, saveAporte, setToast } = useData();
+  const { clients, history, aportes, reunioes, saveClient, deleteClient, saveReuniao, deleteReuniao, saveAporte, deleteAporte, setToast } = useData();
 
   const client = clients.find((c) => slugify(c.nome) === slug || c.id === slug);
   const id = client?.id;
@@ -44,6 +44,7 @@ export default function ClientDetail() {
 
   // ─── Aporte modal ───
   const [aptModal, setAptModal] = useState(false);
+  const [aptEditId, setAptEditId] = useState(null);
   const [aptForm, setAptForm] = useState({ client_id: "", data: "", tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false });
   const [aptHistOpen, setAptHistOpen] = useState(false);
   const [aptYearFilter, setAptYearFilter] = useState("todos");
@@ -140,14 +141,32 @@ export default function ClientDetail() {
 
   const saveAptEntry = async () => {
     if (!aptForm.data || !aptForm.valor) { setToast({ type: "error", text: "Preencha data e valor." }); return; }
-    const entry = { ...aptForm, client_id: id, id: huid(), valor: Number(aptForm.valor) };
-    await saveAporte(entry, true);
-    if (entry.is_reserva) {
+    const isNew = !aptEditId;
+    const entry = { ...aptForm, client_id: id, id: aptEditId || huid(), valor: Number(aptForm.valor) };
+    await saveAporte(entry, isNew);
+    if (isNew && entry.is_reserva) {
       const delta = entry.tipo === "aporte" ? entry.valor : -entry.valor;
       await updateField("liquidez_atual", Math.max(0, (Number(client.liquidez_atual) || 0) + delta));
     }
     setAptModal(false);
-    setToast({ type: "success", text: "Registrado." });
+    setAptEditId(null);
+    setToast({ type: "success", text: isNew ? "Registrado." : "Atualizado." });
+  };
+
+  const openAptEdit = (a) => {
+    setAptEditId(a.id);
+    setAptForm({ ...a, valor: String(a.valor) });
+    setAptModal(true);
+  };
+
+  const handleDeleteAporte = async (a) => {
+    if (!confirm("Remover este lançamento?")) return;
+    await deleteAporte(a.id);
+    if (a.is_reserva) {
+      const delta = a.tipo === "aporte" ? -Number(a.valor) : Number(a.valor);
+      await updateField("liquidez_atual", Math.max(0, (Number(client.liquidez_atual) || 0) + delta));
+    }
+    setToast({ type: "success", text: "Removido." });
   };
 
   const hasSeguro = client.seguro_vida || client.seguroVida;
@@ -364,36 +383,57 @@ export default function ClientDetail() {
         </div>
 
         {/* Liquidez definida x atual */}
-        {(client.liquidez_desejada || Number(client.liquidez_atual || 0) > 0) && (() => {
+        {Number(client.liquidez_desejada || 0) > 0 && (() => {
           const liqA = Number(client.liquidez_atual || 0);
-          const desejada = Number(client.liquidez_desejada || 0);
-          const pct = desejada > 0 ? Math.min(100, Math.round((liqA / desejada) * 100)) : null;
+          const desejada = Number(client.liquidez_desejada);
+          const pct = Math.min(100, Math.round((liqA / desejada) * 100));
           const ok = liqA >= desejada;
           return (
             <div style={{ background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 8, padding: "10px 14px", marginBottom: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                <span style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase" }}>Liquidez</span>
-                {pct !== null && <span style={{ fontSize: 10, fontWeight: 700, color: ok ? "#16a34a" : "#c2410c" }}>{pct}%</span>}
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase" }}>Reserva / Liquidez</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: ok ? "#16a34a" : "#c2410c" }}>{pct}%</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                 <div>
-                  <div style={{ fontSize: 9, color: "#8899bb", textTransform: "uppercase", marginBottom: 2 }}>Definida</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: B.navy }}>{desejada > 0 ? money(desejada) : "—"}</div>
+                  <div style={{ fontSize: 9, color: "#8899bb", textTransform: "uppercase", marginBottom: 2 }}>Meta</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: B.navy }}>{money(desejada)}</div>
                 </div>
-                <div style={{ fontSize: 16, color: B.border }}>→</div>
+                <div style={{ fontSize: 14, color: B.border }}>→</div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 9, color: "#8899bb", textTransform: "uppercase", marginBottom: 2 }}>Atual</div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: liqA > 0 ? (ok ? "#16a34a" : "#c2410c") : B.gray }}>{liqA > 0 ? money(liqA) : "—"}</div>
                 </div>
               </div>
-              {pct !== null && (
-                <div style={{ marginTop: 8, background: "#e5e7eb", borderRadius: 999, height: 5, overflow: "hidden" }}>
-                  <div style={{ width: `${pct}%`, height: "100%", background: ok ? "#16a34a" : "#f59e0b", borderRadius: 999, transition: "width 0.3s" }} />
-                </div>
-              )}
+              <div style={{ background: "#e5e7eb", borderRadius: 999, height: 6, overflow: "hidden" }}>
+                <div style={{ width: `${pct}%`, height: "100%", background: ok ? "#16a34a" : "#f59e0b", borderRadius: 999, transition: "width 0.3s" }} />
+              </div>
             </div>
           );
         })()}
+
+        {/* PGBL no Aportes */}
+        {hasPgbl && (
+          <div style={{ background: "#f5f3ff", border: "1px solid #ddd6fe", borderRadius: 8, padding: "10px 14px", marginBottom: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+              <span style={{ fontSize: 9, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase" }}>PGBL — Limite anual (12% renda bruta tributável)</span>
+              {pgblPct !== null && <span style={{ fontSize: 11, fontWeight: 700, color: pgblPct >= 100 ? "#16a34a" : "#c2410c" }}>{pgblPct}%</span>}
+            </div>
+            {rendaBruta > 0 ? (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 6 }}>
+                  <span style={{ color: B.gray }}>Aportado em {anoAtual}: <strong style={{ color: B.navy }}>{money(pgblAnoAtual)}</strong></span>
+                  <span style={{ color: B.gray }}>Limite: <strong style={{ color: B.navy }}>{money(pgblLimite)}</strong></span>
+                </div>
+                <div style={{ background: "#ddd6fe", borderRadius: 999, height: 6, overflow: "hidden" }}>
+                  <div style={{ width: `${pgblPct ?? 0}%`, height: "100%", background: pgblPct >= 100 ? "#16a34a" : "#7c3aed", borderRadius: 999, transition: "width 0.3s" }} />
+                </div>
+              </>
+            ) : (
+              <div style={{ fontSize: 11, color: "#7c3aed" }}>Preencha a Receita Mensal no card Financeiro para calcular</div>
+            )}
+          </div>
+        )}
 
         {/* Histórico colapsável */}
         <div>
@@ -423,12 +463,18 @@ export default function ClientDetail() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     {clientAportes.filter((a) => aptYearFilter === "todos" || a.data?.startsWith(aptYearFilter)).map((a) => (
                       <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", borderRadius: 6, background: a.tipo === "aporte" ? "#f0fdf4" : "#fff5f5", border: `1px solid ${a.tipo === "aporte" ? "#dcfce7" : "#fee2e2"}` }}>
-                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1 }}>
                           <span style={{ fontSize: 11, fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "+" : "−"}</span>
                           <span style={{ fontSize: 11, color: B.gray }}>{fmtDate(a.data)}</span>
+                          {a.is_reserva && <span style={{ fontSize: 9, background: "#e0f2fe", color: "#0369a1", borderRadius: 4, padding: "1px 5px", fontWeight: 700 }}>RESERVA</span>}
+                          {a.is_pgbl && <span style={{ fontSize: 9, background: "#f5f3ff", color: "#7c3aed", borderRadius: 4, padding: "1px 5px", fontWeight: 700 }}>PGBL</span>}
                           {a.observacao && <span style={{ fontSize: 10, color: "#9baabf", fontStyle: "italic" }}>{a.observacao}</span>}
                         </div>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "+" : "-"}{money(a.valor)}</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "+" : "−"}{money(a.valor)}</span>
+                          <button onClick={() => openAptEdit(a)} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 5, padding: "2px 8px", fontSize: 10, cursor: "pointer" }}>Editar</button>
+                          <button onClick={() => handleDeleteAporte(a)} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 5, padding: "2px 8px", fontSize: 10, cursor: "pointer" }}>Remover</button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -566,9 +612,9 @@ export default function ClientDetail() {
       </Modal>
 
       {/* Modal Aporte */}
-      <Modal open={aptModal} onClose={() => setAptModal(false)}>
+      <Modal open={aptModal} onClose={() => { setAptModal(false); setAptEditId(null); }}>
         <div style={{ padding: "26px 30px" }}>
-          <h3 style={{ margin: "0 0 20px", fontSize: 17, fontWeight: 700, color: B.navy }}>Novo Aporte / Resgate</h3>
+          <h3 style={{ margin: "0 0 20px", fontSize: 17, fontWeight: 700, color: B.navy }}>{aptEditId ? "Editar Lançamento" : "Novo Aporte / Resgate"}</h3>
           <Inp label="Data *" type="date" value={aptForm.data} onChange={(e) => setAptForm((f) => ({ ...f, data: e.target.value }))} />
           <div style={{ display: "flex", gap: 8, marginBottom: 13 }}>
             {["aporte", "resgate"].map((t) => (
@@ -589,7 +635,7 @@ export default function ClientDetail() {
           <Inp label="Observação" value={aptForm.observacao} onChange={(e) => setAptForm((f) => ({ ...f, observacao: e.target.value }))} />
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => setAptModal(false)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>
-            <button onClick={saveAptEntry} style={{ flex: 2, padding: "10px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700 }}>REGISTRAR</button>
+            <button onClick={saveAptEntry} style={{ flex: 2, padding: "10px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700 }}>{aptEditId ? "SALVAR" : "REGISTRAR"}</button>
           </div>
         </div>
       </Modal>
