@@ -47,7 +47,7 @@ export default function ClientDetail() {
   const [aptEditId, setAptEditId] = useState(null);
   const [aptForm, setAptForm] = useState({ client_id: "", data: "", tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false });
   const [aptHistOpen, setAptHistOpen] = useState(false);
-  const [aptYearFilter, setAptYearFilter] = useState("todos");
+  const [aptFilter, setAptFilter] = useState({ mode: "todos", ano: "", de: "", ate: "" });
 
   if (!client) return (
     <div style={{ padding: 40, textAlign: "center", color: B.gray }}>
@@ -94,17 +94,49 @@ export default function ClientDetail() {
   const liqAtual = getLiquidezAtual(client, aportes);
 
   const clientAportes = aportes.filter((a) => a.client_id === id).sort((a, b) => b.data.localeCompare(a.data));
-  const totalAp = clientAportes.filter((a) => a.tipo === "aporte").reduce((s, a) => s + Number(a.valor || 0), 0);
-  const totalRe = clientAportes.filter((a) => a.tipo === "resgate").reduce((s, a) => s + Number(a.valor || 0), 0);
-  const liquido = totalAp - totalRe;
   const aporteYears = [...new Set(clientAportes.map((a) => a.data?.slice(0, 4)).filter(Boolean))].sort((a, b) => b - a);
-  // Média mensal: aportes do ano corrente ÷ meses passados do ano (incluindo meses com zero)
+
+  // Aplica filtro de período nos aportes
+  const filteredClientAportes = clientAportes.filter((a) => {
+    if (aptFilter.mode === "todos") return true;
+    if (aptFilter.mode === "ano") return a.data?.startsWith(aptFilter.ano);
+    if (aptFilter.mode === "periodo") {
+      if (aptFilter.de && a.data < aptFilter.de) return false;
+      if (aptFilter.ate && a.data > aptFilter.ate) return false;
+      return true;
+    }
+    return true;
+  });
+
+  const totalAp = filteredClientAportes.filter((a) => a.tipo === "aporte").reduce((s, a) => s + Number(a.valor || 0), 0);
+  const totalRe = filteredClientAportes.filter((a) => a.tipo === "resgate").reduce((s, a) => s + Number(a.valor || 0), 0);
+  const liquido = totalAp - totalRe;
+
+  // Média/mês coerente com o filtro ativo
   const mediaMes = (() => {
-    const anoAtual = new Date().getFullYear().toString();
-    const mesAtual = new Date().getMonth() + 1; // 1-12
-    const apAno = clientAportes.filter((a) => a.tipo === "aporte" && a.data?.startsWith(anoAtual));
-    const totalAno = apAno.reduce((s, a) => s + Number(a.valor || 0), 0);
-    return totalAno / mesAtual;
+    const apAtivos = filteredClientAportes.filter((a) => a.tipo === "aporte");
+    const total = apAtivos.reduce((s, a) => s + Number(a.valor || 0), 0);
+    const now = new Date();
+    if (aptFilter.mode === "todos") {
+      if (apAtivos.length === 0) return 0;
+      const earliest = [...apAtivos].sort((a, b) => a.data.localeCompare(b.data))[0].data;
+      const start = new Date(earliest);
+      const months = Math.max(1, (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth()) + 1);
+      return total / months;
+    }
+    if (aptFilter.mode === "ano") {
+      const ano = parseInt(aptFilter.ano);
+      const months = ano === now.getFullYear() ? now.getMonth() + 1 : 12;
+      return total / Math.max(1, months);
+    }
+    if (aptFilter.mode === "periodo") {
+      const de = aptFilter.de ? new Date(aptFilter.de) : null;
+      const ate = aptFilter.ate ? new Date(aptFilter.ate) : now;
+      if (!de) return apAtivos.length === 0 ? 0 : total;
+      const months = Math.max(1, (ate.getFullYear() - de.getFullYear()) * 12 + (ate.getMonth() - de.getMonth()) + 1);
+      return total / months;
+    }
+    return total;
   })();
 
   // PGBL: aportes do ano corrente marcados is_pgbl
@@ -274,7 +306,6 @@ export default function ClientDetail() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Perfil</div><InlineSelect value={client.perfil || "moderado"} onSave={(v) => updateField("perfil", v)} opts={Object.entries(PERFIL_MAP).map(([k, v]) => ({ v: k, l: v.label }))} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>PL Atual</div><InlineMoney value={client.pl_inicial} onSave={(v) => updateField("pl_inicial", v)} /></div>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Aporte Mensal</div><InlineMoney value={client.aporte_mensal} onSave={(v) => updateField("aporte_mensal", v)} /></div>
             <div>
               <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Liquidez Atual</div>
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -285,6 +316,7 @@ export default function ClientDetail() {
               </div>
             </div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Liquidez Desejada</div><InlineMoney value={client.liquidez_desejada} onSave={(v) => updateField("liquidez_desejada", v)} /></div>
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Aporte Mensal</div><InlineMoney value={client.aporte_mensal} onSave={(v) => updateField("aporte_mensal", v)} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Taxa</div><InlineText value={client.taxa_contratada} onSave={(v) => updateField("taxa_contratada", v)} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Receita Mensal</div><InlineMoney value={client.receita_mensal} onSave={(v) => updateField("receita_mensal", v)} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Pagamento</div><InlineText value={client.forma_pagamento} onSave={(v) => updateField("forma_pagamento", v)} /></div>
@@ -375,7 +407,37 @@ export default function ClientDetail() {
           <button onClick={() => { setAptForm({ client_id: id, data: today(), tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false }); setAptModal(true); }} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Registrar</button>
         </div>
 
-        {/* Stats principais */}
+        {/* Filtro de período — controla os stats e o histórico */}
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: aptFilter.mode === "periodo" ? 8 : 0 }}>
+            <button onClick={() => setAptFilter({ mode: "todos", ano: "", de: "", ate: "" })}
+              style={{ padding: "3px 12px", borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${aptFilter.mode === "todos" ? B.navy : B.border}`, background: aptFilter.mode === "todos" ? B.navy : "white", color: aptFilter.mode === "todos" ? "white" : B.gray }}>
+              Desde o início
+            </button>
+            {aporteYears.map((y) => (
+              <button key={y} onClick={() => setAptFilter({ mode: "ano", ano: y, de: "", ate: "" })}
+                style={{ padding: "3px 12px", borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${aptFilter.mode === "ano" && aptFilter.ano === y ? B.brand : B.border}`, background: aptFilter.mode === "ano" && aptFilter.ano === y ? B.brand : "white", color: aptFilter.mode === "ano" && aptFilter.ano === y ? "white" : B.gray }}>
+                {y}
+              </button>
+            ))}
+            <button onClick={() => setAptFilter((f) => ({ ...f, mode: "periodo" }))}
+              style={{ padding: "3px 12px", borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${aptFilter.mode === "periodo" ? "#0369a1" : B.border}`, background: aptFilter.mode === "periodo" ? "#e0f2fe" : "white", color: aptFilter.mode === "periodo" ? "#0369a1" : B.gray }}>
+              Período...
+            </button>
+          </div>
+          {aptFilter.mode === "periodo" && (
+            <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
+              <span style={{ fontSize: 11, color: B.gray }}>De</span>
+              <input type="date" value={aptFilter.de || ""} onChange={(e) => setAptFilter((f) => ({ ...f, de: e.target.value }))}
+                style={{ border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 8px", fontSize: 12, outline: "none", fontFamily: "inherit" }} />
+              <span style={{ fontSize: 11, color: B.gray }}>até</span>
+              <input type="date" value={aptFilter.ate || ""} onChange={(e) => setAptFilter((f) => ({ ...f, ate: e.target.value }))}
+                style={{ border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 8px", fontSize: 12, outline: "none", fontFamily: "inherit" }} />
+            </div>
+          )}
+        </div>
+
+        {/* Stats principais — respondem ao filtro acima */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 12 }}>
           <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "10px 12px" }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Aportado</div>
@@ -454,33 +516,24 @@ export default function ClientDetail() {
           </div>
         )}
 
-        {/* Histórico colapsável */}
+        {/* Histórico colapsável — usa o mesmo filtro dos stats acima */}
+        {(() => {
+          return (
         <div>
           <button onClick={() => setAptHistOpen((o) => !o)}
             style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: "4px 0", fontSize: 11, fontWeight: 600, color: B.navy }}>
             <span style={{ fontSize: 10 }}>{aptHistOpen ? "▼" : "▶"}</span>
-            Ver histórico ({clientAportes.length} registro{clientAportes.length !== 1 ? "s" : ""})
+            Ver histórico ({filteredClientAportes.length} registro{filteredClientAportes.length !== 1 ? "s" : ""}{aptFilter.mode !== "todos" ? " no período" : ""})
           </button>
 
           {aptHistOpen && (
             <div style={{ marginTop: 10 }}>
-              {/* Filtro por ano */}
-              {aporteYears.length > 1 && (
-                <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
-                  {["todos", ...aporteYears].map((y) => (
-                    <button key={y} onClick={() => setAptYearFilter(y)}
-                      style={{ padding: "3px 12px", borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${aptYearFilter === y ? B.navy : B.border}`, background: aptYearFilter === y ? B.navy : "white", color: aptYearFilter === y ? "white" : B.gray }}>
-                      {y === "todos" ? "Todos" : y}
-                    </button>
-                  ))}
-                </div>
-              )}
               {/* Lista */}
-              {clientAportes.filter((a) => aptYearFilter === "todos" || a.data?.startsWith(aptYearFilter)).length === 0
+              {filteredClientAportes.length === 0
                 ? <div style={{ padding: 12, textAlign: "center", color: B.gray, fontSize: 12 }}>Nenhuma movimentação.</div>
                 : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    {clientAportes.filter((a) => aptYearFilter === "todos" || a.data?.startsWith(aptYearFilter)).map((a) => (
+                    {filteredClientAportes.map((a) => (
                       <div key={a.id} style={{ padding: "8px 10px", borderRadius: 6, background: a.tipo === "aporte" ? "#f0fdf4" : "#fff5f5", border: `1px solid ${a.tipo === "aporte" ? "#dcfce7" : "#fee2e2"}` }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1 }}>
@@ -508,6 +561,8 @@ export default function ClientDetail() {
             </div>
           )}
         </div>
+          );
+        })()}
       </Card>
 
       {/* Reuniões */}
