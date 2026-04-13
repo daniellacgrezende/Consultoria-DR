@@ -34,7 +34,7 @@ export default function Clients() {
   const alertas75 = useMemo(() => active.filter((c) => {
     const d = daysSince(c.ultima_reuniao || c.ultimaReuniao);
     const p = (c.periodicidade_reuniao || c.periodicidadeReuniao || "Trimestral").toLowerCase();
-    const days = { mensal: 30, bimestral: 60, trimestral: 90, semestral: 180, anual: 365 }[p] || 90;
+    const days = { mensal: 30, bimestral: 60, trimestral: 90, quadrimestral: 120, semestral: 180, anual: 365 }[p] || 90;
     return d !== null && d > Math.round(days * 0.83);
   }).length, [active]);
 
