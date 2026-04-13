@@ -8,7 +8,7 @@ import Card from "../components/ui/Card";
 import Avatar from "../components/ui/Avatar";
 import Modal from "../components/ui/Modal";
 import { SBadge, PBadge, CBadge } from "../components/ui/Badge";
-import { InlineText, InlineDate, InlineSelect } from "../components/ui/InlineEdit";
+import { InlineText, InlineDate, InlineSelect, InlineMoney } from "../components/ui/InlineEdit";
 import { SecH, Inp, Sel, Tarea } from "../components/ui/FormFields";
 
 export default function ClientDetail() {
@@ -97,15 +97,26 @@ export default function ClientDetail() {
   const totalRe = clientAportes.filter((a) => a.tipo === "resgate").reduce((s, a) => s + Number(a.valor || 0), 0);
   const liquido = totalAp - totalRe;
   const aporteYears = [...new Set(clientAportes.map((a) => a.data?.slice(0, 4)).filter(Boolean))].sort((a, b) => b - a);
-  // Média mensal: distribuída pelo intervalo entre primeiro e último aporte
-  const aptDatas = clientAportes.map((a) => a.data).filter(Boolean).sort();
+  // Média mensal: aportes do ano corrente ÷ meses passados do ano (incluindo meses com zero)
   const mediaMes = (() => {
-    if (aptDatas.length === 0) return 0;
-    const first = new Date(aptDatas[0] + "T12:00:00");
-    const last = new Date(aptDatas[aptDatas.length - 1] + "T12:00:00");
-    const months = Math.max(1, (last.getFullYear() - first.getFullYear()) * 12 + (last.getMonth() - first.getMonth()) + 1);
-    return totalAp / months;
+    const anoAtual = new Date().getFullYear().toString();
+    const mesAtual = new Date().getMonth() + 1; // 1-12
+    const apAno = clientAportes.filter((a) => a.tipo === "aporte" && a.data?.startsWith(anoAtual));
+    const totalAno = apAno.reduce((s, a) => s + Number(a.valor || 0), 0);
+    return totalAno / mesAtual;
   })();
+
+  // PGBL: aportes do ano corrente marcados is_pgbl
+  const anoAtual = new Date().getFullYear().toString();
+  const pgblAnoAtual = clientAportes
+    .filter((a) => a.tipo === "aporte" && a.is_pgbl && a.data?.startsWith(anoAtual))
+    .reduce((s, a) => s + Number(a.valor || 0), 0);
+  const hasPgbl = client.pgbl;
+  const rendaBruta = Number(client.receita_mensal || 0);
+  // Limite PGBL: 12% da renda bruta tributável anual (renda mensal × 12 + 1/3 renda mensal)
+  const rendaBrutaAnual = rendaBruta * 12 + rendaBruta / 3;
+  const pgblLimite = rendaBrutaAnual * 0.12;
+  const pgblPct = pgblLimite > 0 ? Math.min(100, Math.round((pgblAnoAtual / pgblLimite) * 100)) : null;
 
   const clientReunioes = reunioes.filter((r) => r.client_id === id).sort((a, b) => b.data.localeCompare(a.data));
 
@@ -204,25 +215,43 @@ export default function ClientDetail() {
           <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Financeiro</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Perfil</div><InlineSelect value={client.perfil || "moderado"} onSave={(v) => updateField("perfil", v)} opts={Object.entries(PERFIL_MAP).map(([k, v]) => ({ v: k, l: v.label }))} /></div>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>PL Atual</div><InlineText value={client.pl_inicial} onSave={(v) => updateField("pl_inicial", v)} /></div>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Aporte Mensal</div><InlineText value={client.aporte_mensal} onSave={(v) => updateField("aporte_mensal", v)} /></div>
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>PL Atual</div><InlineMoney value={client.pl_inicial} onSave={(v) => updateField("pl_inicial", v)} /></div>
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Aporte Mensal</div><InlineMoney value={client.aporte_mensal} onSave={(v) => updateField("aporte_mensal", v)} /></div>
             <div>
               <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Liquidez Atual</div>
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                <InlineText value={client.liquidez_atual || ""} onSave={(v) => updateField("liquidez_atual", v)} placeholder="0" />
+                <InlineMoney value={client.liquidez_atual} onSave={(v) => updateField("liquidez_atual", v)} />
                 {Number(client.liquidez_atual || 0) > 0 && Number(client.liquidez_desejada || 0) > 0 && (
                   <span style={{ fontSize: 10, fontWeight: 700, color: Number(client.liquidez_atual) >= Number(client.liquidez_desejada) ? "#16a34a" : "#c2410c", background: Number(client.liquidez_atual) >= Number(client.liquidez_desejada) ? "#f0fdf4" : "#fff7ed", border: `1px solid ${Number(client.liquidez_atual) >= Number(client.liquidez_desejada) ? "#bbf7d0" : "#fed7aa"}`, borderRadius: 999, padding: "1px 6px" }}>{Math.min(100, Math.round((Number(client.liquidez_atual) / Number(client.liquidez_desejada)) * 100))}%</span>
                 )}
               </div>
             </div>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Liquidez Desejada</div><InlineText value={client.liquidez_desejada} onSave={(v) => updateField("liquidez_desejada", v)} /></div>
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Liquidez Desejada</div><InlineMoney value={client.liquidez_desejada} onSave={(v) => updateField("liquidez_desejada", v)} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Taxa</div><InlineText value={client.taxa_contratada} onSave={(v) => updateField("taxa_contratada", v)} /></div>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Receita Mensal</div><InlineText value={client.receita_mensal} onSave={(v) => updateField("receita_mensal", v)} /></div>
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Receita Mensal</div><InlineMoney value={client.receita_mensal} onSave={(v) => updateField("receita_mensal", v)} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Pagamento</div><InlineText value={client.forma_pagamento} onSave={(v) => updateField("forma_pagamento", v)} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>IR</div><InlineText value={client.declaracao_ir} onSave={(v) => updateField("declaracao_ir", v)} /></div>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Mínimo Contrato</div><InlineText value={client.valor_minimo_contrato} onSave={(v) => updateField("valor_minimo_contrato", v)} /></div>
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Mínimo Contrato</div><InlineMoney value={client.valor_minimo_contrato} onSave={(v) => updateField("valor_minimo_contrato", v)} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Corretoras</div><InlineText value={client.corretoras} onSave={(v) => updateField("corretoras", v)} /></div>
+            <div style={{ gridColumn: "1/-1" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Produtos da Reserva / Liquidez</div><InlineText value={client.liquidez_produtos} onSave={(v) => updateField("liquidez_produtos", v)} placeholder="Ex: Tesouro Selic, CDB..." /></div>
           </div>
+          {hasPgbl && rendaBruta > 0 && (
+            <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${B.border}` }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase" }}>PGBL — Limite anual (12% renda bruta tributável)</div>
+                <span style={{ fontSize: 10, fontWeight: 700, color: pgblPct !== null && pgblPct >= 100 ? "#16a34a" : "#c2410c" }}>{pgblPct !== null ? `${pgblPct}%` : "—"}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 5 }}>
+                <span style={{ color: B.gray }}>Aportado em {anoAtual}: <strong style={{ color: B.navy }}>{money(pgblAnoAtual)}</strong></span>
+                <span style={{ color: B.gray }}>Limite: <strong style={{ color: B.navy }}>{money(pgblLimite)}</strong></span>
+              </div>
+              {pgblPct !== null && (
+                <div style={{ background: "#e5e7eb", borderRadius: 999, height: 5, overflow: "hidden" }}>
+                  <div style={{ width: `${pgblPct}%`, height: "100%", background: pgblPct >= 100 ? "#16a34a" : "#6366f1", borderRadius: 999, transition: "width 0.3s" }} />
+                </div>
+              )}
+            </div>
+          )}
           <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${B.border}` }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Planejamento / Metas</div>
             <InlineText value={client.planejamento} onSave={(v) => updateField("planejamento", v)} placeholder="Clique para editar..." multiline style={{ width: "100%", display: "block" }} />

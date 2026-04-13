@@ -22,6 +22,26 @@ export function InlineText({ value, onSave, placeholder = "—", style = {}, mul
   );
 }
 
+export function InlineMoney({ value, onSave, placeholder = "—", style = {} }) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(value != null && value !== "" ? String(value) : "");
+  useEffect(() => { setVal(value != null && value !== "" ? String(value) : ""); }, [value]);
+
+  const display = val !== "" ? Number(val).toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0, maximumFractionDigits: 0 }) : placeholder;
+
+  if (editing) return (
+    <input type="number" value={val} autoFocus onChange={(e) => setVal(e.target.value)}
+      onBlur={() => { onSave(val); setEditing(false); }}
+      onKeyDown={(e) => { if (e.key === "Enter") { onSave(val); setEditing(false); } if (e.key === "Escape") { setVal(value != null ? String(value) : ""); setEditing(false); } }}
+      style={{ width: "100%", boxSizing: "border-box", padding: "4px 8px", border: "1px solid #D30000", borderRadius: 6, fontSize: 12, fontFamily: "inherit", outline: "none", background: "#fff", boxShadow: "0 0 0 3px rgba(211,0,0,0.08)", ...style }} />
+  );
+  return (
+    <span onClick={() => setEditing(true)} title="Clique para editar" style={{ cursor: "text", borderBottom: "1px dashed rgba(10,8,9,0.2)", paddingBottom: 1, minWidth: 30, display: "inline-block", fontSize: 12, color: val !== "" ? "inherit" : "#9E9C9E", transition: "border-color 0.15s", ...style }}>
+      {display}
+    </span>
+  );
+}
+
 export function InlineSelect({ value, onSave, opts = [], placeholder = "—", style = {} }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(value ?? "");
