@@ -16,7 +16,7 @@ export function InlineText({ value, onSave, placeholder = "—", style = {}, mul
     return multiline ? <textarea {...props} rows={3} style={{ ...props.style, resize: "vertical" }} /> : <input {...props} />;
   }
   return (
-    <span onClick={() => setEditing(true)} title="Clique para editar" style={{ cursor: "text", borderBottom: "1px dashed rgba(10,8,9,0.2)", paddingBottom: 1, minWidth: 30, display: "inline-block", fontSize: 12, color: val ? "inherit" : "#9E9C9E", transition: "border-color 0.15s", ...style }}>
+    <span onClick={() => setEditing(true)} title="Clique para editar" style={{ cursor: "text", borderBottom: "1px dashed rgba(10,8,9,0.2)", paddingBottom: 1, minWidth: 30, display: "inline-block", fontSize: 12, color: val ? "inherit" : "#9E9C9E", transition: "border-color 0.15s", whiteSpace: multiline ? "pre-wrap" : undefined, ...style }}>
       {val || placeholder}
     </span>
   );
