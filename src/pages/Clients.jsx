@@ -14,7 +14,7 @@ import { Inp, Sel, Tarea, SecH } from "../components/ui/FormFields";
 
 export default function Clients() {
   const navigate = useNavigate();
-  const { clients, history, saveClient, setToast } = useData();
+  const { clients, history, saveClient, deleteClient, setToast } = useData();
   const [modal, setModal] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(EMPTY_CLIENT);
@@ -79,6 +79,7 @@ export default function Clients() {
   const openEdit = (c) => { setEditId(c.id); setForm({ ...c }); setModal(true); };
 
   const importRef = useRef(null);
+  const importPlRef = useRef(null);
 
   const COLS = [
     { h: "Nome", f: "nome" }, { h: "Data Nascimento", f: "data_nascimento" },
@@ -86,9 +87,10 @@ export default function Clients() {
     { h: "Estado Civil", f: "estado_civil" }, { h: "Filhos", f: "filhos" },
     { h: "Cônjuge", f: "conjuge" }, { h: "Profissão", f: "profissao" },
     { h: "Hobbies", f: "hobbies" }, { h: "Status", f: "status" },
-    { h: "Perfil", f: "perfil" }, { h: "PL Inicial (R$)", f: "pl_inicial" },
+    { h: "Perfil", f: "perfil" }, { h: "PL Atual (R$)", f: "pl_inicial" },
     { h: "Aporte Mensal (R$)", f: "aporte_mensal" }, { h: "Meta Patrimônio (R$)", f: "meta_patrimonio" },
-    { h: "Liquidez Desejada (R$)", f: "liquidez_desejada" }, { h: "Taxa Contratada", f: "taxa_contratada" },
+    { h: "Liquidez Desejada (R$)", f: "liquidez_desejada" }, { h: "Liquidez Atual (R$)", f: "liquidez_atual" },
+    { h: "Produtos Liquidez", f: "liquidez_produtos" }, { h: "Taxa Contratada", f: "taxa_contratada" },
     { h: "Receita Mensal (R$)", f: "receita_mensal" }, { h: "Forma Pagamento", f: "forma_pagamento" },
     { h: "Declaração IR", f: "declaracao_ir" }, { h: "Corretoras", f: "corretoras" },
     { h: "Origem", f: "origem_cliente" }, { h: "Grupo", f: "grupo_nome" },
@@ -139,7 +141,7 @@ export default function Clients() {
           COLS.forEach((c) => {
             if (colIdx[c.f] === undefined) return;
             const val = row[colIdx[c.f]];
-            if (["seguro_vida", "pgbl", "vgbl", "envio_ips", "sucessao", "cliente_desbalanceado"].includes(c.f)) {
+            if (["seguro_vida", "pgbl", "vgbl", "envio_ips", "cliente_desbalanceado"].includes(c.f)) {
               entry[c.f] = val === "Sim" || val === true;
             } else {
               entry[c.f] = val ?? "";
@@ -159,6 +161,58 @@ export default function Clients() {
     e.target.value = "";
   };
 
+  // ── Exporta template de 2 colunas para atualização mensal de PL ──
+  const exportPlTemplate = () => {
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([
+      ["Nome", "PL Atual (R$)"],
+      ["Exemplo: João Silva", "150000"],
+    ]);
+    ws["!cols"] = [{ wch: 40 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, ws, "PL Mensal");
+    XLSX.writeFile(wb, "template_pl_mensal.xlsx");
+    setToast({ type: "success", text: "Template exportado." });
+  };
+
+  // ── Importação mensal: atualiza apenas pl_inicial dos clientes existentes ──
+  const importPlXlsx = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      try {
+        const wb = XLSX.read(ev.target.result, { type: "binary" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+        if (data.length < 2) { setToast({ type: "error", text: "Planilha vazia." }); return; }
+        const headers = data[0];
+        const nomeIdx = headers.indexOf("Nome");
+        const plIdx = headers.indexOf("PL Atual (R$)");
+        if (nomeIdx < 0 || plIdx < 0) {
+          setToast({ type: "error", text: 'Planilha precisa ter colunas "Nome" e "PL Atual (R$)".' });
+          return;
+        }
+        let updated = 0;
+        const notFound = [];
+        for (const row of data.slice(1)) {
+          const nomePlanilha = String(row[nomeIdx] || "").trim().toLowerCase();
+          if (!nomePlanilha) continue;
+          const pl = Number(row[plIdx]) || 0;
+          const found = clients.find((c) => (c.nome || "").trim().toLowerCase() === nomePlanilha);
+          if (!found) { notFound.push(row[nomeIdx]); continue; }
+          await saveClient({ ...found, pl_inicial: pl }, false);
+          updated++;
+        }
+        const nfMsg = notFound.length > 0 ? ` Não encontrados (${notFound.length}): ${notFound.slice(0, 5).join(", ")}${notFound.length > 5 ? "…" : ""}.` : "";
+        setToast({ type: updated > 0 ? "success" : "error", text: `${updated} PL(s) atualizados.${nfMsg}` });
+      } catch {
+        setToast({ type: "error", text: "Erro ao ler planilha de PL." });
+      }
+    };
+    reader.readAsBinaryString(file);
+    e.target.value = "";
+  };
+
   const selStyle = { background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "7px 11px", fontSize: 12, color: B.navy, outline: "none", cursor: "pointer", fontFamily: "inherit" };
 
   const SortIcon = ({ col }) => {
@@ -170,10 +224,15 @@ export default function Clients() {
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
         <SecH eyebrow="Carteira" title="Clientes" desc="Gestão completa da sua carteira." />
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {/* Importação cadastral */}
           <input ref={importRef} type="file" accept=".xlsx,.xls" style={{ display: "none" }} onChange={importXlsx} />
           <button onClick={() => importRef.current?.click()} style={{ padding: "8px 14px", background: "white", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>↑ Importar</button>
           <button onClick={exportXlsx} style={{ padding: "8px 14px", background: "white", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>↓ Exportar</button>
+          {/* Atualização mensal de PL */}
+          <input ref={importPlRef} type="file" accept=".xlsx,.xls" style={{ display: "none" }} onChange={importPlXlsx} />
+          <button onClick={() => importPlRef.current?.click()} style={{ padding: "8px 14px", background: "white", color: "#7c3aed", border: "1px solid #c4b5fd", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>↑ Atualizar PL</button>
+          <button onClick={exportPlTemplate} style={{ padding: "8px 14px", background: "white", color: "#7c3aed", border: "1px solid #c4b5fd", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>↓ Template PL</button>
           <button onClick={openNew} style={{ padding: "8px 18px", background: B.brand, color: "white", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Novo Cliente</button>
         </div>
       </div>
@@ -272,8 +331,9 @@ export default function Clients() {
                     <td style={{ padding: "10px 12px" }}><span style={{ fontSize: 12, color: rW ? "#dc2626" : "#444", fontWeight: rW ? 700 : 400 }}>{(c.ultima_reuniao || c.ultimaReuniao) ? fmtDate(c.ultima_reuniao || c.ultimaReuniao) : "—"}</span></td>
                     <td style={{ padding: "10px 12px" }}><span style={{ fontSize: 12, fontWeight: 600, color: hasSeguro ? "#16a34a" : "#9ca3af" }}>{hasSeguro ? "Sim" : "Não"}</span></td>
                     <td style={{ padding: "10px 12px" }}><CBadge curva={c._curva} /></td>
-                    <td style={{ padding: "10px 12px" }}>
+                    <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
                       <button onClick={(e) => { e.stopPropagation(); openEdit(c); }} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Editar</button>
+                      <button onClick={async (e) => { e.stopPropagation(); if (window.confirm(`Excluir "${c.nome}"?\n\nEsta ação não pode ser desfeita.`)) { await deleteClient(c.id); setToast({ type: "success", text: `${c.nome} excluído.` }); } }} style={{ marginLeft: 6, background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Excluir</button>
                     </td>
                   </tr>
                 );
@@ -306,7 +366,7 @@ export default function Clients() {
             <Sel label="Perfil" value={form.perfil} onChange={F("perfil")} opts={Object.entries(PERFIL_MAP).map(([k, v]) => ({ v: k, l: v.label }))} />
 
             <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Financeiro</div>
-            <Inp label="PL Inicial (R$)" value={form.pl_inicial ?? form.plInicial ?? ""} onChange={F("pl_inicial")} type="number" />
+            <Inp label="PL Atual (R$)" value={form.pl_inicial ?? form.plInicial ?? ""} onChange={F("pl_inicial")} type="number" />
             <Inp label="Aporte Mensal (R$)" value={form.aporte_mensal ?? form.aporteMensal ?? ""} onChange={F("aporte_mensal")} type="number" />
             <Inp label="Meta Patrimonial (R$)" value={form.meta_patrimonio ?? form.metaPatrimonio ?? ""} onChange={F("meta_patrimonio")} type="number" />
             <Inp label="Liquidez Desejada (R$)" value={form.liquidez_desejada ?? form.liquidezDesejada ?? ""} onChange={F("liquidez_desejada")} type="number" />
