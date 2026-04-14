@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { fmtDate } from "../../utils/formatters";
 
-export function InlineText({ value, onSave, placeholder = "—", style = {}, multiline = false }) {
+export function InlineText({ value, onSave, placeholder = "—", style = {}, multiline = false, saveOnEnter = false }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(value || "");
   useEffect(() => { setVal(value || ""); }, [value]);
@@ -10,7 +10,7 @@ export function InlineText({ value, onSave, placeholder = "—", style = {}, mul
     const props = {
       value: val, onChange: (e) => setVal(e.target.value), autoFocus: true,
       onBlur: () => { onSave(val); setEditing(false); },
-      onKeyDown: (e) => { if (e.key === "Enter" && !multiline) { onSave(val); setEditing(false); } if (e.key === "Escape") { setVal(value || ""); setEditing(false); } },
+      onKeyDown: (e) => { if (e.key === "Enter" && (!multiline || saveOnEnter)) { e.preventDefault(); onSave(val); setEditing(false); } if (e.key === "Escape") { setVal(value || ""); setEditing(false); } },
       style: { width: "100%", boxSizing: "border-box", padding: "4px 8px", border: "1px solid #D30000", borderRadius: 6, fontSize: 12, fontFamily: "inherit", outline: "none", background: "#fff", boxShadow: "0 0 0 3px rgba(211,0,0,0.08)", ...style },
     };
     return multiline ? <textarea {...props} rows={3} style={{ ...props.style, resize: "vertical" }} /> : <input {...props} />;

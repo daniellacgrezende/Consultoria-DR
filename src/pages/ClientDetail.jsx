@@ -267,10 +267,10 @@ export default function ClientDetail() {
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Data Nascimento</div><InlineDate value={client.data_nascimento} onSave={(v) => updateField("data_nascimento", v)} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Origem do Cliente</div><InlineSelect value={client.origem_cliente || ""} onSave={(v) => updateField("origem_cliente", v)} opts={[{ v: "", l: "—" }, ...LEAD_ORIGENS.map((o) => ({ v: o, l: o }))]} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Início Carteira</div><InlineDate value={client.inicio_carteira} onSave={(v) => updateField("inicio_carteira", v)} /></div>
-                {/* Seguro / Previdência / Sucessão — ao lado de Início Carteira */}
+                {/* Seguro / Previdência / Sucessão + Obs — ao lado de Início Carteira */}
                 <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Seguro / Prev. / Sucessão</div>
-                  <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" }}>
+                  <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center", marginBottom: 4 }}>
                     {(() => {
                       const val = client.seguro_vida;
                       const isTrue = val === true || val === "true";
@@ -297,11 +297,8 @@ export default function ClientDetail() {
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 999, background: "#fff7ed", color: "#c2410c", fontSize: 10, fontWeight: 700, border: "1px solid #fed7aa", userSelect: "none" }}>! IPS</span>
                     )}
                   </div>
-                </div>
-                {/* Obs. Seguro */}
-                <div style={{ gridColumn: "1/-1" }}>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Obs. Seguro</div>
-                  <InlineText value={client.seguro_observacao} onSave={(v) => updateField("seguro_observacao", v)} placeholder="observação sobre o seguro..." />
+                  {/* Obs. Seguro — agrupada visualmente com os badges */}
+                  <InlineText value={client.seguro_observacao} onSave={(v) => updateField("seguro_observacao", v)} placeholder="obs. seguro..." style={{ fontSize: 11 }} />
                 </div>
                 {grupoNome && <div style={{ gridColumn: "1/-1" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Grupo (PJ+PF)</div><InlineText value={client.grupo_nome} onSave={(v) => updateField("grupo_nome", v)} /></div>}
               </div>
@@ -541,7 +538,7 @@ export default function ClientDetail() {
           <span>Notas Gerais</span>
           <span style={{ fontSize: 10, color: B.muted }}>{notasOpen ? "▲ recolher" : "▼ expandir"}</span>
         </div>
-        {notasOpen && <InlineText value={client.notas_gerais} onSave={(v) => updateField("notas_gerais", v)} placeholder="Clique para adicionar notas gerais..." multiline style={{ width: "100%", minHeight: 60 }} />}
+        {notasOpen && <InlineText value={client.notas_gerais} onSave={(v) => updateField("notas_gerais", v)} placeholder="Clique para adicionar notas gerais..." multiline saveOnEnter style={{ width: "100%", minHeight: 60 }} />}
       </Card>
 
       {/* Histórico de Reuniões — último, conteúdo colapsável por entrada */}
@@ -676,7 +673,7 @@ export default function ClientDetail() {
 
       {/* Modal Aporte */}
       <Modal open={aptModal} onClose={() => { setAptModal(false); setAptEditId(null); }}>
-        <div style={{ padding: "26px 30px" }}>
+        <div style={{ padding: "26px 30px" }} onKeyDown={(e) => { if (e.key === "Enter" && e.target.type !== "checkbox") { e.preventDefault(); saveAptEntry(); } }}>
           <h3 style={{ margin: "0 0 20px", fontSize: 17, fontWeight: 700, color: B.navy }}>{aptEditId ? "Editar Lançamento" : "Novo Aporte / Resgate"}</h3>
           <Inp label="Data *" type="date" value={aptForm.data} onChange={(e) => setAptForm((f) => ({ ...f, data: e.target.value }))} />
           <div style={{ display: "flex", gap: 8, marginBottom: 13 }}>
