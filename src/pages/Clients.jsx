@@ -29,6 +29,7 @@ export default function Clients() {
   const [ufFilter, setUfFilter] = useState("");
   const [showStats, setShowStats] = useState(false);
   const [showPL, setShowPL] = useState(false);
+  const [atrasoPanel, setAtrasoPanel] = useState(null); // null | "precisaChamar" | "jaChamei"
 
   const active = useMemo(() => clients.filter((c) => c.status === "ativo"), [clients]);
   const getPL = (c) => getCurrentPL(c, history);
@@ -315,17 +316,48 @@ export default function Clients() {
         <div style={{ background: "white", border: `1px solid ${alertas75 > 0 ? "#fecaca" : B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${alertas75 > 0 ? "#dc2626" : B.border}` }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 8 }}>Reunião em Atraso</div>
           <div style={{ display: "flex", gap: 10 }}>
-            <div style={{ flex: 1, background: precisaChamar.length > 0 ? "#fff5f5" : "#f8faff", border: `1px solid ${precisaChamar.length > 0 ? "#fecaca" : B.border}`, borderRadius: 8, padding: "8px 10px", textAlign: "center" }}>
+            <div onClick={() => setAtrasoPanel((p) => p === "precisaChamar" ? null : "precisaChamar")} style={{ flex: 1, background: atrasoPanel === "precisaChamar" ? "#fee2e2" : precisaChamar.length > 0 ? "#fff5f5" : "#f8faff", border: `1px solid ${precisaChamar.length > 0 ? "#fecaca" : B.border}`, borderRadius: 8, padding: "8px 10px", textAlign: "center", cursor: "pointer", userSelect: "none" }}>
               <div style={{ fontSize: 18, fontWeight: 700, color: precisaChamar.length > 0 ? "#dc2626" : B.muted }}>{precisaChamar.length}</div>
               <div style={{ fontSize: 9, fontWeight: 700, color: precisaChamar.length > 0 ? "#dc2626" : B.muted, textTransform: "uppercase", marginTop: 2 }}>📞 Preciso chamar</div>
             </div>
-            <div style={{ flex: 1, background: jaChamei.length > 0 ? "#ecfeff" : "#f8faff", border: `1px solid ${jaChamei.length > 0 ? "#a5f3fc" : B.border}`, borderRadius: 8, padding: "8px 10px", textAlign: "center" }}>
+            <div onClick={() => setAtrasoPanel((p) => p === "jaChamei" ? null : "jaChamei")} style={{ flex: 1, background: atrasoPanel === "jaChamei" ? "#cffafe" : jaChamei.length > 0 ? "#ecfeff" : "#f8faff", border: `1px solid ${jaChamei.length > 0 ? "#a5f3fc" : B.border}`, borderRadius: 8, padding: "8px 10px", textAlign: "center", cursor: "pointer", userSelect: "none" }}>
               <div style={{ fontSize: 18, fontWeight: 700, color: jaChamei.length > 0 ? "#0891b2" : B.muted }}>{jaChamei.length}</div>
               <div style={{ fontSize: 9, fontWeight: 700, color: jaChamei.length > 0 ? "#0891b2" : B.muted, textTransform: "uppercase", marginTop: 2 }}>✓ Já chamei</div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Painel expansível de atraso */}
+      {atrasoPanel && (
+        <Card style={{ marginBottom: 12, border: `1px solid ${atrasoPanel === "precisaChamar" ? "#fecaca" : "#a5f3fc"}`, background: atrasoPanel === "precisaChamar" ? "#fff9f9" : "#f0feff" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <div style={{ fontWeight: 700, fontSize: 12, color: atrasoPanel === "precisaChamar" ? "#dc2626" : "#0891b2" }}>
+              {atrasoPanel === "precisaChamar" ? "📞 Preciso chamar" : "✓ Já chamei"}
+            </div>
+            <button onClick={() => setAtrasoPanel(null)} style={{ background: "none", border: "none", fontSize: 16, cursor: "pointer", color: B.muted }}>×</button>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {(atrasoPanel === "precisaChamar" ? precisaChamar : jaChamei).map((c) => (
+              <div key={c.id} onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 10px", borderRadius: 7, background: "white", border: `1px solid ${atrasoPanel === "precisaChamar" ? "#fecaca" : "#a5f3fc"}`, cursor: "pointer" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Avatar nome={c.nome} size={26} />
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 12, color: B.navy }}>{c.nome}</div>
+                    <div style={{ fontSize: 10, color: B.muted }}>{c.proxima_reuniao || c.proximaReuniao ? `Próxima: ${fmtDate(c.proxima_reuniao || c.proximaReuniao)}` : "Sem data definida"}</div>
+                  </div>
+                </div>
+                {atrasoPanel === "jaChamei" && (c.avisado_em || c.avisadoEm) && (
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "#0891b2" }}>Chamei em</div>
+                    <div style={{ fontSize: 11, color: B.navy, fontWeight: 600 }}>{fmtDate(c.avisado_em || c.avisadoEm)}</div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Filters */}
       <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
