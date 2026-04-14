@@ -281,11 +281,9 @@ export default function ClientDetail() {
               );
             })()}
             {/* Obs. Seguro — inline, logo após o badge */}
-            {hasSeguro && (
-              <span style={{ fontSize: 11, color: B.gray }}>
-                · <InlineText value={client.seguro_observacao} onSave={(v) => updateField("seguro_observacao", v)} placeholder="obs. seguro..." style={{ display: "inline" }} />
-              </span>
-            )}
+            <span style={{ fontSize: 11, color: B.gray }}>
+              · <InlineText value={client.seguro_observacao} onSave={(v) => updateField("seguro_observacao", v)} placeholder="obs. seguro..." style={{ display: "inline" }} />
+            </span>
             {/* PGBL / VGBL — só exibe quando ativo */}
             {(client.pgbl === true || client.pgbl === "true") && (
               <span onClick={() => updateField("pgbl", false)} title="Clique para remover" style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 999, background: "#dcfce7", color: "#16a34a", fontSize: 11, fontWeight: 700, cursor: "pointer", border: "1px solid #bbf7d0", userSelect: "none" }}>✓ PGBL</span>
