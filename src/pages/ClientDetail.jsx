@@ -481,11 +481,12 @@ export default function ClientDetail() {
                     {filteredClientAportes.map((a) => (
                       <div key={a.id} style={{ padding: "8px 10px", borderRadius: 6, background: a.tipo === "aporte" ? "#f0fdf4" : "#fff5f5", border: `1px solid ${a.tipo === "aporte" ? "#dcfce7" : "#fee2e2"}` }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1 }}>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1, flexWrap: "wrap" }}>
                             <span style={{ fontSize: 12, fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "+" : "−"}</span>
                             <span style={{ fontSize: 11, color: B.gray }}>{fmtDate(a.data)}</span>
                             {a.is_reserva && <span style={{ fontSize: 9, background: "#e0f2fe", color: "#0369a1", borderRadius: 4, padding: "1px 6px", fontWeight: 700 }}>RESERVA</span>}
                             {a.is_pgbl && <span style={{ fontSize: 9, background: "#f5f3ff", color: "#7c3aed", borderRadius: 4, padding: "1px 6px", fontWeight: 700 }}>PGBL</span>}
+                            {a.observacao && <span style={{ fontSize: 11, color: "#6b7280" }}>· {a.observacao}</span>}
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             <span style={{ fontSize: 13, fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "+" : "−"}{money(a.valor)}</span>
@@ -493,11 +494,6 @@ export default function ClientDetail() {
                             <button onClick={() => handleDeleteAporte(a)} style={{ background: "white", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 5, padding: "2px 8px", fontSize: 10, cursor: "pointer" }}>Remover</button>
                           </div>
                         </div>
-                        {a.observacao && (
-                          <div style={{ marginTop: 4, fontSize: 11, color: "#6b7280", paddingLeft: 20 }}>
-                            <span style={{ fontSize: 9, fontWeight: 700, color: "#9baabf", textTransform: "uppercase", marginRight: 4 }}>Obs:</span>{a.observacao}
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
