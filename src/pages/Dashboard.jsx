@@ -16,6 +16,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { clients, history, leads } = useData();
   const [ufFilter, setUfFilter] = useState("");
+  const [showAUM, setShowAUM] = useState(false);
 
   const active = useMemo(() => clients.filter((c) => c.status === "ativo"), [clients]);
   const getPL = (c) => getCurrentPL(c, history);
@@ -91,14 +92,17 @@ export default function Dashboard() {
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
         <MiniStat label="Clientes Ativos" value={active.length} sub={`${clients.length} total na base`} />
-        <div style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${B.navy}` }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5 }}>Patrimônio sob Gestão</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: B.navy }}>{money(totalAUM)}</div>
-          <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>{active.length} clientes</div>
+        <div onClick={() => setShowAUM((v) => !v)} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${B.navy}`, cursor: "pointer", userSelect: "none" }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5, display: "flex", justifyContent: "space-between" }}>
+            <span>Patrimônio sob Gestão</span>
+            <span>{showAUM ? "🙈" : "👁"}</span>
+          </div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: B.navy }}>{showAUM ? money(totalAUM) : "R$ ••••••"}</div>
+          <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>{showAUM ? `${active.length} clientes` : "clique para revelar"}</div>
         </div>
-        <div style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${B.navy}` }}>
+        <div onClick={() => setShowAUM((v) => !v)} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${B.navy}`, cursor: "pointer", userSelect: "none" }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5 }}>Patrimônio Médio</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: B.navy }}>{money(aumMedio)}</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: B.navy }}>{showAUM ? money(aumMedio) : "R$ ••••••"}</div>
           <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>por cliente ativo</div>
         </div>
       </div>
