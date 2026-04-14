@@ -28,6 +28,7 @@ export default function Clients() {
   const [sortDir, setSortDir] = useState("asc");
   const [ufFilter, setUfFilter] = useState("");
   const [showStats, setShowStats] = useState(false);
+  const [showPL, setShowPL] = useState(false);
 
   const active = useMemo(() => clients.filter((c) => c.status === "ativo"), [clients]);
   const getPL = (c) => getCurrentPL(c, history);
@@ -351,7 +352,7 @@ export default function Clients() {
               <tr>
                 <th onClick={() => toggleSort("nome")} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer" }}>Nome <SortIcon col="nome" /></th>
                 <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff" }}>Cidade/UF</th>
-                <th onClick={() => toggleSort("pl")} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer" }}>PL <SortIcon col="pl" /></th>
+                <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer", userSelect: "none" }} onClick={() => setShowPL((v) => !v)}>PL {showPL ? "🙈" : "👁"}</th>
                 <th onClick={() => toggleSort("perfil")} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer" }}>Perfil <SortIcon col="perfil" /></th>
                 <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff" }}>Últ. Reunião</th>
                 <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff" }}>Seguro</th>
@@ -378,7 +379,7 @@ export default function Clients() {
                       </div>
                     </td>
                     <td style={{ padding: "10px 12px", color: B.gray, fontSize: 12 }}>{c.cidade && c.uf ? `${c.cidade}/${c.uf}` : c.cidade || "—"}</td>
-                    <td style={{ padding: "10px 12px", fontWeight: 700, color: B.navy }}>{money(c._pl)}</td>
+                    <td style={{ padding: "10px 12px", fontWeight: 700, color: B.navy }}>{showPL ? money(c._pl) : <span style={{ color: B.muted, letterSpacing: 2 }}>••••</span>}</td>
                     <td style={{ padding: "10px 12px" }}><PBadge p={c.perfil} /></td>
                     <td style={{ padding: "10px 12px" }}><span style={{ fontSize: 12, color: rW ? "#dc2626" : "#444", fontWeight: rW ? 700 : 400 }}>{(c.ultima_reuniao || c.ultimaReuniao) ? fmtDate(c.ultima_reuniao || c.ultimaReuniao) : "—"}</span></td>
                     <td style={{ padding: "10px 12px" }}><span style={{ fontSize: 12, fontWeight: 600, color: hasSeguro ? "#16a34a" : "#9ca3af" }}>{hasSeguro ? "Sim" : "Não"}</span></td>

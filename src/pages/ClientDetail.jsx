@@ -49,6 +49,8 @@ export default function ClientDetail() {
   const [aptHistOpen, setAptHistOpen] = useState(false);
   const [aptFilter, setAptFilter] = useState({ mode: "todos", ano: "", de: "", ate: "" });
   const [rhExpandedIds, setRhExpandedIds] = useState(new Set());
+  const [finOpen, setFinOpen] = useState(true);
+  const [notasOpen, setNotasOpen] = useState(true);
   const toggleRhExpand = (rid) => setRhExpandedIds((prev) => { const n = new Set(prev); n.has(rid) ? n.delete(rid) : n.add(rid); return n; });
 
   if (!client) return (
@@ -251,13 +253,16 @@ export default function ClientDetail() {
             <span>Dados Gerais</span>
             <span style={{ fontSize: 10, color: "#8899bb", fontWeight: 400 }}>clique para editar</span>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
-            {[["Cidade", "cidade"], ["UF", "uf"], ["Estado Civil", "estado_civil"], ["Profissão", "profissao"], ["Filhos", "filhos"], ["Cônjuge", "conjuge"]].map(([lbl, field]) => (
-              <div key={field}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>{lbl}</div><InlineText value={client[field]} onSave={(v) => updateField(field, v)} /></div>
-            ))}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10 }}>
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Cidade</div><InlineText value={client.cidade} onSave={(v) => updateField("cidade", v)} /></div>
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>UF</div><InlineText value={client.uf} onSave={(v) => updateField("uf", v)} /></div>
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Estado Civil</div><InlineSelect value={client.estado_civil || ""} onSave={(v) => updateField("estado_civil", v)} opts={[{ v: "", l: "—" }, { v: "Solteiro", l: "Solteiro" }, { v: "Casado", l: "Casado" }, { v: "Divorciado", l: "Divorciado" }, { v: "Viúvo", l: "Viúvo" }, { v: "União estável", l: "União estável" }]} /></div>
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Profissão</div><InlineText value={client.profissao} onSave={(v) => updateField("profissao", v)} /></div>
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Filhos</div><InlineText value={client.filhos} onSave={(v) => updateField("filhos", v)} /></div>
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Cônjuge</div><InlineText value={client.conjuge} onSave={(v) => updateField("conjuge", v)} /></div>
             {idade !== null && <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Idade</div><span style={{ fontSize: 12, fontWeight: 600 }}>{idade} anos</span></div>}
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Data Nascimento</div><InlineDate value={client.data_nascimento} onSave={(v) => updateField("data_nascimento", v)} /></div>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Origem do Cliente</div><InlineText value={client.origem_cliente} onSave={(v) => updateField("origem_cliente", v)} /></div>
+            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Origem do Cliente</div><InlineSelect value={client.origem_cliente || ""} onSave={(v) => updateField("origem_cliente", v)} opts={[{ v: "", l: "—" }, ...LEAD_ORIGENS.map((o) => ({ v: o, l: o }))]} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Início Carteira</div><InlineDate value={client.inicio_carteira} onSave={(v) => updateField("inicio_carteira", v)} /></div>
             {grupoNome && <div style={{ gridColumn: "1/-1" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Grupo (PJ+PF)</div><InlineText value={client.grupo_nome} onSave={(v) => updateField("grupo_nome", v)} /></div>}
           </div>
@@ -303,40 +308,47 @@ export default function ClientDetail() {
 
         {/* Financeiro */}
         <Card style={{ gridColumn: "1/-1" }}>
-          <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Financeiro</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Perfil</div><InlineSelect value={client.perfil || "moderado"} onSave={(v) => updateField("perfil", v)} opts={Object.entries(PERFIL_MAP).map(([k, v]) => ({ v: k, l: v.label }))} /></div>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>PL Atual</div><InlineMoney value={client.pl_inicial} onSave={(v) => updateField("pl_inicial", v)} /></div>
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Liquidez Atual</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                <InlineMoney value={client.liquidez_atual} onSave={(v) => updateField("liquidez_atual", v)} />
-                {Number(client.liquidez_atual || 0) > 0 && Number(client.liquidez_desejada || 0) > 0 && (
-                  <span style={{ fontSize: 10, fontWeight: 700, color: Number(client.liquidez_atual) >= Number(client.liquidez_desejada) ? "#16a34a" : "#c2410c", background: Number(client.liquidez_atual) >= Number(client.liquidez_desejada) ? "#f0fdf4" : "#fff7ed", border: `1px solid ${Number(client.liquidez_atual) >= Number(client.liquidez_desejada) ? "#bbf7d0" : "#fed7aa"}`, borderRadius: 999, padding: "1px 6px" }}>{Math.min(100, Math.round((Number(client.liquidez_atual) / Number(client.liquidez_desejada)) * 100))}%</span>
-                )}
-              </div>
-            </div>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Liquidez Desejada</div><InlineMoney value={client.liquidez_desejada} onSave={(v) => updateField("liquidez_desejada", v)} /></div>
-            {/* Produtos da Reserva — agrupado junto da Liquidez */}
-            <div style={{ gridColumn: "1/-1" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Produtos da Reserva / Liquidez</div><InlineText value={client.liquidez_produtos} onSave={(v) => updateField("liquidez_produtos", v)} placeholder="Ex: Tesouro Selic, CDB..." /></div>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Aporte Mensal</div><InlineMoney value={client.aporte_mensal} onSave={(v) => updateField("aporte_mensal", v)} /></div>
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Taxa (%)</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-                <InlineText value={client.taxa_contratada} onSave={(v) => updateField("taxa_contratada", v)} />
-                {client.taxa_contratada && !String(client.taxa_contratada).includes("%") && <span style={{ fontSize: 11, color: B.gray, fontWeight: 600 }}>%</span>}
-              </div>
-            </div>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Receita Mensal</div><InlineMoney value={client.receita_mensal} onSave={(v) => updateField("receita_mensal", v)} /></div>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Pagamento</div><InlineText value={client.forma_pagamento} onSave={(v) => updateField("forma_pagamento", v)} /></div>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>IR</div><InlineText value={client.declaracao_ir} onSave={(v) => updateField("declaracao_ir", v)} /></div>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Mínimo Contrato</div><InlineMoney value={client.valor_minimo_contrato} onSave={(v) => updateField("valor_minimo_contrato", v)} /></div>
-            <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Corretoras</div><InlineText value={client.corretoras} onSave={(v) => updateField("corretoras", v)} /></div>
+          <div onClick={() => setFinOpen((o) => !o)} style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: finOpen ? 10 : 0, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", userSelect: "none" }}>
+            <span>Financeiro</span>
+            <span style={{ fontSize: 10, color: B.muted }}>{finOpen ? "▲ recolher" : "▼ expandir"}</span>
           </div>
-          <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${B.border}` }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Planejamento / Metas</div>
-            <InlineText value={client.planejamento} onSave={(v) => updateField("planejamento", v)} placeholder="Clique para editar..." multiline style={{ width: "100%", display: "block" }} />
-          </div>
+          {finOpen && (
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Perfil</div><InlineSelect value={client.perfil || "moderado"} onSave={(v) => updateField("perfil", v)} opts={Object.entries(PERFIL_MAP).map(([k, v]) => ({ v: k, l: v.label }))} /></div>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>PL Atual</div><InlineMoney value={client.pl_inicial} onSave={(v) => updateField("pl_inicial", v)} /></div>
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Liquidez Atual</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    <InlineMoney value={client.liquidez_atual} onSave={(v) => updateField("liquidez_atual", v)} />
+                    {Number(client.liquidez_atual || 0) > 0 && Number(client.liquidez_desejada || 0) > 0 && (
+                      <span style={{ fontSize: 10, fontWeight: 700, color: Number(client.liquidez_atual) >= Number(client.liquidez_desejada) ? "#16a34a" : "#c2410c", background: Number(client.liquidez_atual) >= Number(client.liquidez_desejada) ? "#f0fdf4" : "#fff7ed", border: `1px solid ${Number(client.liquidez_atual) >= Number(client.liquidez_desejada) ? "#bbf7d0" : "#fed7aa"}`, borderRadius: 999, padding: "1px 6px" }}>{Math.min(100, Math.round((Number(client.liquidez_atual) / Number(client.liquidez_desejada)) * 100))}%</span>
+                    )}
+                  </div>
+                </div>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Liquidez Desejada</div><InlineMoney value={client.liquidez_desejada} onSave={(v) => updateField("liquidez_desejada", v)} /></div>
+                {/* Produtos da Reserva — imediatamente abaixo da Liquidez Atual */}
+                <div style={{ gridColumn: "1/-1" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Produtos da Reserva / Liquidez</div><InlineText value={client.liquidez_produtos} onSave={(v) => updateField("liquidez_produtos", v)} placeholder="Ex: Tesouro Selic, CDB..." /></div>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Aporte Mensal</div><InlineMoney value={client.aporte_mensal} onSave={(v) => updateField("aporte_mensal", v)} /></div>
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Taxa (%)</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <InlineText value={client.taxa_contratada} onSave={(v) => updateField("taxa_contratada", v)} />
+                    {client.taxa_contratada && !String(client.taxa_contratada).includes("%") && <span style={{ fontSize: 11, color: B.gray, fontWeight: 600 }}>%</span>}
+                  </div>
+                </div>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Receita Mensal</div><InlineMoney value={client.receita_mensal} onSave={(v) => updateField("receita_mensal", v)} /></div>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Pagamento</div><InlineText value={client.forma_pagamento} onSave={(v) => updateField("forma_pagamento", v)} /></div>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>IR</div><InlineSelect value={client.declaracao_ir || "Simplificada"} onSave={(v) => updateField("declaracao_ir", v)} opts={[{ v: "Simplificada", l: "Simplificada" }, { v: "Completa", l: "Completa" }]} /></div>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Mínimo Contrato</div><InlineMoney value={client.valor_minimo_contrato} onSave={(v) => updateField("valor_minimo_contrato", v)} /></div>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Corretoras</div><InlineText value={client.corretoras} onSave={(v) => updateField("corretoras", v)} /></div>
+              </div>
+              <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${B.border}` }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Planejamento / Metas</div>
+                <InlineText value={client.planejamento} onSave={(v) => updateField("planejamento", v)} placeholder="Clique para editar..." multiline style={{ width: "100%", display: "block" }} />
+              </div>
+            </>
+          )}
         </Card>
 
 
@@ -417,7 +429,12 @@ export default function ClientDetail() {
         {/* Link Rebalanceamento */}
         <div style={{ marginBottom: 10 }}>
           <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Link Rebalanceamento</div>
-          <InlineText value={client.link_rebalanceamento} onSave={(v) => updateField("link_rebalanceamento", v)} placeholder="https://…" />
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <InlineText value={client.link_rebalanceamento} onSave={(v) => updateField("link_rebalanceamento", v)} placeholder="https://…" />
+            {client.link_rebalanceamento && String(client.link_rebalanceamento).startsWith("http") && (
+              <a href={client.link_rebalanceamento} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, textDecoration: "none" }} onClick={(e) => e.stopPropagation()}>↗ Abrir</a>
+            )}
+          </div>
         </div>
 
         {/* Reserva + PGBL — badges compactos */}
@@ -506,7 +523,6 @@ export default function ClientDetail() {
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Última Reunião</div><InlineDate value={client.ultima_reuniao} onSave={(v) => updateField("ultima_reuniao", v)} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Próxima Reunião</div><InlineDate value={client.proxima_reuniao} onSave={(v) => updateField("proxima_reuniao", v)} /></div>
           </div>
-          <div style={{ fontSize: 9, color: "#8899bb", marginTop: 6 }}>Chamei em: registra contato sem resposta — remove "Atrasado"</div>
         </Card>
         <Card>
           <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${B.border}` }}>Relatório</div>
@@ -521,8 +537,11 @@ export default function ClientDetail() {
 
       {/* Notas Gerais — abaixo de Aportes */}
       <Card style={{ marginBottom: 12, border: "2px solid #e0e7ff", background: "#fafbff" }}>
-        <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid #e0e7ff" }}>Notas Gerais</div>
-        <InlineText value={client.notas_gerais} onSave={(v) => updateField("notas_gerais", v)} placeholder="Clique para adicionar notas gerais..." multiline style={{ width: "100%", minHeight: 60 }} />
+        <div onClick={() => setNotasOpen((o) => !o)} style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: notasOpen ? 10 : 0, paddingBottom: 8, borderBottom: "1px solid #e0e7ff", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", userSelect: "none" }}>
+          <span>Notas Gerais</span>
+          <span style={{ fontSize: 10, color: B.muted }}>{notasOpen ? "▲ recolher" : "▼ expandir"}</span>
+        </div>
+        {notasOpen && <InlineText value={client.notas_gerais} onSave={(v) => updateField("notas_gerais", v)} placeholder="Clique para adicionar notas gerais..." multiline style={{ width: "100%", minHeight: 60 }} />}
       </Card>
 
       {/* Histórico de Reuniões — último, conteúdo colapsável por entrada */}
