@@ -317,10 +317,11 @@ export default function ClientDetail() {
           </div>
           {finOpen && (
             <>
-              {/* Linha 1: Perfil / PL / Liq. Atual / Liq. Desejada / Aporte / Receita */}
+              {/* Linha 1: Perfil / PL / Liq. Desejada / Liq. Atual / Aporte / Receita */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, marginBottom: 8 }}>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Perfil</div><InlineSelect value={client.perfil || "moderado"} onSave={(v) => updateField("perfil", v)} opts={Object.entries(PERFIL_MAP).map(([k, v]) => ({ v: k, l: v.label }))} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>PL Atual</div><InlineMoney value={client.pl_inicial} onSave={(v) => updateField("pl_inicial", v)} /></div>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Liquidez Desejada</div><InlineMoney value={client.liquidez_desejada} onSave={(v) => updateField("liquidez_desejada", v)} /></div>
                 <div>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Liquidez Atual</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -330,18 +331,17 @@ export default function ClientDetail() {
                     )}
                   </div>
                 </div>
-                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Liquidez Desejada</div><InlineMoney value={client.liquidez_desejada} onSave={(v) => updateField("liquidez_desejada", v)} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Aporte Mensal</div><InlineMoney value={client.aporte_mensal} onSave={(v) => updateField("aporte_mensal", v)} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Receita Mensal</div><InlineMoney value={client.receita_mensal} onSave={(v) => updateField("receita_mensal", v)} /></div>
               </div>
-              {/* Linha 2: IR / Produtos Reserva / Corretoras / Mínimo / Taxa / Pagamento */}
+              {/* Linha 2: IR / Corretoras / Pagamento / Produtos Reserva / Taxa / Mínimo */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 }}>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>IR</div><InlineSelect value={client.declaracao_ir || ""} onSave={(v) => updateField("declaracao_ir", v)} opts={[{ v: "", l: "—" }, { v: "Simplificada", l: "Simplificada" }, { v: "Completa", l: "Completa" }]} /></div>
-                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Produtos de Reserva</div><InlineText value={client.liquidez_produtos} onSave={(v) => updateField("liquidez_produtos", v)} placeholder="Tesouro Selic, CDB..." /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Corretoras</div><InlineText value={client.corretoras} onSave={(v) => updateField("corretoras", v)} /></div>
-                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Mínimo Contrato</div><InlineMoney value={client.valor_minimo_contrato} onSave={(v) => updateField("valor_minimo_contrato", v)} /></div>
-                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Taxa (%)</div><InlineSelect value={client.taxa_contratada || ""} onSave={(v) => updateField("taxa_contratada", v)} opts={[{ v: "", l: "—" }, { v: "1", l: "1%" }, { v: "0.95", l: "0,95%" }, { v: "0.9", l: "0,9%" }, { v: "0.8", l: "0,8%" }, { v: "0.7", l: "0,7%" }]} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Pagamento</div><InlineSelect value={client.forma_pagamento || ""} onSave={(v) => updateField("forma_pagamento", v)} opts={[{ v: "", l: "—" }, { v: "BTG", l: "BTG" }, { v: "XP", l: "XP" }, { v: "Boleto", l: "Boleto" }]} /></div>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Produtos de Reserva</div><InlineText value={client.liquidez_produtos} onSave={(v) => updateField("liquidez_produtos", v)} placeholder="Tesouro Selic, CDB..." /></div>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Taxa (%)</div><InlineSelect value={client.taxa_contratada || ""} onSave={(v) => updateField("taxa_contratada", v)} opts={[{ v: "", l: "—" }, { v: "1", l: "1%" }, { v: "0.95", l: "0,95%" }, { v: "0.9", l: "0,9%" }, { v: "0.8", l: "0,8%" }, { v: "0.7", l: "0,7%" }]} /></div>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Mínimo Contrato</div><InlineMoney value={client.valor_minimo_contrato} onSave={(v) => updateField("valor_minimo_contrato", v)} /></div>
               </div>
               <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${B.border}` }}>
                 <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Planejamento / Metas</div>
