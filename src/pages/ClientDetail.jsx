@@ -244,7 +244,8 @@ export default function ClientDetail() {
         {client.observacao_rapida && (
           <Card style={{ gridColumn: "1/-1", background: "#fffbeb", border: `1px solid #fde68a` }}>
             <div style={{ fontWeight: 700, fontSize: 12, color: "#92400e", marginBottom: 6 }}>Observação</div>
-            <InlineText value={client.observacao_rapida} onSave={(v) => updateField("observacao_rapida", v)} placeholder="Clique para editar..." multiline saveOnEnter style={{ width: "100%", display: "block" }} />
+            <InlineText value={client.observacao_rapida} onSave={(v) => updateField("observacao_rapida", v)} placeholder="Clique para editar…" multiline saveOnEnter style={{ width: "100%", display: "block" }} />
+            <div style={{ fontSize: 9, color: "#92400e", opacity: 0.6, marginTop: 4, textAlign: "right" }}>Enter = nova linha · Ctrl+Enter = salvar</div>
           </Card>
         )}
 
@@ -537,7 +538,12 @@ export default function ClientDetail() {
           <span>Notas Gerais</span>
           <span style={{ fontSize: 10, color: B.muted }}>{notasOpen ? "▲ recolher" : "▼ expandir"}</span>
         </div>
-        {notasOpen && <InlineText value={client.notas_gerais} onSave={(v) => updateField("notas_gerais", v)} placeholder="Clique para adicionar notas gerais..." multiline saveOnEnter style={{ width: "100%", minHeight: 60 }} />}
+        {notasOpen && (
+          <>
+            <InlineText value={client.notas_gerais} onSave={(v) => updateField("notas_gerais", v)} placeholder="Clique para editar… Enter = nova linha · Ctrl+Enter = salvar" multiline saveOnEnter style={{ width: "100%", minHeight: 60 }} />
+            <div style={{ fontSize: 9, color: B.muted, marginTop: 4, textAlign: "right" }}>Enter = nova linha · Ctrl+Enter = salvar · Esc = cancelar</div>
+          </>
+        )}
       </Card>
 
       {/* Histórico de Reuniões — último, conteúdo colapsável por entrada */}
@@ -660,7 +666,7 @@ export default function ClientDetail() {
           <Inp label="Data *" type="date" value={rhForm.data} onChange={(e) => setRhForm((f) => ({ ...f, data: e.target.value }))} />
           <div style={{ marginBottom: 18 }}>
             <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Registro *</label>
-            <textarea value={rhForm.texto} onChange={(e) => setRhForm((f) => ({ ...f, texto: e.target.value }))} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); saveRhEntry(); } }} rows={8} placeholder="O que foi discutido… (Enter salva · Shift+Enter para nova linha)" style={{ width: "100%", boxSizing: "border-box", background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 7, padding: "10px 13px", fontSize: 13, color: B.navy, outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.7 }} />
+            <textarea value={rhForm.texto} onChange={(e) => setRhForm((f) => ({ ...f, texto: e.target.value }))} onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveRhEntry(); } }} rows={8} placeholder="O que foi discutido… (Enter = nova linha · Ctrl+Enter = salvar)" style={{ width: "100%", boxSizing: "border-box", background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 7, padding: "10px 13px", fontSize: 13, color: B.navy, outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.7 }} />
           </div>
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => setRhModal(false)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>
