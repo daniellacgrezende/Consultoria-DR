@@ -68,6 +68,11 @@ export default function Clients() {
       if (sortCol === "pl") return d * (a._pl - b._pl);
       if (sortCol === "curva") return d * a._curva.localeCompare(b._curva);
       if (sortCol === "perfil") return d * (a.perfil || "").localeCompare(b.perfil || "");
+      if (sortCol === "proxima_reuniao") {
+        const da = new Date(a.proxima_reuniao || a.proximaReuniao || "9999-12-31");
+        const db = new Date(b.proxima_reuniao || b.proximaReuniao || "9999-12-31");
+        return d * (da - db);
+      }
       return 0;
     });
     return r;
@@ -379,7 +384,7 @@ export default function Clients() {
                   <span onClick={(e) => { e.stopPropagation(); setShowPL((v) => !v); }} style={{ marginLeft: 6, fontSize: 11, cursor: "pointer" }}>{showPL ? "🙈" : "👁"}</span>
                 </th>
                 <th onClick={() => toggleSort("perfil")} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer" }}>Perfil <SortIcon col="perfil" /></th>
-                <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff" }}>Próx. Reunião</th>
+                <th onClick={() => toggleSort("proxima_reuniao")} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer" }}>Próx. Reunião <SortIcon col="proxima_reuniao" /></th>
                 <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff" }}>Seguro</th>
                 <th onClick={() => toggleSort("curva")} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer" }}>Curva <SortIcon col="curva" /></th>
                 <th style={{ padding: "10px 12px", background: "#f5f7ff", borderBottom: `1px solid ${B.border}` }}></th>
