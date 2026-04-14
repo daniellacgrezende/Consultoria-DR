@@ -122,9 +122,9 @@ export default function Relatorios() {
 
   const atrasado = active.filter((c) => {
     if (naoAplicaRel(c)) return false;
-    const d = daysSince(c.ultimo_relatorio || c.ultimoRelatorio);
-    const p = getPeriodDays(c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal");
-    return d === null || d > p;
+    const proxRel = c.proximo_relatorio || c.proximoRelatorio;
+    if (!proxRel) return false; // sem data → sem pendência
+    return new Date(proxRel) < new Date();
   }).length;
 
   const atencao = active.filter((c) => {

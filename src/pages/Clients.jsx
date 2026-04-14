@@ -36,12 +36,11 @@ export default function Clients() {
   const totalAUM = useMemo(() => active.reduce((s, c) => s + getPL(c), 0), [active, history]);
   const PDAYS = { mensal: 30, bimestral: 60, trimestral: 90, quadrimestral: 120, semestral: 180, anual: 365 };
   const isLate = (c) => {
-    const p = (c.periodicidade_reuniao || c.periodicidadeReuniao || "Trimestral").toLowerCase();
+    const p = (c.periodicidade_reuniao || c.periodicidadeReuniao || "").toLowerCase();
     if (p === "não se aplica") return false;
     const proxima = c.proxima_reuniao || c.proximaReuniao;
-    if (proxima) return new Date(proxima) < new Date();
-    const d = daysSince(c.ultima_reuniao || c.ultimaReuniao);
-    return d !== null && d > Math.round((PDAYS[p] || 90) * 0.83);
+    if (!proxima) return false; // sem data → sem pendência (exibe "?")
+    return new Date(proxima) < new Date();
   };
   const isChamei = (c) => {
     const dAv = daysSince(c.avisado_em || c.avisadoEm);
@@ -426,8 +425,8 @@ export default function Clients() {
             <tbody>
               {rows.length === 0 && <tr><td colSpan={8} style={{ padding: 40, textAlign: "center", color: B.gray }}>Nenhum cliente</td></tr>}
               {rows.map((c, i) => {
-                const dR = daysSince(c.ultima_reuniao || c.ultimaReuniao);
                 const proximaReu = c.proxima_reuniao || c.proximaReuniao;
+                const reunNaoAplica = (c.periodicidade_reuniao || c.periodicidadeReuniao || "").toLowerCase() === "não se aplica";
                 const rW = isLate(c);
                 const chameiFlg = rW && isChamei(c);
                 const seguroVal = c.seguro_vida ?? c.seguroVida;
@@ -449,9 +448,16 @@ export default function Clients() {
                     <td style={{ padding: "10px 12px", fontWeight: 700, color: B.navy }}>{showPL ? money(c._pl) : <span style={{ color: B.muted, letterSpacing: 2 }}>••••</span>}</td>
                     <td style={{ padding: "10px 12px" }}><PBadge p={c.perfil} /></td>
                     <td style={{ padding: "10px 12px" }}>
-                      <span style={{ fontSize: 12, color: chameiFlg ? "#0891b2" : rW ? "#dc2626" : "#444", fontWeight: rW ? 700 : 400 }}>{proximaReu ? fmtDate(proximaReu) : "—"}</span>
-                      {chameiFlg && <span style={{ marginLeft: 5, fontSize: 9, fontWeight: 700, background: "#ecfeff", color: "#0891b2", border: "1px solid #a5f3fc", borderRadius: 999, padding: "1px 6px" }}>✓ chamei</span>}
-                      {rW && !chameiFlg && <span style={{ marginLeft: 5, fontSize: 9, fontWeight: 700, background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 999, padding: "1px 6px" }}>chamar</span>}
+                      {reunNaoAplica
+                        ? <span style={{ fontSize: 11, color: "#9ca3af", fontWeight: 500 }}>N/A</span>
+                        : !proximaReu
+                          ? <span style={{ fontSize: 12, color: "#d97706", fontWeight: 700 }}>?</span>
+                          : <>
+                              <span style={{ fontSize: 12, color: chameiFlg ? "#0891b2" : rW ? "#dc2626" : "#444", fontWeight: rW ? 700 : 400 }}>{fmtDate(proximaReu)}</span>
+                              {chameiFlg && <span style={{ marginLeft: 5, fontSize: 9, fontWeight: 700, background: "#ecfeff", color: "#0891b2", border: "1px solid #a5f3fc", borderRadius: 999, padding: "1px 6px" }}>✓ chamei</span>}
+                              {rW && !chameiFlg && <span style={{ marginLeft: 5, fontSize: 9, fontWeight: 700, background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 999, padding: "1px 6px" }}>chamar</span>}
+                            </>
+                      }
                     </td>
                     <td style={{ padding: "10px 12px" }}><span style={{ fontSize: 12, fontWeight: 600, color: seguroNA ? "#9ca3af" : hasSeguro ? "#16a34a" : "#9ca3af" }}>{seguroNA ? "N/A" : hasSeguro ? "Sim" : "Não"}</span></td>
                     <td style={{ padding: "10px 12px" }}><CBadge curva={c._curva} /></td>
