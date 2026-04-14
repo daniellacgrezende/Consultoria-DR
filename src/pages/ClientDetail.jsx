@@ -28,7 +28,7 @@ export default function ClientDetail() {
     if (!editForm.nome?.trim()) { setToast({ type: "error", text: "Informe o nome." }); return; }
     const f = { ...editForm, id: client.id };
     if (f.ultima_reuniao) f.proxima_reuniao = addDays(f.ultima_reuniao, getPeriodDays(f.periodicidade_reuniao || "Trimestral"));
-    if (f.ultimo_relatorio) f.proximo_relatorio = addDays(f.ultimo_relatorio, getPeriodDays(f.periodicidade_relatorio || "Mensal"));
+    if (f.ultimo_relatorio) { const pd = getPeriodDays(f.periodicidade_relatorio || "Mensal"); if (isFinite(pd)) f.proximo_relatorio = addDays(f.ultimo_relatorio, pd); else f.proximo_relatorio = ""; }
     await saveClient(f, false);
     setEditModal(false);
     setToast({ type: "success", text: "Cadastro atualizado." });
@@ -75,16 +75,23 @@ export default function ClientDetail() {
       updates.proxima_reuniao = addDays(base, getPeriodDays(value));
       toastMsg = `Próxima reunião recalculada: ${updates.proxima_reuniao.split("-").reverse().join("/")}`;
     }
-    // Auto-calcular próximo relatório
+    // Auto-calcular próximo relatório (ignora "Não se aplica")
     if (field === "ultimo_relatorio" && value) {
       const pDays = getPeriodDays(client.periodicidade_relatorio || client.periodicidadeRelatorio || "Mensal");
-      updates.proximo_relatorio = addDays(value, pDays);
-      toastMsg = `Próximo relatório calculado: ${updates.proximo_relatorio.split("-").reverse().join("/")}`;
+      if (isFinite(pDays)) {
+        updates.proximo_relatorio = addDays(value, pDays);
+        toastMsg = `Próximo relatório calculado: ${updates.proximo_relatorio.split("-").reverse().join("/")}`;
+      }
     }
     if (field === "periodicidade_relatorio" && (client.ultimo_relatorio || client.ultimoRelatorio)) {
-      const base = client.ultimo_relatorio || client.ultimoRelatorio;
-      updates.proximo_relatorio = addDays(base, getPeriodDays(value || "Mensal"));
-      toastMsg = `Próximo relatório recalculado: ${updates.proximo_relatorio.split("-").reverse().join("/")}`;
+      const pDays = getPeriodDays(value || "Mensal");
+      if (isFinite(pDays)) {
+        const base = client.ultimo_relatorio || client.ultimoRelatorio;
+        updates.proximo_relatorio = addDays(base, pDays);
+        toastMsg = `Próximo relatório recalculado: ${updates.proximo_relatorio.split("-").reverse().join("/")}`;
+      } else {
+        updates.proximo_relatorio = "";
+      }
     }
     await saveClient({ ...client, ...updates }, false);
     if (toastMsg) setToast({ type: "success", text: toastMsg });

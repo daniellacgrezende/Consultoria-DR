@@ -102,8 +102,10 @@ export default function Relatorios() {
     }
   };
 
+  const naoAplicaRel = (c) => (c.periodicidade_relatorio || c.periodicidadeRelatorio || "").toLowerCase() === "não se aplica";
+
   const rows = useMemo(() => {
-    let r = active.map((c) => ({
+    let r = active.filter((c) => !naoAplicaRel(c)).map((c) => ({
       ...c,
       diasSem: daysSince(c.ultimo_relatorio || c.ultimoRelatorio),
       periodDays: getPeriodDays(c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal"),
@@ -119,18 +121,21 @@ export default function Relatorios() {
   }, [active, filterClient, sortCol, sortDir]);
 
   const atrasado = active.filter((c) => {
+    if (naoAplicaRel(c)) return false;
     const d = daysSince(c.ultimo_relatorio || c.ultimoRelatorio);
     const p = getPeriodDays(c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal");
     return d === null || d > p;
   }).length;
 
   const atencao = active.filter((c) => {
+    if (naoAplicaRel(c)) return false;
     const d = daysSince(c.ultimo_relatorio || c.ultimoRelatorio);
     const p = getPeriodDays(c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal");
     return d !== null && d > Math.round(p * 0.83) && d <= p;
   }).length;
 
   const emDia = active.filter((c) => {
+    if (naoAplicaRel(c)) return false;
     const d = daysSince(c.ultimo_relatorio || c.ultimoRelatorio);
     const p = getPeriodDays(c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal");
     return d !== null && d <= Math.round(p * 0.83);
