@@ -24,6 +24,7 @@ export default function Tasks() {
   const [filterMonth, setFilterMonth] = useState("");
   const [quickText, setQuickText] = useState("");
   const [quickDate, setQuickDate] = useState(today());
+  const [quickPrior, setQuickPrior] = useState("normal");
   const [notaDia, setNotaDia] = useState(() => localStorage.getItem(NOTA_KEY()) || "");
   const [dragId, setDragId] = useState(null);
 
@@ -32,8 +33,9 @@ export default function Tasks() {
   const quickAdd = async (e) => {
     e.preventDefault();
     if (!quickText.trim()) return;
-    await saveTodo({ id: huid(), texto: quickText.trim(), recorrencia: "", vencimento: quickDate, descricao: "", prioridade: "normal", done: false, done_at: null, data: today(), ordem: todos.length }, true);
+    await saveTodo({ id: huid(), texto: quickText.trim(), recorrencia: "", vencimento: quickDate, descricao: "", prioridade: quickPrior, done: false, done_at: null, data: today(), ordem: todos.length }, true);
     setQuickText("");
+    setQuickPrior("normal");
   };
 
   const openEdit = (t) => {
@@ -198,21 +200,46 @@ export default function Tasks() {
       </div>
 
       {/* Quick add */}
-      <form onSubmit={quickAdd} style={{ display: "flex", gap: 8, marginBottom: 18 }}>
-        <input
-          value={quickText}
-          onChange={(e) => setQuickText(e.target.value)}
-          placeholder="Adicionar tarefa… pressione Enter"
-          style={{ flex: 1, padding: "11px 16px", border: `1.5px solid ${B.border}`, borderRadius: 10, fontSize: 14, color: B.navy, outline: "none", fontFamily: "inherit", background: "white", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
-          autoFocus
-        />
-        <input
-          type="date"
-          value={quickDate}
-          onChange={(e) => setQuickDate(e.target.value)}
-          style={{ padding: "11px 10px", border: `1.5px solid ${B.border}`, borderRadius: 10, fontSize: 13, color: B.navy, outline: "none", fontFamily: "inherit", background: "white" }}
-        />
-        <button type="submit" style={{ padding: "11px 20px", background: B.navy, color: "white", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>+</button>
+      <form onSubmit={quickAdd} style={{ marginBottom: 18 }}>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            value={quickText}
+            onChange={(e) => setQuickText(e.target.value)}
+            placeholder="Adicionar tarefa… pressione Enter"
+            style={{ flex: 1, padding: "11px 16px", border: `1.5px solid ${quickPrior === "alta" ? "#fca5a5" : B.border}`, borderRadius: 10, fontSize: 14, color: B.navy, outline: "none", fontFamily: "inherit", background: quickPrior === "alta" ? "#fff8f8" : "white", boxShadow: "0 1px 4px rgba(0,0,0,0.04)", transition: "border-color 0.15s, background 0.15s" }}
+            autoFocus
+          />
+          <input
+            type="date"
+            value={quickDate}
+            onChange={(e) => setQuickDate(e.target.value)}
+            style={{ padding: "11px 10px", border: `1.5px solid ${B.border}`, borderRadius: 10, fontSize: 13, color: B.navy, outline: "none", fontFamily: "inherit", background: "white" }}
+          />
+          <button type="submit" style={{ padding: "11px 20px", background: B.navy, color: "white", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>+</button>
+        </div>
+        <div style={{ display: "flex", gap: 6, marginTop: 7 }}>
+          {[
+            { v: "alta",   label: "🔴 Alta",   activeBg: "#fef2f2", activeColor: "#dc2626", activeBorder: "#fca5a5" },
+            { v: "normal", label: "⚪ Normal",  activeBg: "#f0f4ff", activeColor: B.navy,    activeBorder: "#c7d2fe" },
+            { v: "baixa",  label: "🔵 Baixa",  activeBg: "#f0f9ff", activeColor: "#0369a1", activeBorder: "#bae6fd" },
+          ].map(({ v, label, activeBg, activeColor, activeBorder }) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setQuickPrior(v)}
+              style={{
+                padding: "4px 13px", fontSize: 11, fontWeight: 700, borderRadius: 999, cursor: "pointer",
+                background: quickPrior === v ? activeBg : "#f3f4f6",
+                color: quickPrior === v ? activeColor : "#6b7280",
+                border: `1.5px solid ${quickPrior === v ? activeBorder : "#e5e7eb"}`,
+                transition: "all 0.12s",
+              }}
+            >
+              {label}
+            </button>
+          ))}
+          <span style={{ fontSize: 11, color: B.muted, alignSelf: "center", marginLeft: 4 }}>prioridade</span>
+        </div>
       </form>
 
       {/* Filter bar */}
