@@ -22,7 +22,8 @@ export default function ClientDetail() {
   // ─── Edit modal ───
   const [editModal, setEditModal] = useState(false);
   const [editForm, setEditForm] = useState({});
-  const openEditModal = () => { setEditForm({ ...client }); setEditModal(true); };
+  const [editSection, setEditSection] = useState(null); // null=tudo | "dados" | "financeiro"
+  const openEditModal = (section = null) => { setEditForm({ ...client }); setEditSection(section); setEditModal(true); };
   const EF = (k) => (e) => setEditForm((f) => ({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
   const saveEdit = async () => {
     if (!editForm.nome?.trim()) { setToast({ type: "error", text: "Informe o nome." }); return; }
@@ -258,9 +259,9 @@ export default function ClientDetail() {
 
         {/* Dados Gerais */}
         <Card style={{ gridColumn: "1/-1" }}>
-          <div onClick={() => setDgOpen((o) => !o)} style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: dgOpen ? 12 : 0, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", userSelect: "none" }}>
-            <span>Dados Gerais</span>
-            <span style={{ fontSize: 10, color: B.muted }}>{dgOpen ? "▲ recolher" : "▼ expandir"}</span>
+          <div style={{ marginBottom: dgOpen ? 12 : 0, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span onClick={() => setDgOpen((o) => !o)} style={{ fontWeight: 700, fontSize: 12, color: B.navy, cursor: "pointer", userSelect: "none", flex: 1 }}>Dados Gerais <span style={{ fontSize: 10, color: B.muted, fontWeight: 400 }}>{dgOpen ? "▲" : "▼"}</span></span>
+            <button onClick={(e) => { e.stopPropagation(); openEditModal("dados"); }} style={{ fontSize: 10, fontWeight: 700, color: B.navy, background: "#f0f4ff", border: `1px solid ${B.border}`, borderRadius: 6, padding: "3px 10px", cursor: "pointer" }}>Editar</button>
           </div>
           {dgOpen && (
             <>
@@ -322,9 +323,9 @@ export default function ClientDetail() {
 
         {/* Financeiro */}
         <Card style={{ gridColumn: "1/-1" }}>
-          <div onClick={() => setFinOpen((o) => !o)} style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: finOpen ? 10 : 0, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", userSelect: "none" }}>
-            <span>Financeiro</span>
-            <span style={{ fontSize: 10, color: B.muted }}>{finOpen ? "▲ recolher" : "▼ expandir"}</span>
+          <div style={{ marginBottom: finOpen ? 10 : 0, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span onClick={() => setFinOpen((o) => !o)} style={{ fontWeight: 700, fontSize: 12, color: B.navy, cursor: "pointer", userSelect: "none", flex: 1 }}>Financeiro <span style={{ fontSize: 10, color: B.muted, fontWeight: 400 }}>{finOpen ? "▲" : "▼"}</span></span>
+            <button onClick={(e) => { e.stopPropagation(); openEditModal("financeiro"); }} style={{ fontSize: 10, fontWeight: 700, color: B.navy, background: "#f0f4ff", border: `1px solid ${B.border}`, borderRadius: 6, padding: "3px 10px", cursor: "pointer" }}>Editar</button>
           </div>
           {finOpen && (
             <>
@@ -603,10 +604,11 @@ export default function ClientDetail() {
       <Modal open={editModal} onClose={() => setEditModal(false)} wide>
         <div style={{ padding: "26px 30px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-            <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: B.navy }}>Editar Cadastro</h3>
+            <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: B.navy }}>{editSection === "dados" ? "Editar Dados Gerais" : editSection === "financeiro" ? "Editar Financeiro" : "Editar Cadastro"}</h3>
             <button onClick={() => setEditModal(false)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: B.gray }}>×</button>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
+            {(editSection === null || editSection === "dados") && <>
             <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}` }}>Dados Gerais</div>
             <div style={{ gridColumn: "1/-1" }}><Tarea label="Observação" value={editForm.observacao_rapida ?? editForm.observacaoRapida ?? ""} onChange={EF("observacao_rapida")} /></div>
             <div style={{ gridColumn: "1/-1" }}><Inp label="Nome completo *" value={editForm.nome || ""} onChange={EF("nome")} /></div>
@@ -624,8 +626,10 @@ export default function ClientDetail() {
             <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Status e Perfil</div>
             <Sel label="Status" value={editForm.status || "ativo"} onChange={EF("status")} opts={[{ v: "ativo", l: "Ativo" }, { v: "inativo", l: "Inativo" }]} />
             <Sel label="Perfil" value={editForm.perfil || "moderado"} onChange={EF("perfil")} opts={Object.entries(PERFIL_MAP).map(([k, v]) => ({ v: k, l: v.label }))} />
+            </>}
 
-            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Financeiro</div>
+            {(editSection === null || editSection === "financeiro") && <>
+            <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: editSection === "financeiro" ? 0 : 6 }}>Financeiro</div>
             <Inp label="PL Atual (R$)" value={editForm.pl_inicial ?? editForm.plInicial ?? ""} onChange={EF("pl_inicial")} type="number" />
             <Inp label="Aporte Mensal (R$)" value={editForm.aporte_mensal ?? editForm.aporteMensal ?? ""} onChange={EF("aporte_mensal")} type="number" />
             <Inp label="Liquidez Desejada (R$)" value={editForm.liquidez_desejada ?? editForm.liquidezDesejada ?? ""} onChange={EF("liquidez_desejada")} type="number" />
@@ -637,7 +641,9 @@ export default function ClientDetail() {
             <div style={{ gridColumn: "1/-1" }}><Inp label="Corretoras" value={editForm.corretoras || ""} onChange={EF("corretoras")} placeholder="XP, BTG, Avenue…" /></div>
             <div style={{ gridColumn: "1/-1" }}><Inp label="Link Rebalanceamento" value={editForm.link_rebalanceamento ?? editForm.linkRebalanceamento ?? ""} onChange={EF("link_rebalanceamento")} placeholder="https://…" /></div>
             <div style={{ gridColumn: "1/-1" }}><Tarea label="Planejamento / Metas" value={editForm.planejamento || ""} onChange={EF("planejamento")} /></div>
+            </>}
 
+            {(editSection === null || editSection === "dados") && <>
             <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Datas</div>
             <Inp label="Última Reunião" value={editForm.ultima_reuniao ?? editForm.ultimaReuniao ?? ""} onChange={EF("ultima_reuniao")} type="date" />
             <Inp label="Próxima Reunião" value={editForm.proxima_reuniao ?? editForm.proximaReuniao ?? ""} onChange={EF("proxima_reuniao")} type="date" />
@@ -663,6 +669,7 @@ export default function ClientDetail() {
                 opts={[{ v: "nao", l: "Não" }, { v: "pgbl", l: "PGBL" }, { v: "vgbl", l: "VGBL" }, { v: "ambos", l: "PGBL e VGBL" }, { v: "nao_aplica", l: "Não se aplica" }]} />
               <Inp label="Sucessão" value={typeof editForm.sucessao === "boolean" ? (editForm.sucessao ? "Sim" : "") : (editForm.sucessao || "")} onChange={EF("sucessao")} placeholder="Descreva o planejamento..." />
             </div>
+            </>}
 
           </div>
           <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
