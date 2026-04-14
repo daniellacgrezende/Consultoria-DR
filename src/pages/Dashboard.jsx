@@ -155,23 +155,11 @@ export default function Dashboard() {
             <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 8, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Clientes por Perfil</div>
             {perfilData.length > 0 ? (
               <ResponsiveContainer width="100%" height={130}>
-                <PieChart><Pie data={perfilData} cx="50%" cy="50%" outerRadius={52} dataKey="value" label={({ name, value }) => `${name}: ${value}`} labelLine={false} fontSize={9}>{perfilData.map((_, i) => (<Cell key={i} fill={PCOLS[i % PCOLS.length]} />))}</Pie><Tooltip formatter={(v, n) => [`${v}cl`, n]} /></PieChart>
+                <PieChart><Pie data={perfilData} cx="50%" cy="50%" outerRadius={52} dataKey="value" label={({ name, percent }) => `${name}: ${Math.round(percent * 100)}%`} labelLine={false} fontSize={9}>{perfilData.map((_, i) => (<Cell key={i} fill={PCOLS[i % PCOLS.length]} />))}</Pie><Tooltip formatter={(v, n) => [`${v}cl`, n]} /></PieChart>
               </ResponsiveContainer>
             ) : (
               <div style={{ padding: 20, textAlign: "center", color: B.gray, fontSize: 12 }}>Sem dados</div>
             )}
-            <div style={{ marginTop: 10 }}>
-              <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 8 }}>🗺️ Top Estados</div>
-              {Object.entries(ufMap).sort((a, b) => b[1].length - a[1].length).slice(0, 5).map(([uf, cls]) => (
-                <div key={uf} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: B.navy, width: 24 }}>{uf}</span>
-                  <div style={{ flex: 1, height: 5, background: "#e8eeff", borderRadius: 999 }}>
-                    <div style={{ height: "100%", width: `${Math.round((cls.length / active.length) * 100)}%`, background: B.navy, borderRadius: 999 }} />
-                  </div>
-                  <span style={{ fontSize: 10, color: B.gray, width: 20, textAlign: "right" }}>{cls.length}</span>
-                </div>
-              ))}
-            </div>
           </Card>
 
           {/* UF Filter */}

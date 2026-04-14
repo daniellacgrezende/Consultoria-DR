@@ -46,7 +46,8 @@ export default function ClientDetail() {
   // ─── Aporte modal ───
   const [aptModal, setAptModal] = useState(false);
   const [aptEditId, setAptEditId] = useState(null);
-  const [aptForm, setAptForm] = useState({ client_id: "", data: "", tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false });
+  const [aptForm, setAptForm] = useState({ client_id: "", data: "", tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false, is_faixa: false, valor_max: "" });
+  const parseFaixa = (a) => { const m = (a.observacao || "").match(/^__fmax:(\d+(?:\.\d+)?)__([\s\S]*)/); return m ? { isFaixa: true, valorMax: Number(m[1]), obs: m[2] } : { isFaixa: false, obs: a.observacao || "" }; };
   const [aptHistOpen, setAptHistOpen] = useState(false);
   const [aptFilter, setAptFilter] = useState({ mode: "todos", ano: "", de: "", ate: "" });
   const [rhExpandedIds, setRhExpandedIds] = useState(new Set());
@@ -186,8 +187,11 @@ export default function ClientDetail() {
 
   const saveAptEntry = async () => {
     if (!aptForm.data || !aptForm.valor) { setToast({ type: "error", text: "Preencha data e valor." }); return; }
+    if (aptForm.is_faixa && !aptForm.valor_max) { setToast({ type: "error", text: "Preencha o valor máximo da faixa." }); return; }
     const isNew = !aptEditId;
-    const entry = { ...aptForm, client_id: id, id: aptEditId || huid(), valor: Number(aptForm.valor) };
+    const rawObs = aptForm.is_faixa ? `__fmax:${aptForm.valor_max}__${aptForm.observacao}` : aptForm.observacao;
+    const entry = { ...aptForm, client_id: id, id: aptEditId || huid(), valor: Number(aptForm.valor), observacao: rawObs, is_faixa: undefined, valor_max: undefined };
+    delete entry.is_faixa; delete entry.valor_max;
     await saveAporte(entry, isNew);
     if (isNew && entry.is_reserva) {
       const delta = entry.tipo === "aporte" ? entry.valor : -entry.valor;
@@ -200,7 +204,8 @@ export default function ClientDetail() {
 
   const openAptEdit = (a) => {
     setAptEditId(a.id);
-    setAptForm({ ...a, valor: String(a.valor) });
+    const pf = parseFaixa(a);
+    setAptForm({ ...a, valor: String(a.valor), observacao: pf.obs, is_faixa: pf.isFaixa, valor_max: pf.isFaixa ? String(pf.valorMax) : "" });
     setAptModal(true);
   };
 
@@ -385,7 +390,7 @@ export default function ClientDetail() {
       <Card style={{ marginBottom: 12 }}>
         <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between" }}>
           <span>Aportes e Resgates</span>
-          <button onClick={() => { setAptForm({ client_id: id, data: today(), tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false }); setAptModal(true); }} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Registrar</button>
+          <button onClick={() => { setAptForm({ client_id: id, data: today(), tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false, is_faixa: false, valor_max: "" }); setAptModal(true); }} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Registrar</button>
         </div>
 
         {/* Filtro de período — controla os stats e o histórico */}
@@ -493,7 +498,9 @@ export default function ClientDetail() {
                 ? <div style={{ padding: 12, textAlign: "center", color: B.gray, fontSize: 12 }}>Nenhuma movimentação.</div>
                 : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    {filteredClientAportes.map((a) => (
+                    {filteredClientAportes.map((a) => {
+                      const pf = parseFaixa(a);
+                      return (
                       <div key={a.id} style={{ padding: "8px 10px", borderRadius: 6, background: a.tipo === "aporte" ? "#f0fdf4" : "#fff5f5", border: `1px solid ${a.tipo === "aporte" ? "#dcfce7" : "#fee2e2"}` }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1, flexWrap: "wrap" }}>
@@ -501,16 +508,21 @@ export default function ClientDetail() {
                             <span style={{ fontSize: 11, color: B.gray }}>{fmtDate(a.data)}</span>
                             {a.is_reserva && <span style={{ fontSize: 9, background: "#e0f2fe", color: "#0369a1", borderRadius: 4, padding: "1px 6px", fontWeight: 700 }}>RESERVA</span>}
                             {a.is_pgbl && <span style={{ fontSize: 9, background: "#f5f3ff", color: "#7c3aed", borderRadius: 4, padding: "1px 6px", fontWeight: 700 }}>PGBL</span>}
-                            {a.observacao && <span style={{ fontSize: 11, color: "#6b7280" }}>· {a.observacao}</span>}
+                            {pf.isFaixa && <span style={{ fontSize: 9, background: "#fffbeb", color: "#92400e", borderRadius: 4, padding: "1px 6px", fontWeight: 700 }}>FAIXA</span>}
+                            {pf.obs && <span style={{ fontSize: 11, color: "#6b7280" }}>· {pf.obs}</span>}
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ fontSize: 13, fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "+" : "−"}{money(a.valor)}</span>
+                            {pf.isFaixa
+                              ? <span style={{ fontSize: 13, fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{money(a.valor)} – {money(pf.valorMax)}</span>
+                              : <span style={{ fontSize: 13, fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "+" : "−"}{money(a.valor)}</span>
+                            }
                             <button onClick={() => openAptEdit(a)} style={{ background: "white", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 5, padding: "2px 8px", fontSize: 10, cursor: "pointer" }}>Editar</button>
                             <button onClick={() => handleDeleteAporte(a)} style={{ background: "white", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 5, padding: "2px 8px", fontSize: 10, cursor: "pointer" }}>Remover</button>
                           </div>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )
               }
@@ -705,7 +717,21 @@ export default function ClientDetail() {
               <button key={t} onClick={() => setAptForm((f) => ({ ...f, tipo: t }))} style={{ flex: 1, padding: "9px", border: `2px solid ${aptForm.tipo === t ? (t === "aporte" ? "#16a34a" : "#dc2626") : B.border}`, borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13, background: aptForm.tipo === t ? (t === "aporte" ? "#f0fdf4" : "#fff5f5") : "white", color: aptForm.tipo === t ? (t === "aporte" ? "#16a34a" : "#dc2626") : B.gray }}>{t === "aporte" ? "Aporte" : "Resgate"}</button>
             ))}
           </div>
-          <Inp label="Valor (R$) *" type="number" value={aptForm.valor} onChange={(e) => setAptForm((f) => ({ ...f, valor: e.target.value }))} placeholder="0" />
+          <div style={{ marginBottom: 13 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: B.navy, cursor: "pointer", marginBottom: 8 }}>
+              <input type="checkbox" checked={aptForm.is_faixa || false} onChange={(e) => setAptForm((f) => ({ ...f, is_faixa: e.target.checked, valor_max: "" }))} style={{ width: 15, height: 15, cursor: "pointer" }} />
+              Faixa de valor (mín – máx)
+            </label>
+            {aptForm.is_faixa ? (
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <Inp label="Valor mín (R$) *" type="number" value={aptForm.valor} onChange={(e) => setAptForm((f) => ({ ...f, valor: e.target.value }))} placeholder="0" />
+                <span style={{ fontSize: 18, color: B.muted, marginTop: 18, flexShrink: 0 }}>–</span>
+                <Inp label="Valor máx (R$) *" type="number" value={aptForm.valor_max} onChange={(e) => setAptForm((f) => ({ ...f, valor_max: e.target.value }))} placeholder="0" />
+              </div>
+            ) : (
+              <Inp label="Valor (R$) *" type="number" value={aptForm.valor} onChange={(e) => setAptForm((f) => ({ ...f, valor: e.target.value }))} placeholder="0" />
+            )}
+          </div>
           <div style={{ display: "flex", gap: 12, marginBottom: 13 }}>
             <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: B.navy, cursor: "pointer" }}>
               <input type="checkbox" checked={aptForm.is_reserva || false} onChange={(e) => setAptForm((f) => ({ ...f, is_reserva: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer" }} />
