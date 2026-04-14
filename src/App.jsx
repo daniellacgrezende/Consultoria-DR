@@ -15,7 +15,6 @@ import Backup from "./pages/Backup";
 import Settings from "./pages/Settings";
 import Repasse from "./pages/Repasse";
 import Noticias from "./pages/Noticias";
-import EvolucaoPatrimonial from "./pages/EvolucaoPatrimonial";
 import Relatorios from "./pages/Relatorios";
 
 function ProtectedRoute({ children }) {
@@ -40,7 +39,6 @@ function AppRoutes() {
         <Route path="tasks" element={<Tasks />} />
         <Route path="clients" element={<Clients />} />
         <Route path="clients/:slug" element={<ClientDetail />} />
-        <Route path="evolucao" element={<EvolucaoPatrimonial />} />
         <Route path="meetings" element={<Meetings />} />
         <Route path="relatorios" element={<Relatorios />} />
         <Route path="allocation" element={<AssetAllocation />} />
