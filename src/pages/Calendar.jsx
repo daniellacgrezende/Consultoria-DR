@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { useData } from "../hooks/useData";
 import { B } from "../utils/constants";
@@ -38,18 +38,18 @@ export default function Calendar() {
   }, []);
 
   // Load events
-  const loadEvents = useCallback(async () => {
-    const { data, error } = await supabase.from("calendar_events").select("*").order("start_at");
-    if (error) console.error("[Calendar] Erro ao carregar:", error);
-    setEvents(data || []);
-    setLoaded(true);
-  }, []);
-
-  useEffect(() => { loadEvents(); }, [loadEvents]);
-
-  const refresh = async () => {
+  const [fetchKey, setFetchKey] = useState(0);
+  useEffect(() => {
     setLoaded(false);
-    await loadEvents();
+    supabase.from("calendar_events").select("*").order("start_at").then(({ data, error }) => {
+      if (error) console.error("[Calendar] Erro ao carregar:", error);
+      setEvents(data || []);
+      setLoaded(true);
+    });
+  }, [fetchKey]);
+
+  const refresh = () => {
+    setFetchKey((k) => k + 1);
     if (setToast) setToast({ type: "success", text: "Calendário atualizado!" });
   };
 

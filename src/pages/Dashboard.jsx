@@ -62,21 +62,20 @@ export default function Dashboard() {
 
   // Calendar events
   const [calEvents, setCalEvents] = useState([]);
+  const [calRefreshKey, setCalRefreshKey] = useState(0);
   useEffect(() => {
     supabase.from("calendar_events").select("*").order("start_at").then(({ data }) => {
       setCalEvents(data || []);
     });
-  }, []);
+  }, [calRefreshKey]);
 
   const proximosEventos = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const end = new Date(today);
-    end.setDate(end.getDate() + 7);
-    end.setHours(23, 59, 59, 999);
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const d7 = new Date(); d7.setDate(d7.getDate() + 7);
+    const endStr = d7.toISOString().slice(0, 10);
     return calEvents
-      .filter((e) => { const d = new Date(e.start_at); return d >= today && d <= end; })
-      .sort((a, b) => new Date(a.start_at) - new Date(b.start_at));
+      .filter((e) => { const ds = (e.start_at || "").slice(0, 10); return ds >= todayStr && ds <= endStr; })
+      .sort((a, b) => (a.start_at || "").localeCompare(b.start_at || ""));
   }, [calEvents]);
 
   // UF data
@@ -220,18 +219,22 @@ export default function Dashboard() {
 
       {/* Próximos Eventos */}
       <Card style={{ marginBottom: 0 }}>
-        <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>
-          Próximos Eventos <span style={{ fontWeight: 400, fontSize: 11, color: B.gray }}>(hoje + 7 dias)</span>
+        <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>Próximos Eventos <span style={{ fontWeight: 400, fontSize: 11, color: B.gray }}>(hoje + 7 dias)</span></span>
+          <button onClick={() => setCalRefreshKey((k) => k + 1)} title="Atualizar eventos" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: B.gray, padding: "2px 6px", borderRadius: 6 }}>🔄</button>
         </div>
         {proximosEventos.length === 0 ? (
           <div style={{ padding: "16px 0", textAlign: "center", color: B.gray, fontSize: 12 }}>Nenhum evento nos próximos 7 dias</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {proximosEventos.map((ev) => {
-              const d = new Date(ev.start_at);
-              const isToday = d.toDateString() === new Date().toDateString();
-              const dateLabel = isToday ? "Hoje" : d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" });
-              const timeLabel = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+              const dateStr = (ev.start_at || "").slice(0, 10);
+              const timeLabel = (ev.start_at || "").slice(11, 16);
+              const todayStr = new Date().toISOString().slice(0, 10);
+              const isToday = dateStr === todayStr;
+              const [dy, dm, dd] = dateStr.split("-").map(Number);
+              const localDate = new Date(dy, dm - 1, dd);
+              const dateLabel = isToday ? "Hoje" : localDate.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" });
               const dotColor = ev.color || (ev.type === "reuniao" ? "#2563eb" : "#7c3aed");
               return (
                 <div key={ev.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 10px", borderRadius: 8, background: isToday ? "#eff6ff" : "#f8faff", border: `1px solid ${isToday ? "#bfdbfe" : B.border}` }}>
