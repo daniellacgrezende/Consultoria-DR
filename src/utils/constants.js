@@ -50,7 +50,7 @@ export const LEAD_ORIGENS = [
   "Grupo Primo - Campanhas",
 ];
 
-export const PERIOD_OPTIONS = ["Mensal", "Trimestral", "Quadrimestral", "Semestral", "Anual"];
+export const PERIOD_OPTIONS = ["Mensal", "Trimestral", "Quadrimestral", "Semestral", "Anual", "Não se aplica"];
 
 export const LEAD_TEMPERATURAS = [
   { v: "fria", l: "Fria", color: "#3b82f6" },

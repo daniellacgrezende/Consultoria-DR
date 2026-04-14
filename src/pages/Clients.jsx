@@ -36,10 +36,11 @@ export default function Clients() {
   const totalAUM = useMemo(() => active.reduce((s, c) => s + getPL(c), 0), [active, history]);
   const PDAYS = { mensal: 30, bimestral: 60, trimestral: 90, quadrimestral: 120, semestral: 180, anual: 365 };
   const isLate = (c) => {
+    const p = (c.periodicidade_reuniao || c.periodicidadeReuniao || "Trimestral").toLowerCase();
+    if (p === "não se aplica") return false;
     const proxima = c.proxima_reuniao || c.proximaReuniao;
     if (proxima) return new Date(proxima) < new Date();
     const d = daysSince(c.ultima_reuniao || c.ultimaReuniao);
-    const p = (c.periodicidade_reuniao || c.periodicidadeReuniao || "Trimestral").toLowerCase();
     return d !== null && d > Math.round((PDAYS[p] || 90) * 0.83);
   };
   const isChamei = (c) => {
