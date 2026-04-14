@@ -115,6 +115,7 @@ export const mapClientFromDB = (c) => ({
   grupoId: c.grupo_id,
   origemCliente: c.origem_cliente,
   proximoRelatorio: c.proximo_relatorio,
+  indicadoPor: c.indicado_por,
 });
 
 // Colunas válidas da tabela clients no Supabase
@@ -128,7 +129,7 @@ const CLIENT_DB_COLS = new Set([
   "observacao_rapida", "notas_gerais", "link_rebalanceamento", "periodicidade_reuniao",
   "periodicidade_relatorio", "pgbl", "vgbl", "renda_bruta_tributavel", "reserva_emergencia_valor",
   "reserva_emergencia_meta", "reserva_emergencia_produto", "grupo_id", "grupo_nome",
-  "corretoras", "origem_cliente", "proximo_relatorio",
+  "corretoras", "origem_cliente", "proximo_relatorio", "indicado_por",
 ]);
 
 // Converte valor para número, retornando 0 se vazio/inválido
@@ -191,6 +192,7 @@ export const mapClientToDB = (c) => {
     corretoras: c.corretoras ?? "",
     origem_cliente: c.origem_cliente ?? c.origemCliente ?? "",
     proximo_relatorio: c.proximo_relatorio ?? c.proximoRelatorio ?? "",
+    indicado_por: c.indicado_por ?? c.indicadoPor ?? "",
   };
 
   return db;

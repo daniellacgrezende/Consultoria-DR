@@ -32,6 +32,19 @@ export default function Dashboard() {
   const ufs = [...new Set(active.map((c) => c.uf).filter(Boolean))].length;
 
   const top10 = useMemo(() => [...active].sort((a, b) => getPL(b) - getPL(a)).slice(0, 10), [active, history]);
+
+  // Top Indicadores: agrupa clientes por "indicado_por", soma PL, ordena desc
+  const topIndicadores = useMemo(() => {
+    const map = {};
+    active.forEach((c) => {
+      const ind = c.indicado_por || c.indicadoPor;
+      if (!ind) return;
+      if (!map[ind]) map[ind] = { nome: ind, count: 0, pl: 0 };
+      map[ind].count += 1;
+      map[ind].pl += getPL(c);
+    });
+    return Object.values(map).sort((a, b) => b.pl - a.pl);
+  }, [active, history]);
   const curvaSummary = ["A", "B", "C", "D"].map((k) => ({
     k, ...CURVA_MAP[k],
     count: active.filter((c) => getCurva(getPL(c)) === k).length,
@@ -182,6 +195,36 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
+
+      {/* Top Indicadores */}
+      {topIndicadores.length > 0 && (
+        <Card style={{ marginBottom: 16 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>
+            🤝 Top Indicadores
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {topIndicadores.map((ind, i) => {
+              const pct = topIndicadores[0].pl > 0 ? Math.round((ind.pl / topIndicadores[0].pl) * 100) : 0;
+              return (
+                <div key={ind.nome} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, background: i === 0 ? "#fef3c7" : "#f8faff", border: `1px solid ${i === 0 ? "#e8dfc8" : B.border}` }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: i === 0 ? "#b45309" : B.gray, width: 20, textAlign: "center" }}>{i + 1}</span>
+                  <Avatar nome={ind.nome} size={30} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 12, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ind.nome}</div>
+                    <div style={{ height: 4, background: "#e8eeff", borderRadius: 999, marginTop: 4 }}>
+                      <div style={{ height: "100%", width: `${pct}%`, background: "#8b5cf6", borderRadius: 999 }} />
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 12, color: B.navy }}>{money(ind.pl)}</div>
+                    <div style={{ fontSize: 10, color: "#8b5cf6", fontWeight: 600 }}>{ind.count} indicado{ind.count > 1 ? "s" : ""}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       {/* Próximos Eventos */}
       <Card style={{ marginBottom: 0 }}>

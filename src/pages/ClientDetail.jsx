@@ -266,6 +266,9 @@ export default function ClientDetail() {
                 {idade !== null && <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Idade</div><span style={{ fontSize: 12, fontWeight: 600 }}>{idade} anos</span></div>}
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Data Nascimento</div><InlineDate value={client.data_nascimento} onSave={(v) => updateField("data_nascimento", v)} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Origem do Cliente</div><InlineSelect value={client.origem_cliente || ""} onSave={(v) => updateField("origem_cliente", v)} opts={[{ v: "", l: "—" }, ...LEAD_ORIGENS.map((o) => ({ v: o, l: o }))]} /></div>
+                {client.origem_cliente === "Indicação" && (
+                  <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8b5cf6", textTransform: "uppercase", marginBottom: 3 }}>↳ Indicado por</div><InlineSelect value={client.indicado_por || ""} onSave={(v) => updateField("indicado_por", v)} opts={[{ v: "", l: "—" }, ...clients.filter((c) => c.id !== id).sort((a, b) => a.nome.localeCompare(b.nome)).map((c) => ({ v: c.nome, l: c.nome }))]} /></div>
+                )}
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Início Carteira</div><InlineDate value={client.inicio_carteira} onSave={(v) => updateField("inicio_carteira", v)} /></div>
                 {/* Seguro / Previdência / Sucessão + Obs — ao lado de Início Carteira */}
                 <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
