@@ -33,12 +33,22 @@ export default function Clients() {
   const active = useMemo(() => clients.filter((c) => c.status === "ativo"), [clients]);
   const getPL = (c) => getCurrentPL(c, history);
   const totalAUM = useMemo(() => active.reduce((s, c) => s + getPL(c), 0), [active, history]);
-  const alertas75 = useMemo(() => active.filter((c) => {
+  const PDAYS = { mensal: 30, bimestral: 60, trimestral: 90, quadrimestral: 120, semestral: 180, anual: 365 };
+  const isLate = (c) => {
+    const proxima = c.proxima_reuniao || c.proximaReuniao;
+    if (proxima) return new Date(proxima) < new Date();
     const d = daysSince(c.ultima_reuniao || c.ultimaReuniao);
     const p = (c.periodicidade_reuniao || c.periodicidadeReuniao || "Trimestral").toLowerCase();
-    const days = { mensal: 30, bimestral: 60, trimestral: 90, quadrimestral: 120, semestral: 180, anual: 365 }[p] || 90;
-    return d !== null && d > Math.round(days * 0.83);
-  }).length, [active]);
+    return d !== null && d > Math.round((PDAYS[p] || 90) * 0.83);
+  };
+  const isChamei = (c) => {
+    const dAv = daysSince(c.avisado_em || c.avisadoEm);
+    const p = (c.periodicidade_reuniao || c.periodicidadeReuniao || "Trimestral").toLowerCase();
+    return dAv !== null && dAv <= (PDAYS[p] || 90) + 10;
+  };
+  const precisaChamar = useMemo(() => active.filter((c) => isLate(c) && !isChamei(c)), [active]);
+  const jaChamei = useMemo(() => active.filter((c) => isLate(c) && isChamei(c)), [active]);
+  const alertas75 = precisaChamar.length + jaChamei.length;
 
   const ufs = useMemo(() => [...new Set(active.map((c) => (c.uf || "").toUpperCase()).filter(Boolean))].sort(), [active]);
 
@@ -297,7 +307,19 @@ export default function Clients() {
           <div style={{ fontSize: 20, fontWeight: 700, color: B.navy }}>{showStats ? money(totalAUM) : "R$ ••••••"}</div>
           <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>{showStats ? "patrimônio total" : "clique para revelar"}</div>
         </div>
-        <MiniStat label="Reunião em Atraso" value={alertas75} sub="fora da periodicidade" warn={alertas75 > 0} />
+        <div style={{ background: "white", border: `1px solid ${alertas75 > 0 ? "#fecaca" : B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${alertas75 > 0 ? "#dc2626" : B.border}` }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", marginBottom: 8 }}>Reunião em Atraso</div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <div style={{ flex: 1, background: precisaChamar.length > 0 ? "#fff5f5" : "#f8faff", border: `1px solid ${precisaChamar.length > 0 ? "#fecaca" : B.border}`, borderRadius: 8, padding: "8px 10px", textAlign: "center" }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: precisaChamar.length > 0 ? "#dc2626" : B.muted }}>{precisaChamar.length}</div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: precisaChamar.length > 0 ? "#dc2626" : B.muted, textTransform: "uppercase", marginTop: 2 }}>📞 Preciso chamar</div>
+            </div>
+            <div style={{ flex: 1, background: jaChamei.length > 0 ? "#ecfeff" : "#f8faff", border: `1px solid ${jaChamei.length > 0 ? "#a5f3fc" : B.border}`, borderRadius: 8, padding: "8px 10px", textAlign: "center" }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: jaChamei.length > 0 ? "#0891b2" : B.muted }}>{jaChamei.length}</div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: jaChamei.length > 0 ? "#0891b2" : B.muted, textTransform: "uppercase", marginTop: 2 }}>✓ Já chamei</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Filters */}
@@ -365,7 +387,8 @@ export default function Clients() {
               {rows.map((c, i) => {
                 const dR = daysSince(c.ultima_reuniao || c.ultimaReuniao);
                 const proximaReu = c.proxima_reuniao || c.proximaReuniao;
-                const rW = proximaReu ? new Date(proximaReu) < new Date() : (dR || 0) > 75;
+                const rW = isLate(c);
+                const chameiFlg = rW && isChamei(c);
                 const hasSeguro = c.seguro_vida || c.seguroVida;
                 const grupoNome = c.grupo_nome || c.grupoNome;
                 return (
@@ -382,7 +405,11 @@ export default function Clients() {
                     <td style={{ padding: "10px 12px", color: B.gray, fontSize: 12 }}>{c.cidade && c.uf ? `${c.cidade}/${c.uf}` : c.cidade || "—"}</td>
                     <td style={{ padding: "10px 12px", fontWeight: 700, color: B.navy }}>{showPL ? money(c._pl) : <span style={{ color: B.muted, letterSpacing: 2 }}>••••</span>}</td>
                     <td style={{ padding: "10px 12px" }}><PBadge p={c.perfil} /></td>
-                    <td style={{ padding: "10px 12px" }}><span style={{ fontSize: 12, color: rW ? "#dc2626" : "#444", fontWeight: rW ? 700 : 400 }}>{proximaReu ? fmtDate(proximaReu) : "—"}</span></td>
+                    <td style={{ padding: "10px 12px" }}>
+                      <span style={{ fontSize: 12, color: chameiFlg ? "#0891b2" : rW ? "#dc2626" : "#444", fontWeight: rW ? 700 : 400 }}>{proximaReu ? fmtDate(proximaReu) : "—"}</span>
+                      {chameiFlg && <span style={{ marginLeft: 5, fontSize: 9, fontWeight: 700, background: "#ecfeff", color: "#0891b2", border: "1px solid #a5f3fc", borderRadius: 999, padding: "1px 6px" }}>✓ chamei</span>}
+                      {rW && !chameiFlg && <span style={{ marginLeft: 5, fontSize: 9, fontWeight: 700, background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 999, padding: "1px 6px" }}>chamar</span>}
+                    </td>
                     <td style={{ padding: "10px 12px" }}><span style={{ fontSize: 12, fontWeight: 600, color: hasSeguro ? "#16a34a" : "#9ca3af" }}>{hasSeguro ? "Sim" : "Não"}</span></td>
                     <td style={{ padding: "10px 12px" }}><CBadge curva={c._curva} /></td>
                     <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
