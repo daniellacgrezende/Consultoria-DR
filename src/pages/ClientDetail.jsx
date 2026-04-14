@@ -156,7 +156,7 @@ export default function ClientDetail() {
   const pgblAnoAtual = clientAportes
     .filter((a) => a.tipo === "aporte" && a.is_pgbl && a.data?.startsWith(anoAtual))
     .reduce((s, a) => s + Number(a.valor || 0), 0);
-  const hasPgbl = client.pgbl;
+  const hasPgbl = client.pgbl === true || client.pgbl === "true";
   const rendaBruta = Number(client.receita_mensal || 0);
   // Limite PGBL: 12% da renda bruta tributável anual (renda mensal × 12 + 1/3 renda mensal)
   const rendaBrutaAnual = rendaBruta * 12 + rendaBruta / 3;
@@ -282,21 +282,23 @@ export default function ClientDetail() {
                 <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Seguro / Prev. / Sucessão</div>
                   <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center", marginBottom: 4 }}>
-                    {(() => {
+                    {/* Seguro de Vida: null→true→false→"nao_aplica"→null; oculto quando N/A */}
+                    {client.seguro_vida !== "nao_aplica" && (() => {
                       const val = client.seguro_vida;
                       const isTrue = val === true || val === "true";
                       const isFalse = val === false || val === "false";
-                      const next = isTrue ? false : isFalse ? null : true;
+                      const next = isTrue ? false : isFalse ? "nao_aplica" : true;
                       return (
-                        <span onClick={() => updateField("seguro_vida", next)} title="Clique para alterar" style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 999, background: isTrue ? "#dcfce7" : isFalse ? "#fee2e2" : "#f3f4f6", color: isTrue ? "#16a34a" : isFalse ? "#dc2626" : "#9E9C9E", fontSize: 10, fontWeight: 700, cursor: "pointer", border: `1px solid ${isTrue ? "#bbf7d0" : isFalse ? "#fecaca" : "#e5e7eb"}`, userSelect: "none" }}>
+                        <span onClick={() => updateField("seguro_vida", next)} title="Clique para alterar (✓ / ✗ / N/A)" style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 999, background: isTrue ? "#dcfce7" : isFalse ? "#fee2e2" : "#f3f4f6", color: isTrue ? "#16a34a" : isFalse ? "#dc2626" : "#9E9C9E", fontSize: 10, fontWeight: 700, cursor: "pointer", border: `1px solid ${isTrue ? "#bbf7d0" : isFalse ? "#fecaca" : "#e5e7eb"}`, userSelect: "none" }}>
                           {isTrue ? "✓" : isFalse ? "✗" : "—"} Seguro
                         </span>
                       );
                     })()}
-                    {(client.pgbl === true || client.pgbl === "true") && (
+                    {/* PGBL/VGBL: ocultos quando "nao_aplica" */}
+                    {client.pgbl !== "nao_aplica" && (client.pgbl === true || client.pgbl === "true") && (
                       <span onClick={() => updateField("pgbl", false)} title="Clique para remover" style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 999, background: "#dcfce7", color: "#16a34a", fontSize: 10, fontWeight: 700, cursor: "pointer", border: "1px solid #bbf7d0", userSelect: "none" }}>✓ PGBL</span>
                     )}
-                    {(client.vgbl === true || client.vgbl === "true") && (
+                    {client.vgbl !== "nao_aplica" && (client.vgbl === true || client.vgbl === "true") && (
                       <span onClick={() => updateField("vgbl", false)} title="Clique para remover" style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 999, background: "#dcfce7", color: "#16a34a", fontSize: 10, fontWeight: 700, cursor: "pointer", border: "1px solid #bbf7d0", userSelect: "none" }}>✓ VGBL</span>
                     )}
                     {(() => {
@@ -304,8 +306,9 @@ export default function ClientDetail() {
                       if (!suc) return null;
                       return <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 999, background: "#f0f9ff", color: "#0369a1", fontSize: 10, fontWeight: 700, border: "1px solid #bae6fd", userSelect: "none" }}>✓ Suc.</span>;
                     })()}
-                    {!client.envio_ips && (
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 999, background: "#fff7ed", color: "#c2410c", fontSize: 10, fontWeight: 700, border: "1px solid #fed7aa", userSelect: "none" }}>! IPS</span>
+                    {/* IPS: oculto quando "nao_aplica"; clique no badge pendente marca N/A */}
+                    {client.envio_ips !== "nao_aplica" && !client.envio_ips && (
+                      <span onClick={() => updateField("envio_ips", "nao_aplica")} title="Clique para marcar como Não se aplica" style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 999, background: "#fff7ed", color: "#c2410c", fontSize: 10, fontWeight: 700, border: "1px solid #fed7aa", cursor: "pointer", userSelect: "none" }}>! IPS</span>
                     )}
                   </div>
                   {/* Obs. Seguro — agrupada visualmente com os badges */}
@@ -646,15 +649,18 @@ export default function ClientDetail() {
 
             <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Atributos</div>
             <div style={{ gridColumn: "1/-1", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0 16px" }}>
-              <Sel label="IPS Enviada" value={(editForm.envio_ips ?? editForm.envioIps) ? "sim" : "nao"}
-                onChange={(e) => setEditForm((f) => ({ ...f, envio_ips: e.target.value === "sim" }))}
-                opts={[{ v: "nao", l: "Não" }, { v: "sim", l: "Sim" }]} />
-              <Sel label="Seguro de Vida" value={(editForm.seguro_vida ?? editForm.seguroVida) ? "sim" : "nao"}
-                onChange={(e) => setEditForm((f) => ({ ...f, seguro_vida: e.target.value === "sim" }))}
-                opts={[{ v: "nao", l: "Não" }, { v: "sim", l: "Sim" }]} />
-              <Sel label="Previdência" value={editForm.pgbl && editForm.vgbl ? "ambos" : editForm.pgbl ? "pgbl" : editForm.vgbl ? "vgbl" : "nao"}
-                onChange={(e) => { const v = e.target.value; setEditForm((f) => ({ ...f, pgbl: v === "pgbl" || v === "ambos", vgbl: v === "vgbl" || v === "ambos" })); }}
-                opts={[{ v: "nao", l: "Não" }, { v: "pgbl", l: "PGBL" }, { v: "vgbl", l: "VGBL" }, { v: "ambos", l: "PGBL e VGBL" }]} />
+              <Sel label="IPS Enviada"
+                value={(editForm.envio_ips ?? editForm.envioIps) === "nao_aplica" ? "nao_aplica" : (editForm.envio_ips ?? editForm.envioIps) ? "sim" : "nao"}
+                onChange={(e) => setEditForm((f) => ({ ...f, envio_ips: e.target.value === "sim" ? true : e.target.value === "nao_aplica" ? "nao_aplica" : false }))}
+                opts={[{ v: "nao", l: "Não" }, { v: "sim", l: "Sim" }, { v: "nao_aplica", l: "Não se aplica" }]} />
+              <Sel label="Seguro de Vida"
+                value={(editForm.seguro_vida ?? editForm.seguroVida) === "nao_aplica" ? "nao_aplica" : (editForm.seguro_vida ?? editForm.seguroVida) === true || (editForm.seguro_vida ?? editForm.seguroVida) === "true" ? "sim" : "nao"}
+                onChange={(e) => setEditForm((f) => ({ ...f, seguro_vida: e.target.value === "sim" ? true : e.target.value === "nao_aplica" ? "nao_aplica" : false }))}
+                opts={[{ v: "nao", l: "Não" }, { v: "sim", l: "Sim" }, { v: "nao_aplica", l: "Não se aplica" }]} />
+              <Sel label="Previdência"
+                value={editForm.pgbl === "nao_aplica" ? "nao_aplica" : editForm.pgbl && editForm.vgbl ? "ambos" : editForm.pgbl ? "pgbl" : editForm.vgbl ? "vgbl" : "nao"}
+                onChange={(e) => { const v = e.target.value; setEditForm((f) => ({ ...f, pgbl: v === "pgbl" || v === "ambos" ? true : v === "nao_aplica" ? "nao_aplica" : false, vgbl: v === "vgbl" || v === "ambos" })); }}
+                opts={[{ v: "nao", l: "Não" }, { v: "pgbl", l: "PGBL" }, { v: "vgbl", l: "VGBL" }, { v: "ambos", l: "PGBL e VGBL" }, { v: "nao_aplica", l: "Não se aplica" }]} />
               <Inp label="Sucessão" value={typeof editForm.sucessao === "boolean" ? (editForm.sucessao ? "Sim" : "") : (editForm.sucessao || "")} onChange={EF("sucessao")} placeholder="Descreva o planejamento..." />
             </div>
 

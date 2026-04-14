@@ -430,7 +430,9 @@ export default function Clients() {
                 const proximaReu = c.proxima_reuniao || c.proximaReuniao;
                 const rW = isLate(c);
                 const chameiFlg = rW && isChamei(c);
-                const hasSeguro = c.seguro_vida || c.seguroVida;
+                const seguroVal = c.seguro_vida ?? c.seguroVida;
+                const seguroNA = seguroVal === "nao_aplica";
+                const hasSeguro = !seguroNA && (seguroVal === true || seguroVal === "true");
                 const grupoNome = c.grupo_nome || c.grupoNome;
                 return (
                   <tr key={c.id} onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ cursor: "pointer", borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
@@ -451,7 +453,7 @@ export default function Clients() {
                       {chameiFlg && <span style={{ marginLeft: 5, fontSize: 9, fontWeight: 700, background: "#ecfeff", color: "#0891b2", border: "1px solid #a5f3fc", borderRadius: 999, padding: "1px 6px" }}>✓ chamei</span>}
                       {rW && !chameiFlg && <span style={{ marginLeft: 5, fontSize: 9, fontWeight: 700, background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 999, padding: "1px 6px" }}>chamar</span>}
                     </td>
-                    <td style={{ padding: "10px 12px" }}><span style={{ fontSize: 12, fontWeight: 600, color: hasSeguro ? "#16a34a" : "#9ca3af" }}>{hasSeguro ? "Sim" : "Não"}</span></td>
+                    <td style={{ padding: "10px 12px" }}><span style={{ fontSize: 12, fontWeight: 600, color: seguroNA ? "#9ca3af" : hasSeguro ? "#16a34a" : "#9ca3af" }}>{seguroNA ? "N/A" : hasSeguro ? "Sim" : "Não"}</span></td>
                     <td style={{ padding: "10px 12px" }}><CBadge curva={c._curva} /></td>
                     <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
                       <button onClick={(e) => { e.stopPropagation(); openEdit(c); }} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Editar</button>
