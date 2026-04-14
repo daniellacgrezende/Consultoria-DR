@@ -354,7 +354,7 @@ export default function Clients() {
                 <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff" }}>Cidade/UF</th>
                 <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer", userSelect: "none" }} onClick={() => setShowPL((v) => !v)}>PL {showPL ? "🙈" : "👁"}</th>
                 <th onClick={() => toggleSort("perfil")} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer" }}>Perfil <SortIcon col="perfil" /></th>
-                <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff" }}>Últ. Reunião</th>
+                <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff" }}>Próx. Reunião</th>
                 <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff" }}>Seguro</th>
                 <th onClick={() => toggleSort("curva")} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer" }}>Curva <SortIcon col="curva" /></th>
                 <th style={{ padding: "10px 12px", background: "#f5f7ff", borderBottom: `1px solid ${B.border}` }}></th>
@@ -364,7 +364,8 @@ export default function Clients() {
               {rows.length === 0 && <tr><td colSpan={8} style={{ padding: 40, textAlign: "center", color: B.gray }}>Nenhum cliente</td></tr>}
               {rows.map((c, i) => {
                 const dR = daysSince(c.ultima_reuniao || c.ultimaReuniao);
-                const rW = (dR || 0) > 75;
+                const proximaReu = c.proxima_reuniao || c.proximaReuniao;
+                const rW = proximaReu ? new Date(proximaReu) < new Date() : (dR || 0) > 75;
                 const hasSeguro = c.seguro_vida || c.seguroVida;
                 const grupoNome = c.grupo_nome || c.grupoNome;
                 return (
@@ -381,7 +382,7 @@ export default function Clients() {
                     <td style={{ padding: "10px 12px", color: B.gray, fontSize: 12 }}>{c.cidade && c.uf ? `${c.cidade}/${c.uf}` : c.cidade || "—"}</td>
                     <td style={{ padding: "10px 12px", fontWeight: 700, color: B.navy }}>{showPL ? money(c._pl) : <span style={{ color: B.muted, letterSpacing: 2 }}>••••</span>}</td>
                     <td style={{ padding: "10px 12px" }}><PBadge p={c.perfil} /></td>
-                    <td style={{ padding: "10px 12px" }}><span style={{ fontSize: 12, color: rW ? "#dc2626" : "#444", fontWeight: rW ? 700 : 400 }}>{(c.ultima_reuniao || c.ultimaReuniao) ? fmtDate(c.ultima_reuniao || c.ultimaReuniao) : "—"}</span></td>
+                    <td style={{ padding: "10px 12px" }}><span style={{ fontSize: 12, color: rW ? "#dc2626" : "#444", fontWeight: rW ? 700 : 400 }}>{proximaReu ? fmtDate(proximaReu) : "—"}</span></td>
                     <td style={{ padding: "10px 12px" }}><span style={{ fontSize: 12, fontWeight: 600, color: hasSeguro ? "#16a34a" : "#9ca3af" }}>{hasSeguro ? "Sim" : "Não"}</span></td>
                     <td style={{ padding: "10px 12px" }}><CBadge curva={c._curva} /></td>
                     <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
