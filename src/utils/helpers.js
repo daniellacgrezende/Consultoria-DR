@@ -93,6 +93,11 @@ export const mapClientFromDB = (c) => ({
   receitaMensal: c.receita_mensal,
   formaPagamento: c.forma_pagamento,
   declaracaoIR: c.declaracao_ir,
+  // snake_case sobrescritos para refletir estado N/A (o ...c acima traz false do DB)
+  seguro_vida: c.seguro_nao_aplica ? "nao_aplica" : c.seguro_vida,
+  envio_ips:   c.ips_nao_aplica   ? "nao_aplica" : c.envio_ips,
+  pgbl:        c.prev_nao_aplica  ? "nao_aplica" : c.pgbl,
+  // camelCase aliases
   seguroVida: c.seguro_nao_aplica ? "nao_aplica" : c.seguro_vida,
   valorSeguro: c.valor_seguro,
   seguroObservacao: c.seguro_observacao,
@@ -106,7 +111,6 @@ export const mapClientFromDB = (c) => ({
   envioIps: c.ips_nao_aplica ? "nao_aplica" : c.envio_ips,
   ipsNaoAplica: c.ips_nao_aplica,
   prevNaoAplica: c.prev_nao_aplica,
-  pgbl: c.prev_nao_aplica ? "nao_aplica" : c.pgbl,
   observacaoRapida: c.observacao_rapida,
   notasGerais: c.notas_gerais,
   linkRebalanceamento: c.link_rebalanceamento,
