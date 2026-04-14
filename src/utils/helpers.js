@@ -84,6 +84,7 @@ export const mapClientFromDB = (c) => ({
   estadoCivil: c.estado_civil,
   plInicial: c.pl_inicial,
   aporteMensal: c.aporte_mensal,
+  aporteMensalMax: c.aporte_mensal_max,
   metaPatrimonio: c.meta_patrimonio,
   liquidezDesejada: c.liquidez_desejada,
   liquidezAtual: c.liquidez_atual,
@@ -138,7 +139,7 @@ const CLIENT_DB_COLS = new Set([
   "observacao_rapida", "notas_gerais", "link_rebalanceamento", "periodicidade_reuniao",
   "periodicidade_relatorio", "pgbl", "vgbl", "renda_bruta_tributavel", "reserva_emergencia_valor",
   "reserva_emergencia_meta", "reserva_emergencia_produto", "grupo_id", "grupo_nome",
-  "corretoras", "origem_cliente", "proximo_relatorio", "indicado_por",
+  "corretoras", "origem_cliente", "proximo_relatorio", "indicado_por", "aporte_mensal_max",
   "seguro_nao_aplica", "ips_nao_aplica", "prev_nao_aplica",
 ]);
 
@@ -164,6 +165,7 @@ export const mapClientToDB = (c) => {
     perfil: c.perfil ?? "moderado",
     pl_inicial: toNum(c.pl_inicial ?? c.plInicial),
     aporte_mensal: toNum(c.aporte_mensal ?? c.aporteMensal),
+  aporte_mensal_max: toNum(c.aporte_mensal_max ?? c.aporteMensalMax),
     meta_patrimonio: toNum(c.meta_patrimonio ?? c.metaPatrimonio),
     liquidez_desejada: toNum(c.liquidez_desejada ?? c.liquidezDesejada),
     liquidez_atual: toNum(c.liquidez_atual ?? c.liquidezAtual),
