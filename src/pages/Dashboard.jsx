@@ -63,6 +63,17 @@ export default function Dashboard() {
   // Calendar events
   const [calEvents, setCalEvents] = useState([]);
   const [calRefreshKey, setCalRefreshKey] = useState(0);
+  const [confirmedIds, setConfirmedIds] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("cal_confirmed") || "[]")); } catch { return new Set(); }
+  });
+  const toggleConfirm = (id) => {
+    setConfirmedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      localStorage.setItem("cal_confirmed", JSON.stringify([...next]));
+      return next;
+    });
+  };
   useEffect(() => {
     supabase.from("calendar_events").select("*").order("start_at").then(({ data }) => {
       setCalEvents(data || []);
@@ -262,27 +273,47 @@ export default function Dashboard() {
               const localDate = new Date(dy, dm - 1, dd);
               const dateLabel = isToday ? "Hoje" : localDate.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" });
               const dotColor = ev.color || (ev.type === "reuniao" ? "#2563eb" : "#7c3aed");
+              const isPast = (() => {
+                try { return new Date(ev.start_at.replace(" ", "T")) < new Date(); } catch { return false; }
+              })();
+              const isConfirmed = confirmedIds.has(ev.id);
               const deleteEvent = async () => {
-                if (ev._isReuniao) return; // eventos sintéticos de proxima_reuniao não ficam no banco
+                if (ev._isReuniao) return;
                 await supabase.from("calendar_events").delete().eq("id", ev.id);
                 setCalRefreshKey((k) => k + 1);
               };
+
+              // Estilo visual baseado no estado
+              const rowBg = isPast ? "#f1f5f9" : isConfirmed ? "#f0fdf4" : isToday ? "#eff6ff" : "#f8faff";
+              const rowBorder = isPast ? "#e2e8f0" : isConfirmed ? "#bbf7d0" : isToday ? "#bfdbfe" : B.border;
+              const titleColor = isPast ? "#94a3b8" : B.navy;
+              const titleDecoration = isPast ? "line-through" : "none";
+
               return (
-                <div key={ev.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 10px", borderRadius: 8, background: isToday ? "#eff6ff" : "#f8faff", border: `1px solid ${isToday ? "#bfdbfe" : B.border}` }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
+                <div key={ev.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, background: rowBg, border: `1px solid ${rowBorder}`, opacity: isPast ? 0.7 : 1 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: isPast ? "#94a3b8" : dotColor, flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 12, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ev.title}</div>
+                    <div style={{ fontWeight: 600, fontSize: 12, color: titleColor, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textDecoration: titleDecoration }}>{ev.title}</div>
                     {ev.location && <div style={{ fontSize: 10, color: B.gray, marginTop: 1 }}>{ev.location}</div>}
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <div style={{ fontSize: 11, fontWeight: isToday ? 700 : 500, color: isToday ? "#2563eb" : B.navy }}>{dateLabel}</div>
+                    <div style={{ fontSize: 11, fontWeight: isToday && !isPast ? 700 : 500, color: isPast ? "#94a3b8" : isToday ? "#2563eb" : B.navy }}>{dateLabel}</div>
                     <div style={{ fontSize: 10, color: B.gray }}>{timeLabel}</div>
                   </div>
+                  {/* Botão confirmar — só para eventos futuros */}
+                  {!isPast && (
+                    <button
+                      onClick={() => toggleConfirm(ev.id)}
+                      title={isConfirmed ? "Confirmado — clique para desfazer" : "Confirmar participação"}
+                      style={{ background: isConfirmed ? "#dcfce7" : "white", border: `1px solid ${isConfirmed ? "#16a34a" : "#cbd5e1"}`, cursor: "pointer", color: isConfirmed ? "#16a34a" : "#94a3b8", fontSize: 12, padding: "3px 7px", borderRadius: 5, flexShrink: 0, fontWeight: 700, lineHeight: 1 }}
+                    >{isConfirmed ? "✓" : "✓"}</button>
+                  )}
+                  {/* Botão excluir */}
                   {!ev._isReuniao && (
                     <button
                       onClick={deleteEvent}
                       title="Remover evento"
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "#cbd5e1", fontSize: 14, padding: "2px 4px", borderRadius: 4, flexShrink: 0, lineHeight: 1 }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "#cbd5e1", fontSize: 13, padding: "2px 4px", borderRadius: 4, flexShrink: 0, lineHeight: 1 }}
                       onMouseEnter={(e) => e.target.style.color = "#dc2626"}
                       onMouseLeave={(e) => e.target.style.color = "#cbd5e1"}
                     >✕</button>
