@@ -70,13 +70,36 @@ export default function Dashboard() {
   }, [calRefreshKey]);
 
   const proximosEventos = useMemo(() => {
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const d7 = new Date(); d7.setDate(d7.getDate() + 7);
-    const endStr = d7.toISOString().slice(0, 10);
-    return calEvents
-      .filter((e) => { const ds = (e.start_at || "").slice(0, 10); return ds >= todayStr && ds <= endStr; })
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+    const d7 = new Date(now); d7.setDate(d7.getDate() + 7);
+    const endStr = `${d7.getFullYear()}-${String(d7.getMonth()+1).padStart(2,"0")}-${String(d7.getDate()).padStart(2,"0")}`;
+
+    const calFiltered = calEvents.filter((e) => {
+      const ds = (e.start_at || "").slice(0, 10);
+      return ds >= todayStr && ds <= endStr;
+    });
+
+    const clientMeetings = active
+      .filter((c) => {
+        const pr = c.proxima_reuniao || c.proximaReuniao;
+        return pr && pr >= todayStr && pr <= endStr;
+      })
+      .map((c) => {
+        const pr = c.proxima_reuniao || c.proximaReuniao;
+        return {
+          id: `reuniao-${c.id}`,
+          title: `Reunião — ${c.nome}`,
+          start_at: `${pr}T00:00`,
+          type: "reuniao",
+          color: "#2563eb",
+          _isReuniao: true,
+        };
+      });
+
+    return [...calFiltered, ...clientMeetings]
       .sort((a, b) => (a.start_at || "").localeCompare(b.start_at || ""));
-  }, [calEvents]);
+  }, [calEvents, active]);
 
   // UF data
   const ufMap = {};
@@ -229,9 +252,12 @@ export default function Dashboard() {
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {proximosEventos.map((ev) => {
               const dateStr = (ev.start_at || "").slice(0, 10);
-              const timeLabel = (ev.start_at || "").slice(11, 16);
-              const todayStr = new Date().toISOString().slice(0, 10);
+              const _now = new Date();
+              const todayStr = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,"0")}-${String(_now.getDate()).padStart(2,"0")}`;
               const isToday = dateStr === todayStr;
+              const timeLabel = ev._isReuniao
+                ? ""
+                : (() => { try { return new Date(ev.start_at.replace(" ", "T")).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); } catch { return (ev.start_at || "").slice(11, 16); } })();
               const [dy, dm, dd] = dateStr.split("-").map(Number);
               const localDate = new Date(dy, dm - 1, dd);
               const dateLabel = isToday ? "Hoje" : localDate.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" });

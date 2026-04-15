@@ -23,7 +23,7 @@ export default function ClientDetail() {
   const [editModal, setEditModal] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [editSection, setEditSection] = useState(null); // null=tudo | "dados" | "financeiro"
-  const openEditModal = (section = null) => { setEditForm({ ...client }); setEditSection(section); setEditModal(true); };
+  const openEditModal = (section) => { setEditForm({ ...client }); setEditSection(section || null); setEditModal(true); };
   const EF = (k) => (e) => setEditForm((f) => ({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
   const saveEdit = async () => {
     if (!editForm.nome?.trim()) { setToast({ type: "error", text: "Informe o nome." }); return; }
@@ -241,7 +241,7 @@ export default function ClientDetail() {
             <div style={{ fontSize: 11, opacity: 0.5, textTransform: "uppercase" }}>PL Atual</div>
             <div style={{ fontSize: 22, fontWeight: 700 }}>{money(pl)}</div>
           </div>
-          <button onClick={openEditModal} style={{ padding: "7px 16px", background: "rgba(255,255,255,0.15)", color: "white", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Editar Cadastro</button>
+          <button onClick={() => openEditModal()} style={{ padding: "7px 16px", background: "rgba(255,255,255,0.15)", color: "white", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Editar Cadastro</button>
         </div>
       </div>
 
@@ -563,10 +563,10 @@ export default function ClientDetail() {
         )}
       </Card>
 
-      {/* Histórico de Reuniões — último, conteúdo colapsável por entrada */}
+      {/* Histórico — último, conteúdo colapsável por entrada */}
       <Card style={{ marginBottom: 12 }}>
         <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between" }}>
-          <span>Histórico de Reuniões ({clientReunioes.length})</span>
+          <span>Histórico ({clientReunioes.length})</span>
           <button onClick={() => { setRhEditId(null); setRhForm({ client_id: id, data: today(), texto: "" }); setRhModal(true); }} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Registrar</button>
         </div>
         {clientReunioes.length === 0 ? <div style={{ padding: 16, textAlign: "center", color: B.gray, fontSize: 12 }}>Nenhum registro.</div> : (
@@ -614,7 +614,7 @@ export default function ClientDetail() {
             <button onClick={() => setEditModal(false)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: B.gray }}>×</button>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
-            {(editSection === null || editSection === "dados") && <>
+            {(!editSection || editSection === "dados") && <>
             <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}` }}>Dados Gerais</div>
             <div style={{ gridColumn: "1/-1" }}><Tarea label="Observação" value={editForm.observacao_rapida ?? editForm.observacaoRapida ?? ""} onChange={EF("observacao_rapida")} /></div>
             <div style={{ gridColumn: "1/-1" }}><Inp label="Nome completo *" value={editForm.nome || ""} onChange={EF("nome")} /></div>
@@ -634,7 +634,7 @@ export default function ClientDetail() {
             <Sel label="Perfil" value={editForm.perfil || "moderado"} onChange={EF("perfil")} opts={Object.entries(PERFIL_MAP).map(([k, v]) => ({ v: k, l: v.label }))} />
             </>}
 
-            {(editSection === null || editSection === "financeiro") && <>
+            {(!editSection || editSection === "financeiro") && <>
             <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: editSection === "financeiro" ? 0 : 6 }}>Financeiro</div>
             <Inp label="PL Atual (R$)" value={editForm.pl_inicial ?? editForm.plInicial ?? ""} onChange={EF("pl_inicial")} type="number" />
             <Inp label="Aporte Mensal Mín (R$)" value={editForm.aporte_mensal ?? editForm.aporteMensal ?? ""} onChange={EF("aporte_mensal")} type="number" />
@@ -650,7 +650,7 @@ export default function ClientDetail() {
             <div style={{ gridColumn: "1/-1" }}><Tarea label="Planejamento / Metas" value={editForm.planejamento || ""} onChange={EF("planejamento")} /></div>
             </>}
 
-            {(editSection === null || editSection === "dados") && <>
+            {(!editSection || editSection === "dados") && <>
             <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Datas</div>
             <Inp label="Última Reunião" value={editForm.ultima_reuniao ?? editForm.ultimaReuniao ?? ""} onChange={EF("ultima_reuniao")} type="date" />
             <Inp label="Próxima Reunião" value={editForm.proxima_reuniao ?? editForm.proximaReuniao ?? ""} onChange={EF("proxima_reuniao")} type="date" />
@@ -689,7 +689,7 @@ export default function ClientDetail() {
       {/* Modal Reunião */}
       <Modal open={rhModal} onClose={() => setRhModal(false)} wide>
         <div style={{ padding: "26px 30px" }}>
-          <h3 style={{ margin: "0 0 20px", fontSize: 17, fontWeight: 700, color: B.navy }}>{rhEditId ? "Editar Registro" : "Nova Reunião"}</h3>
+          <h3 style={{ margin: "0 0 20px", fontSize: 17, fontWeight: 700, color: B.navy }}>{rhEditId ? "Editar Registro" : "Novo Registro"}</h3>
           <Inp label="Data *" type="date" value={rhForm.data} onChange={(e) => setRhForm((f) => ({ ...f, data: e.target.value }))} />
           <div style={{ marginBottom: 18 }}>
             <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Registro *</label>
