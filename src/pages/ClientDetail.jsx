@@ -580,7 +580,7 @@ export default function ClientDetail() {
                       <span style={{ fontSize: 10, color: B.muted }}>{isExpanded ? "▼" : "▶"}</span>
                       <span style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap" }}>{fmtDate(r.data)}</span>
                       {r.titulo && (
-                        <span style={{ fontSize: 11, fontWeight: 600, color: B.navy, background: "#e8eeff", borderRadius: 5, padding: "1px 7px", whiteSpace: "nowrap", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis" }}>{r.titulo}</span>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: B.navy, background: "#e8eeff", borderRadius: 5, padding: "1px 7px" }}>{r.titulo}</span>
                       )}
                       {!isExpanded && !r.titulo && r.texto && (
                         <span style={{ fontSize: 11, color: B.gray, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.texto.slice(0, 80)}{r.texto.length > 80 ? "…" : ""}</span>
