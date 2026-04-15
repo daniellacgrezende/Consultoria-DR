@@ -183,7 +183,7 @@ export default function Tasks() {
 
   const atrasadas = pendentes.filter((t) =>  atrasadasSet.has(t.id));
   const hojeList  = pendentes.filter((t) => (t.vencimento || t.data || today()) === today());
-  const futuras   = pendentes.filter((t) => (t.vencimento || t.data || today()) > today());
+  const futuras   = pendentes.filter((t) => (t.vencimento || t.data || today()) > today()).sort((a, b) => (a.vencimento || a.data || "").localeCompare(b.vencimento || b.data || ""));
 
   // Quando filtro de data ativo, exibe todos os pendentes filtrados sem agrupamento
   const visAllDate    = filterDate ? applyFilters(pendentes) : [];
