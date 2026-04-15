@@ -10,24 +10,28 @@ import Modal from "../components/ui/Modal";
 import SearchBox from "../components/ui/SearchBox";
 import { SecH } from "../components/ui/FormFields";
 
-const GRACE_DAYS = 10; // margem após vencimento antes de virar "Atrasado"
+const GRACE_DAYS  = 30; // dias após vencimento antes de virar "Atrasado"
+const RETRY_DAYS  = 45; // dias após "chamei" antes de virar "Retentativa"
 
 /* ─── Status logic ─── */
 function getStatus(c) {
   const diasSem = daysSince(c.ultima_reuniao || c.ultimaReuniao);
   const period  = getPeriodDays(c.periodicidade_reuniao || c.periodicidadeReuniao);
   const dAv     = daysSince(c.avisado_em || c.avisadoEm);
-  // "chamei" válido se registrado dentro do período + margem
-  const chamei  = dAv !== null && dAv <= period + GRACE_DAYS;
 
-  // Nunca reuniu ou passou do prazo + margem de 10 dias
-  if (diasSem === null || diasSem > period + GRACE_DAYS) {
-    if (chamei) return { key: "aguardando", label: "Aguardando", color: "#0891B2", bg: "#ECFEFF", border: "#A5F3FC" };
-    return       { key: "atrasado",  label: "Atrasado",  color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" };
+  const pastDue       = diasSem === null || diasSem > period;
+  const chameiAtivo   = dAv !== null && dAv <= RETRY_DAYS;   // chamou há menos de 45 dias
+  const retentativa   = dAv !== null && dAv > RETRY_DAYS && pastDue; // chamou há +45 dias, sem retorno
+
+  if (pastDue) {
+    if (retentativa)  return { key: "retentativa", label: "Retentativa", color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE" };
+    if (chameiAtivo)  return { key: "aguardando",  label: "Aguardando",  color: "#0891B2", bg: "#ECFEFF", border: "#A5F3FC" };
+    // Só vira "Atrasado" depois de 30 dias do prazo
+    if (diasSem === null || diasSem > period + GRACE_DAYS)
+                      return { key: "atrasado",    label: "Atrasado",    color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" };
+    // Entre vencimento e vencimento+30 dias → Agendar
+    return            { key: "agendar",     label: "Agendar",     color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" };
   }
-
-  // Dentro da margem de 10 dias após vencimento → hora de agendar
-  if (diasSem > period) return { key: "agendar", label: "Agendar", color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" };
 
   // Últimos 25% do período → hora de agendar
   if (diasSem >= Math.round(period * 0.75)) return { key: "agendar", label: "Agendar", color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" };
@@ -52,10 +56,11 @@ function StatusBadge({ st }) {
 export default function Meetings() {
   const navigate  = useNavigate();
   const { clients, reunioes, saveClient, setToast } = useData();
-  const [sortCol, setSortCol]   = useState("status");
-  const [sortDir, setSortDir]   = useState("asc");
-  const [rhFilter, setRhFilter] = useState(null);
-  const [rhSearch, setRhSearch] = useState("");
+  const [sortCol, setSortCol]     = useState("status");
+  const [sortDir, setSortDir]     = useState("asc");
+  const [statusFilter, setStatusFilter] = useState(null); // filtro por status ao clicar no badge
+  const [rhFilter, setRhFilter]   = useState(null);
+  const [rhSearch, setRhSearch]   = useState("");
   const [rhShowSug, setRhShowSug] = useState(false);
 
   // Modal de confirmação de data
@@ -72,7 +77,7 @@ export default function Meetings() {
 
   /* ─── Enriched rows ─── */
   const rows = useMemo(() => {
-    const STATUS_ORDER = { atrasado: 0, agendar: 1, aguardando: 2, emdia: 3 };
+    const STATUS_ORDER = { atrasado: 0, retentativa: 1, agendar: 2, aguardando: 3, emdia: 4 };
     const enriched = active.map((c) => ({
       ...c,
       diasSem:    daysSince(c.ultima_reuniao || c.ultimaReuniao),
@@ -91,11 +96,17 @@ export default function Meetings() {
   }, [active, sortCol, sortDir]);
 
   const counts = useMemo(() => ({
-    atrasado:   rows.filter((r) => r.st.key === "atrasado").length,
-    agendar:    rows.filter((r) => r.st.key === "agendar").length,
-    aguardando: rows.filter((r) => r.st.key === "aguardando").length,
-    emdia:      rows.filter((r) => r.st.key === "emdia").length,
+    atrasado:    rows.filter((r) => r.st.key === "atrasado").length,
+    retentativa: rows.filter((r) => r.st.key === "retentativa").length,
+    agendar:     rows.filter((r) => r.st.key === "agendar").length,
+    aguardando:  rows.filter((r) => r.st.key === "aguardando").length,
+    emdia:       rows.filter((r) => r.st.key === "emdia").length,
   }), [rows]);
+
+  // Tabela filtrada pelo badge clicado
+  const filteredRows = useMemo(() =>
+    statusFilter ? rows.filter((r) => r.st.key === statusFilter) : rows,
+  [rows, statusFilter]);
 
   const toggleSort = (col) => {
     if (sortCol === col) setSortDir((d) => d === "asc" ? "desc" : "asc");
@@ -142,8 +153,9 @@ export default function Meetings() {
   };
 
   /* ─── Alertas rápidos ─── */
-  const atrasados = rows.filter((r) => r.st.key === "atrasado").slice(0, 6);
-  const aAgendar  = rows.filter((r) => r.st.key === "agendar").slice(0, 6);
+  const atrasados    = rows.filter((r) => r.st.key === "atrasado").slice(0, 6);
+  const aAgendar     = rows.filter((r) => r.st.key === "agendar").slice(0, 6);
+  const retentativas = rows.filter((r) => r.st.key === "retentativa").slice(0, 6);
 
   /* ─── Histórico ─── */
   const rhFiltered = useMemo(() =>
@@ -170,37 +182,54 @@ export default function Meetings() {
     <>
       <SecH eyebrow="Agenda" title="Reuniões" desc="Controle de frequência e pendências por cliente." />
 
-      {/* ─── Summary bar ─── */}
+      {/* ─── Summary bar (clicável) ─── */}
       <div style={{
         display: "flex", background: "white", border: `1px solid ${B.border}`,
         borderRadius: 10, marginBottom: 18, overflow: "hidden",
         boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
       }}>
         {[
-          { label: "Atrasado",   value: counts.atrasado,   color: "#DC2626", warn: counts.atrasado > 0 },
-          { label: "Agendar",    value: counts.agendar,    color: "#D97706", warn: counts.agendar > 0 },
-          { label: "Aguardando", value: counts.aguardando, color: "#0891B2" },
-          { label: "Em dia",     value: counts.emdia,      color: "#16A34A" },
-        ].map((item, i, arr) => (
-          <div key={i} style={{
-            flex: 1, padding: "12px 16px", textAlign: "center",
-            borderRight: i < arr.length - 1 ? `1px solid ${B.border}` : "none",
-          }}>
-            <div style={{ fontSize: 9.5, fontWeight: 700, color: B.muted, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>
-              {item.label}
+          { key: "atrasado",    label: "Atrasado",    value: counts.atrasado,    color: "#DC2626" },
+          { key: "retentativa", label: "Retentativa", value: counts.retentativa, color: "#7C3AED" },
+          { key: "agendar",     label: "Agendar",     value: counts.agendar,     color: "#D97706" },
+          { key: "aguardando",  label: "Aguardando",  value: counts.aguardando,  color: "#0891B2" },
+          { key: "emdia",       label: "Em dia",      value: counts.emdia,       color: "#16A34A" },
+        ].map((item, i, arr) => {
+          const active = statusFilter === item.key;
+          return (
+            <div key={i}
+              onClick={() => setStatusFilter(active ? null : item.key)}
+              style={{
+                flex: 1, padding: "12px 16px", textAlign: "center",
+                borderRight: i < arr.length - 1 ? `1px solid ${B.border}` : "none",
+                cursor: "pointer", userSelect: "none",
+                background: active ? item.color + "15" : "white",
+                borderBottom: active ? `3px solid ${item.color}` : "3px solid transparent",
+                transition: "background 0.15s",
+              }}>
+              <div style={{ fontSize: 9.5, fontWeight: 700, color: active ? item.color : B.muted, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>
+                {item.label}
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: item.color, letterSpacing: "-1px", lineHeight: 1 }}>
+                {item.value}
+              </div>
+              {active && <div style={{ fontSize: 9, color: item.color, marginTop: 2 }}>clique p/ limpar</div>}
             </div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: item.warn ? item.color : item.color, letterSpacing: "-1px", lineHeight: 1 }}>
-              {item.value}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
+      {statusFilter && (
+        <div style={{ fontSize: 11, color: B.muted, marginBottom: 10, marginTop: -10 }}>
+          Mostrando: <b style={{ color: B.navy }}>{filteredRows.length} cliente(s)</b> com status <b>{statusFilter}</b> —
+          <button onClick={() => setStatusFilter(null)} style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer", fontSize: 11, fontWeight: 600, padding: "0 4px" }}>ver todos</button>
+        </div>
+      )}
 
       {/* ─── Alert panels ─── */}
-      {(atrasados.length > 0 || aAgendar.length > 0) && (
+      {(atrasados.length > 0 || aAgendar.length > 0 || retentativas.length > 0) && (
         <div style={{
           display: "grid",
-          gridTemplateColumns: atrasados.length > 0 && aAgendar.length > 0 ? "1fr 1fr" : "1fr",
+          gridTemplateColumns: [atrasados.length, retentativas.length, aAgendar.length].filter(Boolean).length > 1 ? "1fr 1fr" : "1fr",
           gap: 12, marginBottom: 18,
         }}>
           {atrasados.length > 0 && (
@@ -224,6 +253,34 @@ export default function Meetings() {
                     >Chamei</button>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {retentativas.length > 0 && (
+            <div style={{ background: "#F5F3FF", border: "1px solid #DDD6FE", borderRadius: 10, padding: "14px 16px" }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: "#7C3AED", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+                Retentativa — tente contato novamente
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {retentativas.map((c) => {
+                  const dAv = daysSince(c.avisado_em || c.avisadoEm);
+                  return (
+                    <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #DDD6FE", borderRadius: 7, padding: "7px 10px" }}>
+                      <Avatar nome={c.nome} size={24} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
+                        <div style={{ fontSize: 10, color: "#7C3AED", fontWeight: 600 }}>
+                          Último contato há {dAv}d · {c.periodicidade_reuniao || "Trimestral"}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => openAction("chamei", c)}
+                        style={{ fontSize: 9.5, fontWeight: 700, background: "#ECFEFF", color: "#0891B2", border: "1px solid #A5F3FC", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}
+                      >Chamei</button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -268,10 +325,10 @@ export default function Meetings() {
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 && (
-                <tr><td colSpan={7} style={{ padding: 40, textAlign: "center", color: B.muted }}>Nenhum cliente ativo</td></tr>
+              {filteredRows.length === 0 && (
+                <tr><td colSpan={7} style={{ padding: 40, textAlign: "center", color: B.muted }}>{statusFilter ? `Nenhum cliente com status "${statusFilter}"` : "Nenhum cliente ativo"}</td></tr>
               )}
-              {rows.map((c, i) => {
+              {filteredRows.map((c, i) => {
                 const dAv     = daysSince(c.avisado_em || c.avisadoEm);
                 const chameiRecentemente = dAv !== null && dAv <= c.periodDays;
                 return (
