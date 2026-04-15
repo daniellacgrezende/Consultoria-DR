@@ -262,6 +262,11 @@ export default function Dashboard() {
               const localDate = new Date(dy, dm - 1, dd);
               const dateLabel = isToday ? "Hoje" : localDate.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" });
               const dotColor = ev.color || (ev.type === "reuniao" ? "#2563eb" : "#7c3aed");
+              const deleteEvent = async () => {
+                if (ev._isReuniao) return; // eventos sintéticos de proxima_reuniao não ficam no banco
+                await supabase.from("calendar_events").delete().eq("id", ev.id);
+                setCalRefreshKey((k) => k + 1);
+              };
               return (
                 <div key={ev.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 10px", borderRadius: 8, background: isToday ? "#eff6ff" : "#f8faff", border: `1px solid ${isToday ? "#bfdbfe" : B.border}` }}>
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
@@ -273,6 +278,15 @@ export default function Dashboard() {
                     <div style={{ fontSize: 11, fontWeight: isToday ? 700 : 500, color: isToday ? "#2563eb" : B.navy }}>{dateLabel}</div>
                     <div style={{ fontSize: 10, color: B.gray }}>{timeLabel}</div>
                   </div>
+                  {!ev._isReuniao && (
+                    <button
+                      onClick={deleteEvent}
+                      title="Remover evento"
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "#cbd5e1", fontSize: 14, padding: "2px 4px", borderRadius: 4, flexShrink: 0, lineHeight: 1 }}
+                      onMouseEnter={(e) => e.target.style.color = "#dc2626"}
+                      onMouseLeave={(e) => e.target.style.color = "#cbd5e1"}
+                    >✕</button>
+                  )}
                 </div>
               );
             })}
