@@ -17,6 +17,7 @@ export default function Dashboard() {
   const { clients, history, leads } = useData();
   const [ufFilter, setUfFilter] = useState("");
   const [showAUM, setShowAUM] = useState(false);
+  const [showClientes, setShowClientes] = useState(false);
 
   const active = useMemo(() => clients.filter((c) => c.status === "ativo"), [clients]);
   const getPL = (c) => getCurrentPL(c, history);
@@ -124,7 +125,14 @@ export default function Dashboard() {
 
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
-        <MiniStat label="Clientes Ativos" value={active.length} sub={`${clients.length} total na base`} />
+        <div onClick={() => setShowClientes((v) => !v)} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${B.navy}`, cursor: "pointer", userSelect: "none" }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5, display: "flex", justifyContent: "space-between" }}>
+            <span>Clientes Ativos</span>
+            <span>{showClientes ? "🙈" : "👁"}</span>
+          </div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: B.navy }}>{showClientes ? active.length : "••"}</div>
+          <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>{showClientes ? `${clients.length} total na base` : "clique para revelar"}</div>
+        </div>
         <div onClick={() => setShowAUM((v) => !v)} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${B.navy}`, cursor: "pointer", userSelect: "none" }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5, display: "flex", justifyContent: "space-between" }}>
             <span>Patrimônio sob Gestão</span>
