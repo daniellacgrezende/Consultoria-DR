@@ -41,7 +41,7 @@ export default function ClientDetail() {
   // ─── Reunião modal ───
   const [rhModal, setRhModal] = useState(false);
   const [rhEditId, setRhEditId] = useState(null);
-  const [rhForm, setRhForm] = useState({ client_id: "", data: "", texto: "" });
+  const [rhForm, setRhForm] = useState({ client_id: "", data: "", titulo: "", texto: "" });
 
   // ─── Aporte modal ───
   const [aptModal, setAptModal] = useState(false);
@@ -567,7 +567,7 @@ export default function ClientDetail() {
       <Card style={{ marginBottom: 12 }}>
         <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between" }}>
           <span>Histórico ({clientReunioes.length})</span>
-          <button onClick={() => { setRhEditId(null); setRhForm({ client_id: id, data: today(), texto: "" }); setRhModal(true); }} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Registrar</button>
+          <button onClick={() => { setRhEditId(null); setRhForm({ client_id: id, data: today(), titulo: "", texto: "" }); setRhModal(true); }} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Registrar</button>
         </div>
         {clientReunioes.length === 0 ? <div style={{ padding: 16, textAlign: "center", color: B.gray, fontSize: 12 }}>Nenhum registro.</div> : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -579,7 +579,10 @@ export default function ClientDetail() {
                     <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1, minWidth: 0 }}>
                       <span style={{ fontSize: 10, color: B.muted }}>{isExpanded ? "▼" : "▶"}</span>
                       <span style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap" }}>{fmtDate(r.data)}</span>
-                      {!isExpanded && r.texto && (
+                      {r.titulo && (
+                        <span style={{ fontSize: 11, fontWeight: 600, color: B.navy, background: "#e8eeff", borderRadius: 5, padding: "1px 7px", whiteSpace: "nowrap", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis" }}>{r.titulo}</span>
+                      )}
+                      {!isExpanded && !r.titulo && r.texto && (
                         <span style={{ fontSize: 11, color: B.gray, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.texto.slice(0, 80)}{r.texto.length > 80 ? "…" : ""}</span>
                       )}
                     </div>
@@ -691,6 +694,7 @@ export default function ClientDetail() {
         <div style={{ padding: "26px 30px" }}>
           <h3 style={{ margin: "0 0 20px", fontSize: 17, fontWeight: 700, color: B.navy }}>{rhEditId ? "Editar Registro" : "Novo Registro"}</h3>
           <Inp label="Data *" type="date" value={rhForm.data} onChange={(e) => setRhForm((f) => ({ ...f, data: e.target.value }))} />
+          <Inp label="Título" value={rhForm.titulo || ""} onChange={(e) => setRhForm((f) => ({ ...f, titulo: e.target.value }))} placeholder="Ex: Reunião de acompanhamento, Compra do imóvel…" />
           <div style={{ marginBottom: 18 }}>
             <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Registro *</label>
             <textarea value={rhForm.texto} onChange={(e) => setRhForm((f) => ({ ...f, texto: e.target.value }))} onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveRhEntry(); } }} rows={8} placeholder="O que foi discutido… (Enter = nova linha · Ctrl+Enter = salvar)" style={{ width: "100%", boxSizing: "border-box", background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 7, padding: "10px 13px", fontSize: 13, color: B.navy, outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.7 }} />
