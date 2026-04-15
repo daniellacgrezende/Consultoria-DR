@@ -62,7 +62,7 @@ function Item({ t, idx, groupList, atrasadasSet, toggle, postpone, openEdit, rem
           style={{ width: 15, height: 15, accentColor: "#1D3557", flexShrink: 0, cursor: "pointer" }} />
 
         <div style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ fontSize: 13, fontWeight: isHigh ? 700 : 600, color: t.done ? "#9baabf" : atras ? "#dc2626" : pc.color, textDecoration: t.done ? "line-through" : "none" }}>
+          <span style={{ fontSize: 13, fontWeight: isHigh ? 700 : 600, color: t.done ? "#6b7280" : atras ? "#dc2626" : pc.color, textDecoration: t.done ? "line-through" : "none" }}>
             {t.texto}
           </span>
           {isHigh && !t.done && (
@@ -326,7 +326,7 @@ export default function Tasks() {
         {visConcluidas.length > 0 && (
           <>
             <div style={{ fontSize: 10, fontWeight: 700, color: "#16a34a", textTransform: "uppercase", marginTop: 8 }}>Concluídas ({visConcluidas.length})</div>
-            <div style={{ maxHeight: 160, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {visConcluidas.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visConcluidas} {...itemProps} />)}
             </div>
           </>
