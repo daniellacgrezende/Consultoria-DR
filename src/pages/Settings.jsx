@@ -25,7 +25,7 @@ export default function Settings() {
     });
   }, []);
 
-  const handleUrlSync = async () => {
+  const runSync = async (forceAll = false) => {
     if (!syncUrl?.trim()) { setSyncResult({ type: "error", text: "Cole a URL do calendário." }); return; }
     setSyncing(true);
     setSyncResult(null);
@@ -36,20 +36,39 @@ export default function Settings() {
       const text = await resp.text();
       const parsed = parseICS(text);
       if (!parsed.length) { setSyncResult({ type: "error", text: "Nenhum evento encontrado no arquivo." }); setSyncing(false); return; }
-      const { data: existing } = await supabase.from("calendar_events").select("outlook_event_id");
-      const existingIds = new Set((existing || []).filter((e) => e.outlook_event_id).map((e) => e.outlook_event_id));
-      const newEvents = parsed.filter((e) => !existingIds.has(e.outlook_event_id) && e.start_at && e.end_at);
-      if (!newEvents.length) { setSyncResult({ type: "info", text: `${parsed.length} eventos encontrados, todos já sincronizados.` }); setSyncing(false); return; }
-      const toInsert = newEvents.map((e) => ({ id: huid(), title: e.title, description: e.description || "", start_at: e.start_at, end_at: e.end_at, type: e.type || "reuniao", color: e.color || "#2563eb", location: e.location || "", outlook_event_id: e.outlook_event_id || "", client_id: null, lead_id: null }));
-      const { error } = await supabase.from("calendar_events").insert(toInsert);
-      if (error) { setSyncResult({ type: "error", text: `Erro ao salvar: ${error.message}` }); setSyncing(false); return; }
-      setSyncResult({ type: "success", text: `${toInsert.length} evento(s) importado(s)! (${parsed.length - newEvents.length} duplicados ignorados)` });
-      if (setToast) setToast({ type: "success", text: `${toInsert.length} eventos importados do Outlook!` });
+
+      const validParsed = parsed.filter((e) => e.start_at && e.outlook_event_id);
+
+      if (forceAll) {
+        // Re-sync completo: apaga todos os eventos do Outlook e reimporta
+        const { data: existing } = await supabase.from("calendar_events").select("id, outlook_event_id");
+        const outlookIds = (existing || []).filter((e) => e.outlook_event_id).map((e) => e.id);
+        if (outlookIds.length) await supabase.from("calendar_events").delete().in("id", outlookIds);
+        const toInsert = validParsed.map((e) => ({ id: huid(), title: e.title, description: e.description || "", start_at: e.start_at, end_at: e.end_at || e.start_at, type: e.type || "reuniao", color: e.color || "#2563eb", location: e.location || "", outlook_event_id: e.outlook_event_id, client_id: null, lead_id: null }));
+        const { error } = await supabase.from("calendar_events").insert(toInsert);
+        if (error) throw new Error(error.message);
+        setSyncResult({ type: "success", text: `Re-sincronização completa: ${toInsert.length} evento(s) importado(s).` });
+        if (setToast) setToast({ type: "success", text: `${toInsert.length} eventos re-importados do Outlook!` });
+      } else {
+        // Sync incremental: só adiciona eventos novos
+        const { data: existing } = await supabase.from("calendar_events").select("outlook_event_id");
+        const existingIds = new Set((existing || []).filter((e) => e.outlook_event_id).map((e) => e.outlook_event_id));
+        const newEvents = validParsed.filter((e) => !existingIds.has(e.outlook_event_id));
+        if (!newEvents.length) { setSyncResult({ type: "info", text: `${parsed.length} eventos encontrados, todos já sincronizados. Use "Re-sincronizar tudo" para corrigir horários.` }); setSyncing(false); return; }
+        const toInsert = newEvents.map((e) => ({ id: huid(), title: e.title, description: e.description || "", start_at: e.start_at, end_at: e.end_at || e.start_at, type: e.type || "reuniao", color: e.color || "#2563eb", location: e.location || "", outlook_event_id: e.outlook_event_id, client_id: null, lead_id: null }));
+        const { error } = await supabase.from("calendar_events").insert(toInsert);
+        if (error) throw new Error(error.message);
+        setSyncResult({ type: "success", text: `${toInsert.length} evento(s) novo(s) importado(s)! (${parsed.length - newEvents.length} já existiam)` });
+        if (setToast) setToast({ type: "success", text: `${toInsert.length} eventos importados do Outlook!` });
+      }
     } catch (err) {
       setSyncResult({ type: "error", text: `Erro na sincronização: ${err.message}` });
     }
     setSyncing(false);
   };
+
+  const handleUrlSync = () => runSync(false);
+  const handleForceSync = () => runSync(true);
 
   const [editId, setEditId] = useState(null);
   const [editForm, setEditForm] = useState({});
@@ -174,14 +193,20 @@ export default function Settings() {
               <li>Copie o <strong>link ICS</strong> (começa com https://outlook.office365.com/...)</li>
             </ol>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input type="url" value={syncUrl} onChange={(e) => setSyncUrl(e.target.value)} placeholder="https://outlook.office365.com/owa/calendar/..." style={{ flex: 1, background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "10px 12px", fontSize: 12, color: B.navy, outline: "none" }} />
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <input type="url" value={syncUrl} onChange={(e) => setSyncUrl(e.target.value)} placeholder="https://outlook.office365.com/owa/calendar/..." style={{ flex: 1, minWidth: 200, background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "10px 12px", fontSize: 12, color: B.navy, outline: "none" }} />
             <button onClick={handleUrlSync} disabled={syncing} style={{ padding: "10px 20px", background: syncing ? "#94a3b8" : "#16a34a", color: "white", border: "none", borderRadius: 8, cursor: syncing ? "wait" : "pointer", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" }}>
               {syncing ? "⏳ Sincronizando..." : "🔄 Sincronizar"}
             </button>
+            <button onClick={() => { if (confirm("Isso vai apagar todos os eventos do Outlook e reimportar do zero (corrige horários errados). Continuar?")) handleForceSync(); }} disabled={syncing} title="Apaga todos os eventos do Outlook e reimporta — use para corrigir horários" style={{ padding: "10px 16px", background: syncing ? "#94a3b8" : "#dc2626", color: "white", border: "none", borderRadius: 8, cursor: syncing ? "wait" : "pointer", fontWeight: 700, fontSize: 12, whiteSpace: "nowrap" }}>
+              🔁 Re-sincronizar tudo
+            </button>
+          </div>
+          <div style={{ fontSize: 10, color: B.gray, marginTop: 6 }}>
+            💡 <b>Re-sincronizar tudo</b>: use quando houver horários errados ou eventos faltando — apaga e reimporta do zero.
           </div>
           {localStorage.getItem("outlook_ics_url") && (
-            <div style={{ fontSize: 10, color: "#16a34a", marginTop: 6 }}>✓ URL salva — clique em Sincronizar para atualizar</div>
+            <div style={{ fontSize: 10, color: "#16a34a", marginTop: 4 }}>✓ URL salva — clique em Sincronizar para atualizar</div>
           )}
         </div>
 

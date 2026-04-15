@@ -3,21 +3,63 @@
  * Extrai eventos do formato padrão usado por Outlook, Google Calendar, Teams, etc.
  */
 
-function parseICSDate(str) {
+// Mapeia timezones comuns para offset UTC
+const TZ_OFFSETS = {
+  "america/sao_paulo":   "-03:00",
+  "america/fortaleza":   "-03:00",
+  "america/recife":      "-03:00",
+  "america/belem":       "-03:00",
+  "america/bahia":       "-03:00",
+  "america/manaus":      "-04:00",
+  "america/cuiaba":      "-04:00",
+  "america/porto_velho": "-04:00",
+  "america/boa_vista":   "-04:00",
+  "america/rio_branco":  "-05:00",
+  "america/new_york":    "-05:00",
+  "america/chicago":     "-06:00",
+  "america/denver":      "-07:00",
+  "america/los_angeles": "-08:00",
+  "europe/lisbon":       "+00:00",
+  "europe/london":       "+00:00",
+};
+
+function getTZOffset(tzid) {
+  if (!tzid) return "";
+  const key = tzid.toLowerCase().replace(/\s/g, "_");
+  return TZ_OFFSETS[key] || "-03:00"; // default Brasil
+}
+
+function parseICSDate(str, tzid) {
   if (!str) return null;
   // Remove TZID prefix if present (e.g., TZID=America/Sao_Paulo:20260411T090000)
   const val = str.includes(":") ? str.split(":").pop() : str;
   // Format: 20260411T090000Z or 20260411T090000
   const clean = val.replace(/[^0-9T]/g, "");
-  if (clean.length < 15) return null;
+  if (clean.length < 8) return null;
   const y = clean.slice(0, 4);
   const m = clean.slice(4, 6);
   const d = clean.slice(6, 8);
+
+  // All-day event (no time part)
+  if (clean.length < 15) return `${y}-${m}-${d}T00:00:00`;
+
   const h = clean.slice(9, 11);
   const min = clean.slice(11, 13);
   const isUTC = val.endsWith("Z");
-  const iso = `${y}-${m}-${d}T${h}:${min}:00${isUTC ? "Z" : ""}`;
-  return iso;
+
+  if (isUTC) {
+    // Already UTC — keep as-is, will be converted to local on display
+    return `${y}-${m}-${d}T${h}:${min}:00Z`;
+  }
+
+  if (tzid) {
+    // Has explicit timezone: append the UTC offset so Supabase stores correctly
+    const offset = getTZOffset(tzid);
+    return `${y}-${m}-${d}T${h}:${min}:00${offset}`;
+  }
+
+  // No timezone (floating time) — treat as local Brazil time
+  return `${y}-${m}-${d}T${h}:${min}:00-03:00`;
 }
 
 function unfoldLines(text) {
@@ -42,8 +84,8 @@ export function parseICS(text) {
         events.push({
           title: current.summary || "",
           description: (current.description || "").replace(/\\n/g, "\n").replace(/\\,/g, ",").replace(/\\\\/g, "\\"),
-          start_at: parseICSDate(current.dtstart) || "",
-          end_at: parseICSDate(current.dtend) || "",
+          start_at: parseICSDate(current.dtstart, current.dtstart_tzid) || "",
+          end_at: parseICSDate(current.dtend, current.dtend_tzid) || "",
           location: (current.location || "").replace(/\\,/g, ",").replace(/\\\\/g, "\\"),
           outlook_event_id: current.uid || "",
           type: detectEventType(current),
@@ -62,18 +104,26 @@ export function parseICS(text) {
     const keyPart = trimmed.slice(0, colonIdx).toUpperCase();
     const value = trimmed.slice(colonIdx + 1);
 
-    // Extract base key (before any ;PARAM=value)
+    // Extract base key (before any ;PARAM=value) and extract TZID if present
     const baseKey = keyPart.split(";")[0];
+    const tzidMatch = keyPart.match(/TZID=([^;]+)/);
+    const tzid = tzidMatch ? tzidMatch[1] : null;
 
     switch (baseKey) {
-      case "SUMMARY": current.summary = value; break;
+      case "SUMMARY":     current.summary = value; break;
       case "DESCRIPTION": current.description = value; break;
-      case "DTSTART": current.dtstart = trimmed.slice(trimmed.indexOf(":") > -1 ? 0 : 0); current.dtstart = value; if (keyPart.includes("TZID")) current.dtstart = keyPart + ":" + value; break;
-      case "DTEND": current.dtend = value; if (keyPart.includes("TZID")) current.dtend = keyPart + ":" + value; break;
-      case "LOCATION": current.location = value; break;
-      case "UID": current.uid = value; break;
-      case "ORGANIZER": current.organizer = value; break;
-      case "STATUS": current.status = value; break;
+      case "DTSTART":
+        current.dtstart = value;
+        current.dtstart_tzid = tzid;
+        break;
+      case "DTEND":
+        current.dtend = value;
+        current.dtend_tzid = tzid;
+        break;
+      case "LOCATION":   current.location = value; break;
+      case "UID":        current.uid = value; break;
+      case "ORGANIZER":  current.organizer = value; break;
+      case "STATUS":     current.status = value; break;
     }
   }
 
