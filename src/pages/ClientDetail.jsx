@@ -308,12 +308,7 @@ export default function ClientDetail() {
                       const suc = typeof client.sucessao === "boolean" ? (client.sucessao ? "Sim" : "") : (client.sucessao || "");
                       if (!suc) return null;
                       return (
-                        <div style={{ width: "100%", marginTop: 4 }}>
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 999, background: "#f0f9ff", color: "#0369a1", fontSize: 10, fontWeight: 700, border: "1px solid #bae6fd", userSelect: "none" }}>✓ Suc.</span>
-                          {suc !== "Sim" && suc !== "true" && suc !== "false" && (
-                            <div style={{ fontSize: 11, color: "#0369a1", marginTop: 4, lineHeight: 1.5, background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 6, padding: "4px 8px" }}>{suc}</div>
-                          )}
-                        </div>
+                        <span title={suc !== "Sim" && suc !== "true" && suc !== "false" ? suc : ""} style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 999, background: "#f0f9ff", color: "#0369a1", fontSize: 10, fontWeight: 700, border: "1px solid #bae6fd", userSelect: "none" }}>✓ Sucessão</span>
                       );
                     })()}
                     {/* IPS: oculto quando "nao_aplica"; clique no badge pendente marca N/A */}
