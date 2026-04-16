@@ -15,6 +15,12 @@ const RETRY_DAYS  = 45; // dias após "chamei" antes de virar "Retentativa"
 
 /* ─── Status logic ─── */
 function getStatus(c) {
+  const pr = c.proxima_reuniao || c.proximaReuniao;
+  // Cliente ainda não alimentado no sistema (marcado com "?")
+  if (!pr || pr.trim() === "?") {
+    return { key: "pendente", label: "Pendente", color: "#6B7280", bg: "#F9FAFB", border: "#E5E7EB" };
+  }
+
   const diasSem = daysSince(c.ultima_reuniao || c.ultimaReuniao);
   const period  = getPeriodDays(c.periodicidade_reuniao || c.periodicidadeReuniao);
   const dAv     = daysSince(c.avisado_em || c.avisadoEm);
@@ -77,7 +83,7 @@ export default function Meetings() {
 
   /* ─── Enriched rows ─── */
   const rows = useMemo(() => {
-    const STATUS_ORDER = { atrasado: 0, retentativa: 1, agendar: 2, aguardando: 3, emdia: 4 };
+    const STATUS_ORDER = { atrasado: 0, retentativa: 1, agendar: 2, aguardando: 3, emdia: 4, pendente: 5 };
     const enriched = active.map((c) => ({
       ...c,
       diasSem:    daysSince(c.ultima_reuniao || c.ultimaReuniao),
