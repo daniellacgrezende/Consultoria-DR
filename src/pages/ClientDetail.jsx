@@ -307,8 +307,14 @@ export default function ClientDetail() {
                     {(() => {
                       const suc = typeof client.sucessao === "boolean" ? (client.sucessao ? "Sim" : "") : (client.sucessao || "");
                       if (!suc) return null;
+                      const hasComment = suc !== "Sim" && suc !== "true" && suc !== "false";
                       return (
-                        <span title={suc !== "Sim" && suc !== "true" && suc !== "false" ? suc : ""} style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 999, background: "#f0f9ff", color: "#0369a1", fontSize: 10, fontWeight: 700, border: "1px solid #bae6fd", userSelect: "none" }}>✓ Sucessão</span>
+                        <span style={{ display: "inline-flex", flexDirection: "column", gap: 2 }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 999, background: "#f0f9ff", color: "#0369a1", fontSize: 10, fontWeight: 700, border: "1px solid #bae6fd", userSelect: "none" }}>✓ Sucessão</span>
+                          {hasComment && (
+                            <span style={{ fontSize: 10, color: "#0369a1", fontStyle: "italic", paddingLeft: 4 }}>{suc}</span>
+                          )}
+                        </span>
                       );
                     })()}
                     {/* IPS: oculto quando "nao_aplica"; clique no badge pendente marca N/A */}
