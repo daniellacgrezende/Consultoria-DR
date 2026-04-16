@@ -69,6 +69,7 @@ export default function Meetings() {
   const [rhSearch, setRhSearch]   = useState("");
   const [rhShowSug, setRhShowSug] = useState(false);
   const [rhOpen, setRhOpen]       = useState(false);
+  const [tableOpen, setTableOpen] = useState(true);
 
   // Modal de confirmação de data
   const [actionModal, setActionModal] = useState(null); // { type, client, date }
@@ -318,7 +319,23 @@ export default function Meetings() {
 
       {/* ─── Tabela principal ─── */}
       <Card style={{ padding: 0, overflow: "hidden", marginBottom: 24 }}>
-        <div style={{ overflowX: "auto" }}>
+        {/* Cabeçalho colapsável */}
+        <div
+          onClick={() => setTableOpen((v) => !v)}
+          style={{
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            padding: "12px 16px", borderBottom: tableOpen ? `1px solid ${B.border}` : "none",
+            cursor: "pointer", userSelect: "none",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 13, display: "inline-block", transition: "transform 0.2s", transform: tableOpen ? "rotate(90deg)" : "rotate(0deg)", color: B.muted }}>▶</span>
+            <span style={{ fontWeight: 700, fontSize: 14, color: B.navy }}>Clientes</span>
+          </div>
+          <span style={{ fontSize: 12, color: B.muted }}>{filteredRows.length} cliente(s)</span>
+        </div>
+
+        {tableOpen && <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <thead>
               <tr>
@@ -430,59 +447,46 @@ export default function Meetings() {
               })}
             </tbody>
           </table>
-        </div>
+        </div>}
       </Card>
 
       {/* ─── Histórico ─── */}
-      <div
-        onClick={() => setRhOpen((v) => !v)}
-        style={{
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-          padding: "12px 16px", background: "white", border: `1px solid ${B.border}`,
-          borderRadius: rhOpen ? "10px 10px 0 0" : 10, cursor: "pointer",
-          userSelect: "none", marginBottom: 0,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 14, transition: "transform 0.2s", display: "inline-block", transform: rhOpen ? "rotate(90deg)" : "rotate(0deg)", color: B.muted }}>▶</span>
-          <span style={{ fontWeight: 700, fontSize: 14, color: B.navy }}>Histórico de Reuniões</span>
-        </div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <span style={{ fontWeight: 700, fontSize: 14, color: B.navy }}>Histórico de Reuniões</span>
         <span style={{ fontSize: 12, color: B.muted }}>{reunioes.length} registro(s)</span>
       </div>
 
-      {rhOpen && (
-        <div style={{ background: "white", border: `1px solid ${B.border}`, borderTop: "none", borderRadius: "0 0 10px 10px", padding: "14px 16px", marginBottom: 24 }}>
-          <div style={{ display: "flex", gap: 10, marginBottom: 14, alignItems: "center" }}>
-            <div style={{ flex: 1, maxWidth: 340 }}>
-              <SearchBox
-                placeholder="Filtrar por cliente..."
-                value={rhSearch}
-                onChange={(e) => { setRhSearch(e.target.value); setRhShowSug(true); }}
-                onFocus={() => setRhShowSug(true)}
-                onBlur={() => setTimeout(() => setRhShowSug(false), 150)}
-                suggestions={rhShowSug ? clients.filter((c) => c.nome.toLowerCase().includes(rhSearch.toLowerCase())).slice(0, 6) : []}
-                onSelect={(c) => { setRhFilter(c.id); setRhSearch(c.nome); setRhShowSug(false); }}
-              />
-            </div>
-            {rhFilter && (
-              <button
-                onClick={(e) => { e.stopPropagation(); setRhFilter(null); setRhSearch(""); }}
-                style={{ padding: "8px 14px", background: "white", color: B.muted, border: `1px solid ${B.border}`, borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
-              >✕ Limpar</button>
-            )}
-          </div>
+      <div style={{ display: "flex", gap: 10, marginBottom: 14, alignItems: "center" }}>
+        <div style={{ flex: 1, maxWidth: 340 }}>
+          <SearchBox
+            placeholder="Filtrar por cliente..."
+            value={rhSearch}
+            onChange={(e) => { setRhSearch(e.target.value); setRhShowSug(true); }}
+            onFocus={() => setRhShowSug(true)}
+            onBlur={() => setTimeout(() => setRhShowSug(false), 150)}
+            suggestions={rhShowSug ? clients.filter((c) => c.nome.toLowerCase().includes(rhSearch.toLowerCase())).slice(0, 6) : []}
+            onSelect={(c) => { setRhFilter(c.id); setRhSearch(c.nome); setRhShowSug(false); }}
+          />
+        </div>
+        {rhFilter && (
+          <button
+            onClick={() => { setRhFilter(null); setRhSearch(""); }}
+            style={{ padding: "8px 14px", background: "white", color: B.muted, border: `1px solid ${B.border}`, borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+          >✕ Limpar</button>
+        )}
+      </div>
 
-          {!rhFilter ? (
-            <div style={{ padding: 24, textAlign: "center", color: B.muted, background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 10 }}>
-              Busque um cliente acima para ver o histórico.
-            </div>
-          ) : rhFiltered.length === 0 ? (
-            <div style={{ padding: 24, textAlign: "center", color: B.muted, background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 10 }}>
-              Nenhum registro para este cliente.
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {rhFiltered.slice(0, 20).map((r) => {
+      {!rhFilter ? (
+        <div style={{ padding: 32, textAlign: "center", color: B.muted, background: "white", border: `1px solid ${B.border}`, borderRadius: 12 }}>
+          Busque um cliente acima para ver o histórico.
+        </div>
+      ) : rhFiltered.length === 0 ? (
+        <div style={{ padding: 32, textAlign: "center", color: B.muted, background: "white", border: `1px solid ${B.border}`, borderRadius: 12 }}>
+          Nenhum registro para este cliente.
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {rhFiltered.slice(0, 20).map((r) => {
             const cl = clients.find((c) => c.id === r.client_id);
             return (
               <div key={r.id} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 11, padding: "14px 18px" }}>
@@ -507,9 +511,7 @@ export default function Meetings() {
                 </p>
               </div>
             );
-              })}
-            </div>
-          )}
+          })}
         </div>
       )}
 
