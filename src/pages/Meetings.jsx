@@ -458,9 +458,13 @@ export default function Meetings() {
         )}
       </div>
 
-      {rhFiltered.length === 0 ? (
+      {!rhFilter ? (
         <div style={{ padding: 32, textAlign: "center", color: B.muted, background: "white", border: `1px solid ${B.border}`, borderRadius: 12 }}>
-          Nenhum registro{rhFilter ? " para este cliente" : ""}.
+          Busque um cliente acima para ver o histórico.
+        </div>
+      ) : rhFiltered.length === 0 ? (
+        <div style={{ padding: 32, textAlign: "center", color: B.muted, background: "white", border: `1px solid ${B.border}`, borderRadius: 12 }}>
+          Nenhum registro para este cliente.
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
