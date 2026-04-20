@@ -39,8 +39,8 @@ function getStatus(c) {
     return            { key: "agendar",     label: "Agendar",     color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" };
   }
 
-  // Últimos 25% do período → hora de agendar
-  if (diasSem >= Math.round(period * 0.75)) return { key: "agendar", label: "Agendar", color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" };
+  // Últimos 20% do período → hora de agendar
+  if (diasSem >= Math.round(period * 0.80)) return { key: "agendar", label: "Agendar", color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" };
 
   return { key: "emdia", label: "Em dia", color: "#16A34A", bg: "#F0FDF4", border: "#BBF7D0" };
 }
@@ -161,8 +161,12 @@ export default function Meetings() {
   };
 
   /* ─── Alertas rápidos ─── */
-  const atrasados    = rows.filter((r) => r.st.key === "atrasado").slice(0, 6);
-  const aAgendar     = rows.filter((r) => r.st.key === "agendar").slice(0, 6);
+  const atrasados    = rows.filter((r) => r.st.key === "atrasado")
+                           .sort((a, b) => (b.diasSem ?? 0) - (a.diasSem ?? 0))
+                           .slice(0, 6);
+  const aAgendar     = rows.filter((r) => r.st.key === "agendar")
+                           .sort((a, b) => (b.diasSem ?? 0) - (a.diasSem ?? 0))
+                           .slice(0, 6);
   const retentativas = rows.filter((r) => r.st.key === "retentativa").slice(0, 6);
 
   /* ─── Histórico ─── */
@@ -254,6 +258,11 @@ export default function Meetings() {
                       <div style={{ fontSize: 10, color: "#DC2626", fontWeight: 600 }}>
                         {c.diasSem !== null ? `${c.diasSem}d sem reunião` : "Nunca reuniu"} · {c.periodicidade_reuniao || "Trimestral"}
                       </div>
+                      {c.diasSem !== null && c.periodDays > 0 && (
+                        <div style={{ fontSize: 10, color: "#B91C1C", fontWeight: 700 }}>
+                          ⚠ {c.diasSem - c.periodDays}d de atraso
+                        </div>
+                      )}
                     </div>
                     <button
                       onClick={() => openAction("chamei", c)}
