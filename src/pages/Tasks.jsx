@@ -1,12 +1,13 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useData } from "../hooks/useData";
 import { B } from "../utils/constants";
 import { fmtDate } from "../utils/formatters";
-import { huid, today } from "../utils/helpers";
+import { huid, today, slugify } from "../utils/helpers";
 import Modal from "../components/ui/Modal";
 import { Inp, Sel, Tarea, SecH } from "../components/ui/FormFields";
 
-const EMPTY_FORM = { texto: "", recorrencia: "", vencimento: "", descricao: "", prioridade: "normal" };
+const EMPTY_FORM = { texto: "", recorrencia: "", vencimento: "", descricao: "", prioridade: "normal", client_id: "" };
 const NOTA_KEY = () => `nota_dia_${today()}`;
 
 const RECORR_COLORS = {
@@ -21,14 +22,15 @@ const PRIOR_COLORS = {
   baixa:  { bg: "#f9fafb", color: "#6b7280", border: "#e5e7eb" },
 };
 
-/* ─── Item: fora do Tasks para estabilidade de referência ─── */
-function Item({ t, idx, groupList, atrasadasSet, toggle, postpone, openEdit, remove, moveItem }) {
+/* ─── Item ─── */
+function Item({ t, idx, groupList, atrasadasSet, toggle, postpone, openEdit, remove, moveItem, clients, navigate }) {
   const atras  = atrasadasSet.has(t.id);
   const pc     = PRIOR_COLORS[t.prioridade || "normal"];
   const rc     = t.recorrencia ? RECORR_COLORS[t.recorrencia] : null;
   const isHigh = (t.prioridade || "normal") === "alta";
   const isFirst = idx === 0;
   const isLast  = idx === groupList.length - 1;
+  const client  = t.client_id ? clients.find((c) => c.id === t.client_id) : null;
 
   return (
     <div style={{
@@ -43,18 +45,10 @@ function Item({ t, idx, groupList, atrasadasSet, toggle, postpone, openEdit, rem
         {/* ↑↓ buttons */}
         {!t.done && (
           <div style={{ display: "flex", flexDirection: "column", gap: 1, flexShrink: 0 }}>
-            <button
-              onClick={() => moveItem(t.id, "up", groupList)}
-              disabled={isFirst}
-              title="Mover para cima"
-              style={{ background: "none", border: "none", cursor: isFirst ? "default" : "pointer", color: isFirst ? "#e5e7eb" : "#9baabf", fontSize: 10, lineHeight: 1, padding: "1px 3px", fontWeight: 700 }}
-            >▲</button>
-            <button
-              onClick={() => moveItem(t.id, "down", groupList)}
-              disabled={isLast}
-              title="Mover para baixo"
-              style={{ background: "none", border: "none", cursor: isLast ? "default" : "pointer", color: isLast ? "#e5e7eb" : "#9baabf", fontSize: 10, lineHeight: 1, padding: "1px 3px", fontWeight: 700 }}
-            >▼</button>
+            <button onClick={() => moveItem(t.id, "up", groupList)} disabled={isFirst} title="Mover para cima"
+              style={{ background: "none", border: "none", cursor: isFirst ? "default" : "pointer", color: isFirst ? "#e5e7eb" : "#9baabf", fontSize: 10, lineHeight: 1, padding: "1px 3px", fontWeight: 700 }}>▲</button>
+            <button onClick={() => moveItem(t.id, "down", groupList)} disabled={isLast} title="Mover para baixo"
+              style={{ background: "none", border: "none", cursor: isLast ? "default" : "pointer", color: isLast ? "#e5e7eb" : "#9baabf", fontSize: 10, lineHeight: 1, padding: "1px 3px", fontWeight: 700 }}>▼</button>
           </div>
         )}
 
@@ -71,6 +65,14 @@ function Item({ t, idx, groupList, atrasadasSet, toggle, postpone, openEdit, rem
           {rc && (
             <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 700, background: rc.bg, color: rc.color, border: `1px solid ${rc.border}`, borderRadius: 999, padding: "1px 6px", textTransform: "uppercase" }}>{t.recorrencia}</span>
           )}
+          {/* Badge do cliente vinculado */}
+          {client && (
+            <span
+              onClick={() => navigate(`/clients/${slugify(client.nome)}`)}
+              title={`Ver ficha de ${client.nome}`}
+              style={{ marginLeft: 6, fontSize: 9, fontWeight: 700, background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", borderRadius: 999, padding: "1px 7px", cursor: "pointer", textDecoration: "underline dotted", userSelect: "none" }}
+            >👤 {client.nome}</span>
+          )}
         </div>
 
         <span style={{ fontSize: 10, color: atras ? "#dc2626" : "#9baabf", flexShrink: 0, fontWeight: atras ? 700 : 400 }}>{fmtDate(t.vencimento || t.data)}</span>
@@ -86,19 +88,32 @@ function Item({ t, idx, groupList, atrasadasSet, toggle, postpone, openEdit, rem
   );
 }
 
+/* ─── Helpers de mês ─── */
+function getMonthRange(offsetMonths) {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth() + offsetMonths; // pode ser 12 → JS normaliza
+  const start = new Date(y, m, 1).toISOString().slice(0, 10);
+  const end   = new Date(y, m + 1, 0).toISOString().slice(0, 10);
+  return { start, end };
+}
+
 /* ─── Tasks page ─── */
 export default function Tasks() {
-  const { todos, saveTodo, deleteTodo, clearDoneTodos, setToast } = useData();
+  const navigate = useNavigate();
+  const { clients, todos, saveTodo, deleteTodo, clearDoneTodos, setToast } = useData();
   const [modal, setModal]               = useState(false);
   const [editId, setEditId]             = useState(null);
   const [form, setForm]                 = useState(EMPTY_FORM);
   const [filterStatus, setFilterStatus] = useState("todas");
   const [filterDate, setFilterDate]     = useState("");
+  const [filterMonth, setFilterMonth]   = useState(""); // "" | "this" | "next"
   const [quickText, setQuickText]       = useState("");
   const [quickDate, setQuickDate]       = useState(today());
   const [quickPrior, setQuickPrior]     = useState("normal");
   const [notaDia, setNotaDia]           = useState(() => localStorage.getItem(NOTA_KEY()) || "");
   const [notaOpen, setNotaOpen]         = useState(false);
+  const [clientSearch, setClientSearch] = useState("");
 
   const saveNota = (v) => { setNotaDia(v); localStorage.setItem(NOTA_KEY(), v); };
 
@@ -106,14 +121,23 @@ export default function Tasks() {
   const quickAdd = async (e) => {
     e.preventDefault();
     if (!quickText.trim()) return;
-    await saveTodo({ id: huid(), texto: quickText.trim(), recorrencia: "", vencimento: quickDate, descricao: "", prioridade: quickPrior, done: false, done_at: null, data: today(), ordem: todos.length }, true);
+    await saveTodo({ id: huid(), texto: quickText.trim(), recorrencia: "", vencimento: quickDate, descricao: "", prioridade: quickPrior, client_id: null, done: false, done_at: null, data: today(), ordem: todos.length }, true);
     setQuickText("");
     setQuickPrior("normal");
   };
 
   const openEdit = (t) => {
     setEditId(t.id);
-    setForm({ texto: t.texto || "", recorrencia: t.recorrencia || "", vencimento: t.vencimento || t.data || "", descricao: t.descricao || "", prioridade: t.prioridade || "normal" });
+    setForm({ texto: t.texto || "", recorrencia: t.recorrencia || "", vencimento: t.vencimento || t.data || "", descricao: t.descricao || "", prioridade: t.prioridade || "normal", client_id: t.client_id || "" });
+    const cl = t.client_id ? clients.find((c) => c.id === t.client_id) : null;
+    setClientSearch(cl ? cl.nome : "");
+    setModal(true);
+  };
+
+  const openNew = () => {
+    setEditId(null);
+    setForm(EMPTY_FORM);
+    setClientSearch("");
     setModal(true);
   };
 
@@ -130,6 +154,7 @@ export default function Tasks() {
       vencimento: form.vencimento || today(),
       descricao: form.descricao,
       prioridade: form.prioridade,
+      client_id: form.client_id || null,
       done:    isNew ? false   : (orig?.done    ?? false),
       done_at: isNew ? null    : (orig?.done_at ?? null),
       data:    isNew ? today() : (orig?.data    ?? today()),
@@ -152,17 +177,11 @@ export default function Tasks() {
     const idx = groupList.findIndex((t) => t.id === id);
     if ((direction === "up" && idx === 0) || (direction === "down" && idx === groupList.length - 1)) return;
     const swapIdx = direction === "up" ? idx - 1 : idx + 1;
-
-    // Monta nova ordem do grupo com o item movido
     const newGroup = [...groupList];
     [newGroup[idx], newGroup[swapIdx]] = [newGroup[swapIdx], newGroup[idx]];
-
-    // Reconstrói a lista global de pendentes substituindo os itens do grupo na posição original
     const groupIdSet = new Set(groupList.map((t) => t.id));
     let gi = 0;
     const result = pendentes.map((t) => (groupIdSet.has(t.id) ? newGroup[gi++] : t));
-
-    // Salva todos com ordem sequencial (garante sem colisões)
     await Promise.all(result.map((t, i) => saveTodo({ ...t, ordem: i }, false)));
   };
 
@@ -173,6 +192,20 @@ export default function Tasks() {
   );
   const concluidas   = useMemo(() => todos.filter((t) => t.done).sort((a, b) => (b.done_at || "").localeCompare(a.done_at || "")), [todos]);
   const atrasadasSet = useMemo(() => new Set(pendentes.filter((t) => (t.vencimento || t.data || today()) < today()).map((t) => t.id)), [pendentes]);
+
+  /* ── Filtro por mês ── */
+  const monthRange = useMemo(() => {
+    if (!filterMonth) return null;
+    return getMonthRange(filterMonth === "this" ? 0 : 1);
+  }, [filterMonth]);
+
+  const applyMonthFilter = (list) => {
+    if (!monthRange) return list;
+    return list.filter((t) => {
+      const d = t.vencimento || t.data || today();
+      return d >= monthRange.start && d <= monthRange.end;
+    });
+  };
 
   const applyFilters = (list) => {
     let r = list;
@@ -185,15 +218,14 @@ export default function Tasks() {
   const hojeList  = pendentes.filter((t) => (t.vencimento || t.data || today()) === today());
   const futuras   = pendentes.filter((t) => (t.vencimento || t.data || today()) > today()).sort((a, b) => (a.vencimento || a.data || "").localeCompare(b.vencimento || b.data || ""));
 
-  // Quando filtro de data ativo, exibe todos os pendentes filtrados sem agrupamento
   const visAllDate    = filterDate ? applyFilters(pendentes) : [];
   const visAtrasadas  = !filterDate ? applyFilters(atrasadas) : [];
   const visHoje       = !filterDate && filterStatus !== "vencidas" ? applyFilters(hojeList) : [];
-  const visFuturas    = !filterDate && filterStatus !== "vencidas" ? applyFilters(futuras) : [];
+  const visFuturas    = !filterDate && filterStatus !== "vencidas" ? applyMonthFilter(applyFilters(futuras)) : [];
   const visConcluidas = filterStatus !== "vencidas" ? applyFilters(concluidas) : [];
   const totalVisible  = (filterDate ? visAllDate.length : visAtrasadas.length + visHoje.length + visFuturas.length) + visConcluidas.length;
 
-  const itemProps = { atrasadasSet, toggle, postpone, openEdit, remove, moveItem };
+  const itemProps = { atrasadasSet, toggle, postpone, openEdit, remove, moveItem, clients, navigate };
 
   const GroupLabel = ({ label, color, count }) => count === 0 ? null : (
     <div style={{ fontSize: 10, fontWeight: 700, color, textTransform: "uppercase", marginTop: 4 }}>{label} ({count})</div>
@@ -205,13 +237,26 @@ export default function Tasks() {
     border: `1px solid ${active ? B.navy : B.border}`,
   });
 
+  const monthBtnStyle = (key) => ({
+    padding: "5px 14px", fontSize: 11, fontWeight: 600, cursor: "pointer", borderRadius: 6,
+    background: filterMonth === key ? "#1d4ed8" : "white",
+    color: filterMonth === key ? "white" : "#1d4ed8",
+    border: `1px solid ${filterMonth === key ? "#1d4ed8" : "#bfdbfe"}`,
+  });
+
   const showNota = notaDia || notaOpen;
+
+  /* ── Clientes filtrados no modal ── */
+  const clientesModal = useMemo(() => {
+    if (!clientSearch.trim()) return clients.filter((c) => c.status === "ativo").slice(0, 8);
+    return clients.filter((c) => c.status === "ativo" && c.nome.toLowerCase().includes(clientSearch.toLowerCase())).slice(0, 8);
+  }, [clients, clientSearch]);
 
   return (
     <>
       <SecH eyebrow="Produtividade" title="To-Do" desc="Suas rotinas e pendências do dia a dia." />
 
-      {/* Nota do Dia — só aparece se tiver conteúdo ou se o usuário abrir */}
+      {/* Nota do Dia */}
       {showNota ? (
         <div style={{ marginBottom: 14, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "10px 14px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
@@ -262,21 +307,32 @@ export default function Tasks() {
             </button>
           ))}
           <span style={{ fontSize: 11, color: B.muted, marginLeft: 2 }}>prioridade</span>
+          <button type="button" onClick={openNew}
+            style={{ marginLeft: "auto", padding: "4px 13px", fontSize: 11, fontWeight: 700, borderRadius: 999, cursor: "pointer", background: "#f0f4ff", color: B.navy, border: "1.5px solid #c7d2fe" }}>
+            + Detalhes / vincular cliente
+          </button>
         </div>
       </form>
 
       {/* Filter bar */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+        {/* Status */}
         <div style={{ display: "flex", gap: 4 }}>
           <button style={btnStyle(filterStatus === "todas")}    onClick={() => { setFilterStatus("todas"); setFilterDate(""); }}>Todas</button>
-          <button style={btnStyle(filterStatus === "vencidas")} onClick={() => { setFilterStatus("vencidas"); setFilterDate(""); }}>Vencidas</button>
+          <button style={btnStyle(filterStatus === "vencidas")} onClick={() => { setFilterStatus("vencidas"); setFilterDate(""); setFilterMonth(""); }}>Vencidas</button>
+        </div>
+
+        {/* Filtro por mês */}
+        <div style={{ display: "flex", gap: 4 }}>
+          <button style={monthBtnStyle("this")} onClick={() => { setFilterMonth(filterMonth === "this" ? "" : "this"); setFilterDate(""); setFilterStatus("todas"); }}>Este mês</button>
+          <button style={monthBtnStyle("next")} onClick={() => { setFilterMonth(filterMonth === "next" ? "" : "next"); setFilterDate(""); setFilterStatus("todas"); }}>Próx. mês</button>
         </div>
 
         {/* Filtro por data específica */}
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <label style={{ fontSize: 11, color: B.gray, fontWeight: 600 }}>Data</label>
           <input type="date" value={filterDate}
-            onChange={(e) => { setFilterDate(e.target.value); setFilterStatus("todas"); }}
+            onChange={(e) => { setFilterDate(e.target.value); setFilterStatus("todas"); setFilterMonth(""); }}
             style={{ fontSize: 11, padding: "4px 8px", border: `1px solid ${filterDate ? B.navy : B.border}`, borderRadius: 6, color: B.navy, background: filterDate ? "#f0f4ff" : "white" }} />
           {filterDate && (
             <button onClick={() => setFilterDate("")} style={{ fontSize: 10, color: B.muted, background: "none", border: "none", cursor: "pointer" }}>limpar</button>
@@ -288,6 +344,15 @@ export default function Tasks() {
         </span>
       </div>
 
+      {/* Indicador do filtro de mês ativo */}
+      {filterMonth && (
+        <div style={{ fontSize: 11, color: "#1d4ed8", marginBottom: 10, marginTop: -8 }}>
+          Mostrando próximas de: <b>{filterMonth === "this" ? "Este mês" : "Próximo mês"}</b>
+          {visFuturas.length === 0 && " — nenhuma tarefa neste período"}
+          <button onClick={() => setFilterMonth("")} style={{ background: "none", border: "none", color: "#1d4ed8", cursor: "pointer", fontSize: 11, fontWeight: 600, padding: "0 4px" }}>✕ limpar</button>
+        </div>
+      )}
+
       {/* Task list */}
       {totalVisible === 0 && todos.length === 0 && (
         <div style={{ padding: "32px 0", textAlign: "center", color: B.gray, fontSize: 12 }}>Nenhuma tarefa. Adicione uma acima para começar.</div>
@@ -297,7 +362,6 @@ export default function Tasks() {
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {/* Modo filtro por data: sem agrupamento */}
         {filterDate ? (
           <>
             {visAllDate.length > 0 && (
@@ -352,6 +416,40 @@ export default function Tasks() {
           <Sel label="Recorrente" value={form.recorrencia} onChange={F("recorrencia")}
             opts={[{ v: "", l: "Não recorrente" }, { v: "diária", l: "Diária" }, { v: "semanal", l: "Semanal" }, { v: "mensal", l: "Mensal" }]} />
           <Inp label="Prazo" type="date" value={form.vencimento} onChange={F("vencimento")} />
+
+          {/* Vincular cliente */}
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 5 }}>Vincular Cliente (opcional)</div>
+            <input
+              value={clientSearch}
+              onChange={(e) => { setClientSearch(e.target.value); setForm((f) => ({ ...f, client_id: "" })); }}
+              placeholder="Buscar cliente…"
+              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: `1.5px solid ${form.client_id ? "#bfdbfe" : B.border}`, borderRadius: 7, fontSize: 13, color: B.navy, fontFamily: "inherit", outline: "none", background: form.client_id ? "#eff6ff" : "white", marginBottom: 4 }}
+            />
+            {/* Lista de sugestões */}
+            {clientSearch && !form.client_id && clientesModal.length > 0 && (
+              <div style={{ border: `1px solid ${B.border}`, borderRadius: 7, overflow: "hidden", background: "white" }}>
+                {clientesModal.map((c) => (
+                  <div key={c.id}
+                    onClick={() => { setForm((f) => ({ ...f, client_id: c.id })); setClientSearch(c.nome); }}
+                    style={{ padding: "8px 12px", fontSize: 13, color: B.navy, cursor: "pointer", borderBottom: `1px solid ${B.border}` }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "#f0f4ff"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "white"}
+                  >
+                    {c.nome}
+                  </div>
+                ))}
+              </div>
+            )}
+            {form.client_id && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+                <span style={{ fontSize: 11, color: "#1d4ed8", fontWeight: 600 }}>👤 {clientSearch}</span>
+                <button type="button" onClick={() => { setForm((f) => ({ ...f, client_id: "" })); setClientSearch(""); }}
+                  style={{ background: "none", border: "none", color: B.muted, cursor: "pointer", fontSize: 13 }}>✕</button>
+              </div>
+            )}
+          </div>
+
           <Tarea label="Descrição" value={form.descricao} onChange={F("descricao")} placeholder="Detalhes, contexto ou instruções…" />
           <div style={{ display: "flex", gap: 10, marginTop: 6 }}>
             <button onClick={() => setModal(false)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.muted, borderRadius: 7, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
