@@ -260,7 +260,7 @@ function PipelineSummaryBar({ leads }) {
 
   const items = [
     { label: "Em andamento", value: ativos.length, color: B.navy },
-    { label: "Pipeline est.", value: totalPipeline > 0 ? money(totalPipeline) : "—", color: "#15803D" },
+    { label: "AUC Mapeado", value: totalPipeline > 0 ? money(totalPipeline) : "—", color: "#15803D" },
     { label: "Quentes", value: quentes, color: "#EF4444" },
     { label: "Sem contato +21d", value: stale, color: stale > 0 ? "#B45309" : B.muted, warn: stale > 0 },
     { label: "Convertidos", value: convertidos, color: "#15803D" },
