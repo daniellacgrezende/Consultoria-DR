@@ -247,7 +247,7 @@ export default function Meetings() {
           {atrasados.length > 0 && (
             <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, padding: "14px 16px" }}>
               <div style={{ fontSize: 10, fontWeight: 800, color: "#DC2626", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
-                Atrasado — &gt;10 dias do prazo
+                Atrasado — &gt;30 dias do prazo
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {atrasados.map((c) => (
