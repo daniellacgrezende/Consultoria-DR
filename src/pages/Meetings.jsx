@@ -254,7 +254,7 @@ export default function Meetings() {
                   <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #FECACA", borderRadius: 7, padding: "7px 10px" }}>
                     <Avatar nome={c.nome} size={24} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
+                      <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
                       <div style={{ fontSize: 10, color: "#DC2626", fontWeight: 600 }}>
                         {c.diasSem !== null ? `${c.diasSem}d sem reunião` : "Nunca reuniu"} · {c.periodicidade_reuniao || "Trimestral"}
                       </div>
@@ -312,7 +312,7 @@ export default function Meetings() {
                   <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #FDE68A", borderRadius: 7, padding: "7px 10px" }}>
                     <Avatar nome={c.nome} size={24} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
+                      <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
                       <div style={{ fontSize: 10, color: "#D97706", fontWeight: 600 }}>
                         Próxima: {fmtDate(c.proxima_reuniao || c.proximaReuniao)}
                         {c.diasAte !== null && ` · em ${c.diasAte}d`}
