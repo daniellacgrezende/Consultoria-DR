@@ -29,19 +29,24 @@ export const CURVA_MAP = {
   D: { label: "Curva D", color: "#9E9C9E", bg: "#f3f4f6" },
 };
 
-export const LEAD_ETAPAS_MAIN = ["Lead", "Qualificação", "Reunião", "Diagnóstico/Proposta", "Fechamento", "Cliente"];
-export const LEAD_ETAPAS_EXIT = ["Perdido", "Nutrição"];
+export const LEAD_ETAPAS_MAIN = [
+  "Tentativa de Contato", "Qualificação", "R1 Agendada",
+  "FUP 1", "R2 Agendada", "Contrato Enviado", "FUP 2", "Cliente",
+];
+export const LEAD_ETAPAS_EXIT = ["Perdido", "Funil de FUP (Nutrição)"];
 export const LEAD_ETAPAS = [...LEAD_ETAPAS_MAIN, ...LEAD_ETAPAS_EXIT];
 
 export const LEAD_ETAPA_COLORS = {
-  "Lead":                { bg: "#f0f4ff", color: "#061841", border: "#d5ddf5" },
-  "Qualificação":        { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
-  "Reunião":             { bg: "#f5f3ff", color: "#7c3aed", border: "#ddd6fe" },
-  "Diagnóstico/Proposta":{ bg: "#fff7ed", color: "#c2410c", border: "#fed7aa" },
-  "Fechamento":          { bg: "#ecfdf5", color: "#0f766e", border: "#99f6e4" },
-  "Cliente":             { bg: "#f0fdf4", color: "#16a34a", border: "#bbf7d0" },
-  "Perdido":             { bg: "#fef2f2", color: "#dc2626", border: "#fecaca" },
-  "Nutrição":            { bg: "#fefce8", color: "#854d0e", border: "#fde047" },
+  "Tentativa de Contato":   { bg: "#f0f4ff", color: "#061841", border: "#d5ddf5" },
+  "Qualificação":           { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
+  "R1 Agendada":            { bg: "#f5f3ff", color: "#7c3aed", border: "#ddd6fe" },
+  "FUP 1":                  { bg: "#fff7ed", color: "#c2410c", border: "#fed7aa" },
+  "R2 Agendada":            { bg: "#eef2ff", color: "#4338ca", border: "#c7d2fe" },
+  "Contrato Enviado":       { bg: "#ecfdf5", color: "#0f766e", border: "#99f6e4" },
+  "FUP 2":                  { bg: "#fffbeb", color: "#b45309", border: "#fde68a" },
+  "Cliente":                { bg: "#f0fdf4", color: "#16a34a", border: "#bbf7d0" },
+  "Perdido":                { bg: "#fef2f2", color: "#dc2626", border: "#fecaca" },
+  "Funil de FUP (Nutrição)":{ bg: "#fefce8", color: "#854d0e", border: "#fde047" },
 };
 
 export const LEAD_ORIGENS = [
@@ -105,7 +110,7 @@ export const EMPTY_CLIENT = {
 
 export const EMPTY_LEAD = {
   nome: "", telefone: "", email: "", origem: "Indicação", suborigem: "", patrimonio_estimado: "",
-  etapa: "Lead", data_primeira_reuniao: "", data_ultima_interacao: "", motivo_negativa: "",
+  etapa: "Tentativa de Contato", data_primeira_reuniao: "", data_ultima_interacao: "", motivo_negativa: "",
   notas: "", convertido_em: "", tipo_reuniao: "", valor_estimado: "", temperatura: "morna",
   responsavel: "",
 };

@@ -15,7 +15,7 @@ import { Inp, Sel, Tarea, SecH } from "../components/ui/FormFields";
 
 /* Etapas que exigem agendamento de reunião */
 /* Palavras-chave para identificar etapas que exigem agendamento (insensível a acentuação/case) */
-const ETAPAS_REUNIAO_KEYS = ["reuni", "diagn\u00f3stico", "diagnostico"];
+const ETAPAS_REUNIAO_KEYS = ["reuni", "agendada", "diagn\u00f3stico", "diagnostico"];
 
 function buildOutlookUrl({ title, start, end, location, body, to }) {
   const p = new URLSearchParams();
@@ -251,9 +251,10 @@ function OverlayCard({ lead }) {
 
 /* ─── Summary Bar (replaces MiniStats) ─── */
 function PipelineSummaryBar({ leads }) {
-  const ativos = leads.filter((l) => !["Cliente", "Perdido", "Nutrição"].includes(l.etapa));
+  const EXIT_STAGES = ["Cliente", "Perdido", "Funil de FUP (Nutrição)"];
+  const ativos = leads.filter((l) => !EXIT_STAGES.includes(l.etapa));
   const convertidos = leads.filter((l) => l.etapa === "Cliente").length;
-  const quentes = leads.filter((l) => l.temperatura === "quente" && !["Cliente", "Perdido", "Nutrição"].includes(l.etapa)).length;
+  const quentes = leads.filter((l) => l.temperatura === "quente" && !EXIT_STAGES.includes(l.etapa)).length;
   const taxaConv = leads.length > 0 ? Math.round((convertidos / leads.length) * 100) : 0;
   const totalPipeline = ativos.reduce((s, l) => s + Number(l.patrimonio_estimado || 0), 0);
   const stale = ativos.filter((l) => { const d = daysSince(l.data_ultima_interacao); return d !== null && d > 21; }).length;
