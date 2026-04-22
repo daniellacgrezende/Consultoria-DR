@@ -430,7 +430,7 @@ export default function Pipeline() {
     <>
       {/* ─── Header ─── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
-        <SecH eyebrow="Vendas" title="Pipeline" desc="Gestão consultiva de leads." />
+        <SecH eyebrow="Vendas" title="Leads" desc="Gestão consultiva de leads." />
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <button
             onClick={() => setView((v) => (v === "pipeline" ? "lista" : "pipeline"))}

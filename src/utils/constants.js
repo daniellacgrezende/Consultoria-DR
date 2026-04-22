@@ -80,7 +80,7 @@ export const DOCUMENT_TYPES = [
 
 export const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: "Home" },
-  { id: "pipeline", label: "Pipeline", icon: "Target" },
+  { id: "pipeline", label: "Leads", icon: "Target" },
   { id: "tasks", label: "Tarefas", icon: "CheckSquare" },
   { id: "meetings", label: "Reuniões", icon: "ClipboardList" },
   { id: "relatorios", label: "Relatórios", icon: "FileText" },
