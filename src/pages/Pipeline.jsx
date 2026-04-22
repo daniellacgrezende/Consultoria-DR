@@ -251,10 +251,11 @@ function OverlayCard({ lead }) {
 
 /* ─── Summary Bar (replaces MiniStats) ─── */
 function PipelineSummaryBar({ leads }) {
-  const EXIT_STAGES = ["Cliente", "Perdido", "Funil de FUP (Nutrição)"];
-  const ativos = leads.filter((l) => !EXIT_STAGES.includes(l.etapa));
+  // Conta apenas leads em estágios principais conhecidos (exclui saídas e etapas desconhecidas/antigas)
+  const ACTIVE_STAGES = ["Tentativa de Contato", "Qualificação", "R1 Agendada", "FUP 1", "R2 Agendada", "Contrato Enviado", "FUP 2"];
+  const ativos = leads.filter((l) => ACTIVE_STAGES.includes(l.etapa));
   const convertidos = leads.filter((l) => l.etapa === "Cliente").length;
-  const quentes = leads.filter((l) => l.temperatura === "quente" && !EXIT_STAGES.includes(l.etapa)).length;
+  const quentes = leads.filter((l) => l.temperatura === "quente" && ACTIVE_STAGES.includes(l.etapa)).length;
   const taxaConv = leads.length > 0 ? Math.round((convertidos / leads.length) * 100) : 0;
   const totalPipeline = ativos.reduce((s, l) => s + Number(l.patrimonio_estimado || 0), 0);
   const stale = ativos.filter((l) => { const d = daysSince(l.data_ultima_interacao); return d !== null && d > 21; }).length;
