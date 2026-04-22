@@ -5,7 +5,7 @@ import { useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useData } from "../hooks/useData";
 import { supabase } from "../lib/supabase";
-import { B, LEAD_ETAPA_COLORS, LEAD_ORIGENS, EMPTY_LEAD, LEAD_TEMPERATURAS, TIPO_REUNIAO } from "../utils/constants";
+import { B, LEAD_ETAPA_COLORS, LEAD_ORIGENS, EMPTY_LEAD, EMPTY_CLIENT, LEAD_TEMPERATURAS, TIPO_REUNIAO } from "../utils/constants";
 import { money, fmtDate } from "../utils/formatters";
 import { huid, today, daysSince } from "../utils/helpers";
 import Card from "../components/ui/Card";
@@ -295,7 +295,7 @@ function PipelineSummaryBar({ leads }) {
 
 /* ═══════════════════════════════════════════ */
 export default function Pipeline() {
-  const { leads, saveLead, deleteLead, pipelineStages, setToast } = useData();
+  const { leads, saveLead, deleteLead, pipelineStages, saveClient, setToast } = useData();
 
   // Derived stage lists from DB (fallback to constants if not yet loaded)
   const stagesMain = pipelineStages.filter((s) => s.tipo === "main");
@@ -365,9 +365,24 @@ export default function Pipeline() {
       return;
     }
     const updates = { etapa, data_ultima_interacao: today() };
-    if (etapa === "Cliente") updates.convertido_em = today();
+    if (etapa === "Cliente") {
+      updates.convertido_em = today();
+      // Cria cliente automaticamente na lista de Clientes
+      const novoCliente = {
+        ...EMPTY_CLIENT,
+        id: huid(),
+        nome: lead.nome,
+        status: "ativo",
+        origemCliente: lead.origem || "",
+        plInicial: lead.patrimonio_estimado ? String(lead.patrimonio_estimado) : "",
+        inicioCarteira: today(),
+      };
+      saveClient(novoCliente, true);
+      setToast({ type: "success", text: `✅ ${lead.nome} convertido! Cliente criado na lista de Clientes.` });
+    } else {
+      setToast({ type: "success", text: `Movido para ${etapa}` });
+    }
     saveLead({ ...lead, ...updates }, false);
-    setToast({ type: "success", text: `Movido para ${etapa}` });
   };
 
   const confirmReuniao = async () => {
