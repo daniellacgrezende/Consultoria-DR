@@ -125,31 +125,31 @@ export default function ClientDetail() {
   const totalRe = filteredClientAportes.filter((a) => a.tipo === "resgate").reduce((s, a) => s + Number(a.valor || 0), 0);
   const liquido = totalAp - totalRe;
 
-  // Média/mês coerente com o filtro ativo
+  // Média/mês líquida (aportes - resgates) coerente com o filtro ativo
   const mediaMes = (() => {
-    const apAtivos = filteredClientAportes.filter((a) => a.tipo === "aporte");
-    const total = apAtivos.reduce((s, a) => s + Number(a.valor || 0), 0);
+    const allMov = filteredClientAportes;
+    const liquidoFiltrado = allMov.reduce((s, a) => s + (a.tipo === "aporte" ? Number(a.valor || 0) : -Number(a.valor || 0)), 0);
     const now = new Date();
     if (aptFilter.mode === "todos") {
-      if (apAtivos.length === 0) return 0;
-      const earliest = [...apAtivos].sort((a, b) => a.data.localeCompare(b.data))[0].data;
+      if (allMov.length === 0) return 0;
+      const earliest = [...allMov].sort((a, b) => a.data.localeCompare(b.data))[0].data;
       const start = new Date(earliest);
       const months = Math.max(1, (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth()) + 1);
-      return total / months;
+      return liquidoFiltrado / months;
     }
     if (aptFilter.mode === "ano") {
       const ano = parseInt(aptFilter.ano);
       const months = ano === now.getFullYear() ? now.getMonth() + 1 : 12;
-      return total / Math.max(1, months);
+      return liquidoFiltrado / Math.max(1, months);
     }
     if (aptFilter.mode === "periodo") {
       const de = aptFilter.de ? new Date(aptFilter.de) : null;
       const ate = aptFilter.ate ? new Date(aptFilter.ate) : now;
-      if (!de) return apAtivos.length === 0 ? 0 : total;
+      if (!de) return allMov.length === 0 ? 0 : liquidoFiltrado;
       const months = Math.max(1, (ate.getFullYear() - de.getFullYear()) * 12 + (ate.getMonth() - de.getMonth()) + 1);
-      return total / months;
+      return liquidoFiltrado / months;
     }
-    return total;
+    return liquidoFiltrado;
   })();
 
   // PGBL: aportes do ano corrente marcados is_pgbl
@@ -449,9 +449,9 @@ export default function ClientDetail() {
             <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Líquido</div>
             <div style={{ fontSize: 14, fontWeight: 700, color: liquido >= 0 ? "#16a34a" : "#dc2626" }}>{liquido >= 0 ? "+" : ""}{money(liquido)}</div>
           </div>
-          <div style={{ background: "#f5f3ff", border: "1px solid #ddd6fe", borderRadius: 8, padding: "10px 12px" }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Média/Mês</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#7c3aed" }}>{money(mediaMes)}</div>
+          <div style={{ background: mediaMes >= 0 ? "#f5f3ff" : "#fff5f5", border: `1px solid ${mediaMes >= 0 ? "#ddd6fe" : "#fecaca"}`, borderRadius: 8, padding: "10px 12px" }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Média/Mês (líq.)</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: mediaMes >= 0 ? "#7c3aed" : "#dc2626" }}>{mediaMes >= 0 ? "" : "-"}{money(Math.abs(mediaMes))}</div>
           </div>
         </div>
 
