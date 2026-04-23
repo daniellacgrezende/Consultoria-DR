@@ -4,12 +4,13 @@ import { supabase } from "../lib/supabase";
 import { useData } from "../hooks/useData";
 import { B } from "../utils/constants";
 import { fmtDate } from "../utils/formatters";
-import { daysSince, getPeriodDays, daysUntil, today, slugify, huid } from "../utils/helpers";
+import { daysSince, getPeriodDays, daysUntil, today, slugify, huid, getCurva, getCurrentPL } from "../utils/helpers";
 import Card from "../components/ui/Card";
 import MiniStat from "../components/ui/MiniStat";
 import Avatar from "../components/ui/Avatar";
 import SearchBox from "../components/ui/SearchBox";
 import { SecH } from "../components/ui/FormFields";
+import { CBadge } from "../components/ui/Badge";
 
 // Margem de atenção: entre o prazo e prazo + ATENCAO_DAYS → "Atenção"
 // Após prazo + ATENCAO_DAYS → "Atrasado"
@@ -41,7 +42,7 @@ const TH = { padding: "10px 14px", textAlign: "left", fontSize: 10, fontWeight: 
 
 export default function Relatorios() {
   const navigate = useNavigate();
-  const { clients, saveClient, setToast } = useData();
+  const { clients, history, saveClient, setToast } = useData();
   const [sortCol, setSortCol] = useState("diasSem");
   const [sortDir, setSortDir] = useState("desc");
   const [search, setSearch] = useState("");
@@ -203,7 +204,9 @@ export default function Relatorios() {
               {/* Pendentes de envio */}
               {pendingMonthly.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: completedMonthly.length > 0 ? 10 : 0 }}>
-                  {pendingMonthly.map((c) => (
+                  {pendingMonthly.map((c) => {
+                    const curva = getCurva(getCurrentPL(c, history));
+                    return (
                     <div key={c.id}
                       style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, border: `1px solid ${B.border}`, background: "white", cursor: "pointer", transition: "all 0.15s" }}
                       onClick={() => toggleCheck(c.id)}
@@ -214,10 +217,11 @@ export default function Relatorios() {
                         <div style={{ fontSize: 13, fontWeight: 600, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
                         <div style={{ fontSize: 10, color: B.gray }}>{c.profissao || "—"}</div>
                       </div>
+                      <CBadge curva={curva} />
                       <button onClick={(e) => { e.stopPropagation(); navigate(`/clients/${slugify(c.nome)}`); }}
                         style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 600, cursor: "pointer" }}>Ficha</button>
                     </div>
-                  ))}
+                  );})
                 </div>
               )}
 
@@ -274,11 +278,16 @@ export default function Relatorios() {
                 Relatório Atrasado — +{ATRASADO_DAYS}d do prazo
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {pendentesAtrasado.map((c) => (
+                {pendentesAtrasado.map((c) => {
+                  const curva = getCurva(getCurrentPL(c, history));
+                  return (
                   <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 7, background: "white", border: "1px solid #fecaca" }}>
                     <Avatar nome={c.nome} size={26} />
                     <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={() => navigate(`/clients/${slugify(c.nome)}`)}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
+                        <CBadge curva={curva} />
+                      </div>
                       <div style={{ fontSize: 10, color: "#dc2626", fontWeight: 600 }}>
                         {c.diasSem === null ? "Nunca enviado" : `${c.diasSem}d sem relatório`}
                       </div>
@@ -291,7 +300,7 @@ export default function Relatorios() {
                       ✓ Enviado
                     </button>
                   </div>
-                ))}
+                );})}
               </div>
             </div>
           )}
@@ -303,11 +312,16 @@ export default function Relatorios() {
                 Atenção — enviar em breve
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {pendentesAtencao.map((c) => (
+                {pendentesAtencao.map((c) => {
+                  const curva = getCurva(getCurrentPL(c, history));
+                  return (
                   <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 7, background: "white", border: "1px solid #fed7aa" }}>
                     <Avatar nome={c.nome} size={26} />
                     <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={() => navigate(`/clients/${slugify(c.nome)}`)}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
+                        <CBadge curva={curva} />
+                      </div>
                       <div style={{ fontSize: 10, color: "#c2410c", fontWeight: 600 }}>
                         {c.diasSem}d sem relatório · {c.periodicidade_relatorio || "Mensal"}
                       </div>
@@ -320,7 +334,7 @@ export default function Relatorios() {
                       ✓ Enviado
                     </button>
                   </div>
-                ))}
+                );})}
               </div>
             </div>
           )}
