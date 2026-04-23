@@ -98,6 +98,29 @@ function getMonthRange(offsetMonths) {
   return { start, end };
 }
 
+/* ─── Calcula próxima data de recorrência ─── */
+function getNextRecorrencia(vencimento, recorrencia) {
+  const base = new Date((vencimento || today()) + "T12:00:00");
+  const todayStr = today();
+
+  // Avança a partir do vencimento original
+  if (recorrencia === "diária")  base.setDate(base.getDate() + 1);
+  if (recorrencia === "semanal") base.setDate(base.getDate() + 7);
+  if (recorrencia === "mensal")  base.setMonth(base.getMonth() + 1);
+
+  const next = base.toISOString().slice(0, 10);
+
+  // Se a data calculada já passou (tarefa muito atrasada), calcula a partir de hoje
+  if (next <= todayStr) {
+    const fallback = new Date(todayStr + "T12:00:00");
+    if (recorrencia === "diária")  fallback.setDate(fallback.getDate() + 1);
+    if (recorrencia === "semanal") fallback.setDate(fallback.getDate() + 7);
+    if (recorrencia === "mensal")  fallback.setMonth(fallback.getMonth() + 1);
+    return fallback.toISOString().slice(0, 10);
+  }
+  return next;
+}
+
 /* ─── Tasks page ─── */
 export default function Tasks() {
   const navigate = useNavigate();
@@ -165,7 +188,28 @@ export default function Tasks() {
     setToast({ type: "success", text: isNew ? "Tarefa criada." : "Tarefa atualizada." });
   };
 
-  const toggle   = async (t) => { await saveTodo({ ...t, done: !t.done, done_at: !t.done ? today() : null }, false); };
+  const toggle = async (t) => {
+    const markingDone = !t.done;
+    await saveTodo({ ...t, done: markingDone, done_at: markingDone ? today() : null }, false);
+
+    // ─── Recorrência: cria próxima ocorrência ao concluir ───
+    if (markingDone && t.recorrencia) {
+      const nextVenc = getNextRecorrencia(t.vencimento || t.data, t.recorrencia);
+      await saveTodo({
+        id: huid(),
+        texto: t.texto,
+        recorrencia: t.recorrencia,
+        vencimento: nextVenc,
+        descricao: t.descricao || "",
+        prioridade: t.prioridade || "normal",
+        client_id: t.client_id || null,
+        done: false,
+        done_at: null,
+        data: today(),
+        ordem: todos.length,
+      }, true);
+    }
+  };
   const remove   = async (id) => { await deleteTodo(id); };
   const postpone = async (t) => {
     const d = new Date(); d.setDate(d.getDate() + 1);
