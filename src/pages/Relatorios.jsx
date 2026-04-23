@@ -11,32 +11,32 @@ import Avatar from "../components/ui/Avatar";
 import SearchBox from "../components/ui/SearchBox";
 import { SecH } from "../components/ui/FormFields";
 
-const GRACE_DAYS = 10;
+// Margem de atenção: entre o prazo e prazo + ATENCAO_DAYS → "Atenção"
+// Após prazo + ATENCAO_DAYS → "Atrasado"
+const ATENCAO_DAYS = 7;
+const ATRASADO_DAYS = 15;
 
 function getRelStatus(diasSem, periodDays) {
-  if (diasSem === null) return { label: "Nunca enviado", color: "#dc2626", bg: "#fef2f2" };
-  if (diasSem > periodDays + GRACE_DAYS) return { label: "Atrasado", color: "#dc2626", bg: "#fef2f2" };
-  if (diasSem > periodDays) return { label: "Enviar", color: "#c2410c", bg: "#fff7ed" }; // margem 10 dias
+  if (diasSem === null) return { key: "atrasado", label: "Atrasado",  color: "#dc2626", bg: "#fef2f2" };
+  if (diasSem > periodDays + ATRASADO_DAYS) return { key: "atrasado", label: "Atrasado",  color: "#dc2626", bg: "#fef2f2" };
+  if (diasSem > periodDays + ATENCAO_DAYS)  return { key: "atrasado", label: "Atrasado",  color: "#dc2626", bg: "#fef2f2" };
+  if (diasSem > periodDays)                 return { key: "atencao",  label: "Atenção",   color: "#c2410c", bg: "#fff7ed" };
   const warn = Math.round(periodDays * 0.83);
-  if (diasSem > warn) return { label: "Atenção", color: "#c2410c", bg: "#fff7ed" };
-  return { label: "Em Dia", color: "#16a34a", bg: "#f0fdf4" };
+  if (diasSem > warn)                       return { key: "atencao",  label: "Atenção",   color: "#c2410c", bg: "#fff7ed" };
+  return                                           { key: "emdia",    label: "Em Dia",    color: "#16a34a", bg: "#f0fdf4" };
 }
 
-// Calcula o 5o dia útil do mês (seg-sex)
 function get5thBusinessDay(year, month) {
-  let count = 0;
-  let day = 0;
+  let count = 0, day = 0;
   while (count < 5) {
     day++;
-    const d = new Date(year, month, day);
-    const dow = d.getDay();
+    const dow = new Date(year, month, day).getDay();
     if (dow !== 0 && dow !== 6) count++;
   }
   return day;
 }
 
-const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-
+const MONTH_NAMES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const TH = { padding: "10px 14px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: "1px solid rgba(10,8,9,0.06)", background: "#f5f7ff" };
 
 export default function Relatorios() {
@@ -47,22 +47,25 @@ export default function Relatorios() {
   const [search, setSearch] = useState("");
   const [showSug, setShowSug] = useState(false);
   const [filterClient, setFilterClient] = useState(null);
+  const [checklistOpen, setChecklistOpen] = useState(true); // colapsável
 
-  // ─── Checklist mensal ───
+  // ─── Checklist: usa o PRÓXIMO mês ───
+  const now = new Date();
+  const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const nextMonth = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, "0")}`;
+  const bd5 = get5thBusinessDay(nextMonthDate.getFullYear(), nextMonthDate.getMonth());
+  const bd5Date = new Date(nextMonthDate.getFullYear(), nextMonthDate.getMonth(), bd5);
+  const isPastBd5 = now >= bd5Date;
+
+  // ─── Checklist state ───
   const [checklist, setChecklist] = useState([]);
   const [checklistLoaded, setChecklistLoaded] = useState(false);
 
-  const now = new Date();
-  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const bd5 = get5thBusinessDay(now.getFullYear(), now.getMonth());
-  const bd5Date = new Date(now.getFullYear(), now.getMonth(), bd5);
-  const isPastBd5 = now >= bd5Date;
-
   const loadChecklist = useCallback(async () => {
-    const { data } = await supabase.from("report_checklist").select("*").eq("month", currentMonth);
+    const { data } = await supabase.from("report_checklist").select("*").eq("month", nextMonth);
     setChecklist(data || []);
     setChecklistLoaded(true);
-  }, [currentMonth]);
+  }, [nextMonth]);
 
   useEffect(() => { loadChecklist(); }, [loadChecklist]);
 
@@ -81,20 +84,27 @@ export default function Relatorios() {
     return m;
   }, [checklist]);
 
-  const checkedCount = monthlyClients.filter((c) => checkedMap[c.id]?.checked).length;
+  // Clientes não marcados ainda (para mostrar na lista)
+  const pendingMonthly   = monthlyClients.filter((c) => !checkedMap[c.id]?.checked);
+  const completedMonthly = monthlyClients.filter((c) =>  checkedMap[c.id]?.checked);
+  const checkedCount     = completedMonthly.length;
 
   const toggleCheck = async (clientId) => {
     const existing = checkedMap[clientId];
     if (existing) {
       const newChecked = !existing.checked;
-      await supabase.from("report_checklist").update({ checked: newChecked, checked_at: newChecked ? new Date().toISOString() : null }).eq("id", existing.id);
-      setChecklist((p) => p.map((r) => r.id === existing.id ? { ...r, checked: newChecked, checked_at: newChecked ? new Date().toISOString() : null } : r));
+      await supabase.from("report_checklist")
+        .update({ checked: newChecked, checked_at: newChecked ? new Date().toISOString() : null })
+        .eq("id", existing.id);
+      setChecklist((p) => p.map((r) => r.id === existing.id
+        ? { ...r, checked: newChecked, checked_at: newChecked ? new Date().toISOString() : null }
+        : r));
       if (newChecked) {
         const cl = clients.find((c) => c.id === clientId);
         if (cl) await saveClient({ ...cl, ultimo_relatorio: today() }, false);
       }
     } else {
-      const entry = { id: huid(), client_id: clientId, month: currentMonth, checked: true, checked_at: new Date().toISOString() };
+      const entry = { id: huid(), client_id: clientId, month: nextMonth, checked: true, checked_at: new Date().toISOString() };
       const { data } = await supabase.from("report_checklist").insert(entry).select();
       if (data) setChecklist((p) => [...p, data[0]]);
       const cl = clients.find((c) => c.id === clientId);
@@ -120,26 +130,18 @@ export default function Relatorios() {
     return r;
   }, [active, filterClient, sortCol, sortDir]);
 
-  const atrasado = active.filter((c) => {
-    if (naoAplicaRel(c)) return false;
-    const proxRel = c.proximo_relatorio || c.proximoRelatorio;
-    if (!proxRel) return false; // sem data → sem pendência
-    return new Date(proxRel) < new Date();
-  }).length;
+  // Painel pendentes: separado em Atenção e Atrasado
+  const pendentesAtencao  = rows.filter((c) => c.diasSem !== null && c.diasSem > c.periodDays && c.diasSem <= c.periodDays + ATRASADO_DAYS).slice(0, 5);
+  const pendentesAtrasado = rows.filter((c) => c.diasSem === null || c.diasSem > c.periodDays + ATRASADO_DAYS).slice(0, 5);
 
-  const atencao = active.filter((c) => {
-    if (naoAplicaRel(c)) return false;
-    const d = daysSince(c.ultimo_relatorio || c.ultimoRelatorio);
-    const p = getPeriodDays(c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal");
-    return d !== null && d > Math.round(p * 0.83) && d <= p;
-  }).length;
+  const proximos = rows.filter((c) => {
+    const d = daysUntil(c.proximo_relatorio || c.proximoRelatorio);
+    return d !== null && d >= 0 && d <= 7;
+  }).slice(0, 5);
 
-  const emDia = active.filter((c) => {
-    if (naoAplicaRel(c)) return false;
-    const d = daysSince(c.ultimo_relatorio || c.ultimoRelatorio);
-    const p = getPeriodDays(c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal");
-    return d !== null && d <= Math.round(p * 0.83);
-  }).length;
+  const atrasadoCount = rows.filter((c) => { const st = getRelStatus(c.diasSem, c.periodDays); return st.key === "atrasado"; }).length;
+  const atencaoCount  = rows.filter((c) => { const st = getRelStatus(c.diasSem, c.periodDays); return st.key === "atencao";  }).length;
+  const emDiaCount    = rows.filter((c) => { const st = getRelStatus(c.diasSem, c.periodDays); return st.key === "emdia";    }).length;
 
   const marcarEnviado = async (c) => {
     await saveClient({ ...c, ultimo_relatorio: today() }, false);
@@ -150,7 +152,6 @@ export default function Relatorios() {
     if (sortCol === col) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else { setSortCol(col); setSortDir("desc"); }
   };
-
   const SortIcon = ({ col }) => sortCol !== col ? null : <span style={{ marginLeft: 4, fontSize: 9 }}>{sortDir === "asc" ? "▲" : "▼"}</span>;
 
   return (
@@ -159,116 +160,193 @@ export default function Relatorios() {
 
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 18 }}>
-        <MiniStat label="Atrasado" value={atrasado} warn={atrasado > 0} />
-        <MiniStat label="Atenção" value={atencao} warn={atencao > 0} />
-        <MiniStat label="Em Dia" value={emDia} />
+        <MiniStat label="Atrasado" value={atrasadoCount} warn={atrasadoCount > 0} />
+        <MiniStat label="Atenção"  value={atencaoCount}  warn={atencaoCount > 0} />
+        <MiniStat label="Em Dia"   value={emDiaCount} />
         <MiniStat label="Clientes Ativos" value={active.length} />
       </div>
 
-      {/* ═══ CHECKLIST MENSAL ═══ */}
+      {/* ═══ CHECKLIST MENSAL (colapsável) ═══ */}
       {monthlyClients.length > 0 && (
-        <Card style={{ marginBottom: 18 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${B.border}` }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 14, color: B.navy }}>Envio Mensal — {MONTH_NAMES[now.getMonth()]} {now.getFullYear()}</div>
-              <div style={{ fontSize: 11, color: B.gray, marginTop: 2 }}>
-                Prazo: 5º dia útil ({bd5}/{String(now.getMonth() + 1).padStart(2, "0")})
-                {isPastBd5 && checkedCount < monthlyClients.length && (
-                  <span style={{ color: "#dc2626", fontWeight: 700, marginLeft: 8 }}>Prazo atingido</span>
-                )}
+        <Card style={{ marginBottom: 18, padding: 0, overflow: "hidden" }}>
+          {/* Cabeçalho clicável */}
+          <div
+            onClick={() => setChecklistOpen((v) => !v)}
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", cursor: "pointer", userSelect: "none", borderBottom: checklistOpen ? `1px solid ${B.border}` : "none" }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 13, display: "inline-block", transition: "transform 0.2s", transform: checklistOpen ? "rotate(90deg)" : "rotate(0deg)", color: B.muted }}>▶</span>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: B.navy }}>
+                  Envio Mensal — {MONTH_NAMES[nextMonthDate.getMonth()]} {nextMonthDate.getFullYear()}
+                </div>
+                <div style={{ fontSize: 11, color: B.gray, marginTop: 1 }}>
+                  Prazo: 5º dia útil ({bd5}/{String(nextMonthDate.getMonth() + 1).padStart(2, "0")})
+                  {isPastBd5 && checkedCount < monthlyClients.length && (
+                    <span style={{ color: "#dc2626", fontWeight: 700, marginLeft: 8 }}>Prazo atingido</span>
+                  )}
+                </div>
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: checkedCount === monthlyClients.length ? "#16a34a" : B.navy }}>
                 {checkedCount}/{monthlyClients.length}
               </div>
-              <div style={{ width: 120, height: 8, background: "#e5e7eb", borderRadius: 999, overflow: "hidden" }}>
+              <div style={{ width: 100, height: 7, background: "#e5e7eb", borderRadius: 999, overflow: "hidden" }}>
                 <div style={{ width: `${monthlyClients.length > 0 ? (checkedCount / monthlyClients.length) * 100 : 0}%`, height: "100%", background: checkedCount === monthlyClients.length ? "#16a34a" : "#2563eb", borderRadius: 999, transition: "width 0.3s" }} />
               </div>
             </div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {monthlyClients.map((c) => {
-              const isChecked = checkedMap[c.id]?.checked;
-              const checkedAt = checkedMap[c.id]?.checked_at;
-              return (
-                <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, border: `1px solid ${isChecked ? "#bbf7d0" : B.border}`, background: isChecked ? "#f0fdf4" : "white", cursor: "pointer", transition: "all 0.15s" }} onClick={() => toggleCheck(c.id)}>
-                  <div style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${isChecked ? "#16a34a" : "#cbd5e1"}`, background: isChecked ? "#16a34a" : "white", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}>
-                    {isChecked && <span style={{ color: "white", fontSize: 13, fontWeight: 700, lineHeight: 1 }}>✓</span>}
-                  </div>
-                  <Avatar nome={c.nome} size={28} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: isChecked ? "#16a34a" : B.navy, textDecoration: isChecked ? "line-through" : "none", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
-                    <div style={{ fontSize: 10, color: B.gray }}>{c.profissao || "—"}</div>
-                  </div>
-                  {isChecked && checkedAt && (
-                    <span style={{ fontSize: 10, color: "#16a34a", fontWeight: 600, whiteSpace: "nowrap" }}>
-                      Enviado {new Date(checkedAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
-                    </span>
-                  )}
-                  <button onClick={(e) => { e.stopPropagation(); navigate(`/clients/${slugify(c.nome)}`); }} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>Ficha</button>
+          {checklistOpen && (
+            <div style={{ padding: "12px 16px" }}>
+              {/* Pendentes de envio */}
+              {pendingMonthly.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: completedMonthly.length > 0 ? 10 : 0 }}>
+                  {pendingMonthly.map((c) => (
+                    <div key={c.id}
+                      style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, border: `1px solid ${B.border}`, background: "white", cursor: "pointer", transition: "all 0.15s" }}
+                      onClick={() => toggleCheck(c.id)}
+                    >
+                      <div style={{ width: 22, height: 22, borderRadius: 6, border: "2px solid #cbd5e1", background: "white", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }} />
+                      <Avatar nome={c.nome} size={28} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
+                        <div style={{ fontSize: 10, color: B.gray }}>{c.profissao || "—"}</div>
+                      </div>
+                      <button onClick={(e) => { e.stopPropagation(); navigate(`/clients/${slugify(c.nome)}`); }}
+                        style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 600, cursor: "pointer" }}>Ficha</button>
+                    </div>
+                  ))}
                 </div>
-              );
-            })}
-          </div>
+              )}
 
-          {checkedCount === monthlyClients.length && monthlyClients.length > 0 && (
-            <div style={{ marginTop: 12, padding: "10px 14px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, textAlign: "center", fontSize: 13, fontWeight: 700, color: "#16a34a" }}>
-              Todos os relatórios mensais foram enviados!
+              {/* Já enviados — ficam visíveis até virar o mês */}
+              {completedMonthly.length > 0 && (
+                <>
+                  {pendingMonthly.length > 0 && <div style={{ fontSize: 9, fontWeight: 700, color: "#16a34a", textTransform: "uppercase", marginBottom: 4 }}>Enviados ✓</div>}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {completedMonthly.map((c) => {
+                      const checkedAt = checkedMap[c.id]?.checked_at;
+                      return (
+                        <div key={c.id}
+                          style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, border: "1px solid #bbf7d0", background: "#f0fdf4", cursor: "pointer", opacity: 0.75 }}
+                          onClick={() => toggleCheck(c.id)}
+                        >
+                          <div style={{ width: 22, height: 22, borderRadius: 6, border: "2px solid #16a34a", background: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <span style={{ color: "white", fontSize: 13, fontWeight: 700, lineHeight: 1 }}>✓</span>
+                          </div>
+                          <Avatar nome={c.nome} size={28} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "#16a34a", textDecoration: "line-through", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
+                            <div style={{ fontSize: 10, color: B.gray }}>{c.profissao || "—"}</div>
+                          </div>
+                          {checkedAt && (
+                            <span style={{ fontSize: 10, color: "#16a34a", fontWeight: 600, whiteSpace: "nowrap" }}>
+                              Enviado {new Date(checkedAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {checkedCount === monthlyClients.length && monthlyClients.length > 0 && (
+                <div style={{ marginTop: 10, padding: "10px 14px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, textAlign: "center", fontSize: 13, fontWeight: 700, color: "#16a34a" }}>
+                  Todos os relatórios mensais foram enviados! 🎉
+                </div>
+              )}
             </div>
           )}
         </Card>
       )}
 
-      {/* Alertas */}
-      {(() => {
-        const pendentes = rows.filter((c) => c.diasSem === null || c.diasSem > c.periodDays).slice(0, 5);
-        const proximos = rows.filter((c) => {
-          const d = daysUntil(c.proximo_relatorio || c.proximoRelatorio);
-          return d !== null && d >= 0 && d <= 7;
-        }).slice(0, 5);
-        if (pendentes.length === 0 && proximos.length === 0) return null;
-        return (
-          <div style={{ display: "grid", gridTemplateColumns: proximos.length > 0 && pendentes.length > 0 ? "1fr 1fr" : "1fr", gap: 12, marginBottom: 18 }}>
-            {pendentes.length > 0 && (
-              <div style={{ background: "#fff5f5", border: "1px solid #fecaca", borderRadius: 10, padding: "14px 16px" }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: "#dc2626", textTransform: "uppercase", marginBottom: 10 }}>Relatório pendente</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {pendentes.map((c) => (
-                    <div key={c.id} onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "6px 8px", borderRadius: 7, background: "white", border: "1px solid #fecaca" }}>
+      {/* ═══ PAINÉIS DE ALERTA ═══ */}
+      {(pendentesAtrasado.length > 0 || pendentesAtencao.length > 0 || proximos.length > 0) && (
+        <div style={{ display: "grid", gridTemplateColumns: [pendentesAtrasado.length, pendentesAtencao.length, proximos.length].filter(Boolean).length > 1 ? "1fr 1fr" : "1fr", gap: 12, marginBottom: 18 }}>
+
+          {/* Atrasado */}
+          {pendentesAtrasado.length > 0 && (
+            <div style={{ background: "#fff5f5", border: "1px solid #fecaca", borderRadius: 10, padding: "14px 16px" }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#dc2626", textTransform: "uppercase", marginBottom: 10 }}>
+                Relatório Atrasado — +{ATRASADO_DAYS}d do prazo
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {pendentesAtrasado.map((c) => (
+                  <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 7, background: "white", border: "1px solid #fecaca" }}>
+                    <Avatar nome={c.nome} size={26} />
+                    <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={() => navigate(`/clients/${slugify(c.nome)}`)}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
+                      <div style={{ fontSize: 10, color: "#dc2626", fontWeight: 600 }}>
+                        {c.diasSem === null ? "Nunca enviado" : `${c.diasSem}d sem relatório`}
+                      </div>
+                      <div style={{ fontSize: 10, color: B.muted }}>
+                        Último envio: {fmtDate(c.ultimo_relatorio || c.ultimoRelatorio) || "—"}
+                      </div>
+                    </div>
+                    <button onClick={() => marcarEnviado(c)}
+                      style={{ fontSize: 9.5, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
+                      ✓ Enviado
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Atenção */}
+          {pendentesAtencao.length > 0 && (
+            <div style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 10, padding: "14px 16px" }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#c2410c", textTransform: "uppercase", marginBottom: 10 }}>
+                Atenção — enviar em breve
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {pendentesAtencao.map((c) => (
+                  <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 7, background: "white", border: "1px solid #fed7aa" }}>
+                    <Avatar nome={c.nome} size={26} />
+                    <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={() => navigate(`/clients/${slugify(c.nome)}`)}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
+                      <div style={{ fontSize: 10, color: "#c2410c", fontWeight: 600 }}>
+                        {c.diasSem}d sem relatório · {c.periodicidade_relatorio || "Mensal"}
+                      </div>
+                      <div style={{ fontSize: 10, color: B.muted }}>
+                        Último envio: {fmtDate(c.ultimo_relatorio || c.ultimoRelatorio) || "—"}
+                      </div>
+                    </div>
+                    <button onClick={() => marcarEnviado(c)}
+                      style={{ fontSize: 9.5, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
+                      ✓ Enviado
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Próximos 7 dias */}
+          {proximos.length > 0 && (
+            <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "14px 16px" }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#1d4ed8", textTransform: "uppercase", marginBottom: 10 }}>Próximos relatórios (7 dias)</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {proximos.map((c) => {
+                  const d = daysUntil(c.proximo_relatorio || c.proximoRelatorio);
+                  return (
+                    <div key={c.id} onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "6px 8px", borderRadius: 7, background: "white", border: "1px solid #bfdbfe" }}>
                       <Avatar nome={c.nome} size={26} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 12, fontWeight: 600, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
-                        <div style={{ fontSize: 10, color: "#dc2626", fontWeight: 600 }}>{c.diasSem === null ? "Nunca enviado" : `${c.diasSem}d sem relatório`} · {c.periodicidade_relatorio || "Mensal"}</div>
+                        <div style={{ fontSize: 10, color: "#1d4ed8", fontWeight: 600 }}>{fmtDate(c.proximo_relatorio || c.proximoRelatorio)} · em {d}d</div>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-            )}
-            {proximos.length > 0 && (
-              <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "14px 16px" }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: "#1d4ed8", textTransform: "uppercase", marginBottom: 10 }}>Próximos relatórios (7 dias)</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {proximos.map((c) => {
-                    const d = daysUntil(c.proximo_relatorio || c.proximoRelatorio);
-                    return (
-                      <div key={c.id} onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "6px 8px", borderRadius: 7, background: "white", border: "1px solid #bfdbfe" }}>
-                        <Avatar nome={c.nome} size={26} />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
-                          <div style={{ fontSize: 10, color: "#1d4ed8", fontWeight: 600 }}>{fmtDate(c.proximo_relatorio || c.proximoRelatorio)} · em {d}d</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })()}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Filtro por cliente */}
       <div style={{ display: "flex", gap: 10, marginBottom: 14, alignItems: "center" }}>
@@ -311,7 +389,7 @@ export default function Relatorios() {
               )}
               {rows.map((c, i) => {
                 const st = getRelStatus(c.diasSem, c.periodDays);
-                const diasColor = c.diasSem === null ? "#dc2626" : c.diasSem > c.periodDays ? "#dc2626" : c.diasSem > Math.round(c.periodDays * 0.83) ? "#c2410c" : "#16a34a";
+                const diasColor = c.diasSem === null ? "#dc2626" : c.diasSem > c.periodDays + ATRASADO_DAYS ? "#dc2626" : c.diasSem > c.periodDays ? "#c2410c" : "#16a34a";
                 return (
                   <tr key={c.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
                     <td style={{ padding: "11px 14px" }}>
