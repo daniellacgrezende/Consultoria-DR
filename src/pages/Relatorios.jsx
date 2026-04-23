@@ -12,19 +12,17 @@ import SearchBox from "../components/ui/SearchBox";
 import { SecH } from "../components/ui/FormFields";
 import { CBadge } from "../components/ui/Badge";
 
-// Margem de atenção: entre o prazo e prazo + ATENCAO_DAYS → "Atenção"
-// Após prazo + ATENCAO_DAYS → "Atrasado"
-const ATENCAO_DAYS = 7;
+// Atenção: passou o prazo mas ainda dentro de ATRASADO_DAYS (15d) → "Atenção"
+// Atrasado: mais de ATRASADO_DAYS após o prazo (ou nunca enviado)
 const ATRASADO_DAYS = 15;
 
 function getRelStatus(diasSem, periodDays) {
-  if (diasSem === null) return { key: "atrasado", label: "Atrasado",  color: "#dc2626", bg: "#fef2f2" };
-  if (diasSem > periodDays + ATRASADO_DAYS) return { key: "atrasado", label: "Atrasado",  color: "#dc2626", bg: "#fef2f2" };
-  if (diasSem > periodDays + ATENCAO_DAYS)  return { key: "atrasado", label: "Atrasado",  color: "#dc2626", bg: "#fef2f2" };
-  if (diasSem > periodDays)                 return { key: "atencao",  label: "Atenção",   color: "#c2410c", bg: "#fff7ed" };
+  if (diasSem === null)                     return { key: "atrasado", label: "Atrasado", color: "#dc2626", bg: "#fef2f2" };
+  if (diasSem > periodDays + ATRASADO_DAYS) return { key: "atrasado", label: "Atrasado", color: "#dc2626", bg: "#fef2f2" };
+  if (diasSem > periodDays)                 return { key: "atencao",  label: "Atenção",  color: "#c2410c", bg: "#fff7ed" };
   const warn = Math.round(periodDays * 0.83);
-  if (diasSem > warn)                       return { key: "atencao",  label: "Atenção",   color: "#c2410c", bg: "#fff7ed" };
-  return                                           { key: "emdia",    label: "Em Dia",    color: "#16a34a", bg: "#f0fdf4" };
+  if (diasSem > warn)                       return { key: "atencao",  label: "Atenção",  color: "#c2410c", bg: "#fff7ed" };
+  return                                           { key: "emdia",    label: "Em Dia",   color: "#16a34a", bg: "#f0fdf4" };
 }
 
 function get5thBusinessDay(year, month) {
@@ -131,9 +129,9 @@ export default function Relatorios() {
     return r;
   }, [active, filterClient, sortCol, sortDir]);
 
-  // Painel pendentes: separado em Atenção e Atrasado
-  const pendentesAtencao  = rows.filter((c) => c.diasSem !== null && c.diasSem > c.periodDays && c.diasSem <= c.periodDays + ATRASADO_DAYS).slice(0, 5);
-  const pendentesAtrasado = rows.filter((c) => c.diasSem === null || c.diasSem > c.periodDays + ATRASADO_DAYS).slice(0, 5);
+  // Painel pendentes: usa getRelStatus para garantir que contadores e painéis batem
+  const pendentesAtrasado = rows.filter((c) => getRelStatus(c.diasSem, c.periodDays).key === "atrasado").slice(0, 5);
+  const pendentesAtencao  = rows.filter((c) => getRelStatus(c.diasSem, c.periodDays).key === "atencao").slice(0, 5);
 
   const proximos = rows.filter((c) => {
     const d = daysUntil(c.proximo_relatorio || c.proximoRelatorio);
