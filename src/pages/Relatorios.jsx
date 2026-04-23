@@ -47,6 +47,7 @@ export default function Relatorios() {
   const [showSug, setShowSug] = useState(false);
   const [filterClient, setFilterClient] = useState(null);
   const [checklistOpen, setChecklistOpen] = useState(true); // colapsável
+  const [statFilter, setStatFilter] = useState(null); // "atrasado" | "atencao" | "emdia" | null
 
   // ─── Checklist: usa o PRÓXIMO mês ───
   const now = new Date();
@@ -129,18 +130,31 @@ export default function Relatorios() {
     return r;
   }, [active, filterClient, sortCol, sortDir]);
 
-  // Painel pendentes: usa getRelStatus para garantir que contadores e painéis batem
-  const pendentesAtrasado = rows.filter((c) => getRelStatus(c.diasSem, c.periodDays).key === "atrasado").slice(0, 5);
-  const pendentesAtencao  = rows.filter((c) => getRelStatus(c.diasSem, c.periodDays).key === "atencao").slice(0, 5);
+  // ─── Arrays derivados: calculados UMA VEZ, usados em contadores E painéis ───
+  const atrasadoRows = useMemo(() => rows.filter((c) => getRelStatus(c.diasSem, c.periodDays).key === "atrasado"), [rows]);
+  const atencaoRows  = useMemo(() => rows.filter((c) => getRelStatus(c.diasSem, c.periodDays).key === "atencao"),  [rows]);
+  const emDiaRows    = useMemo(() => rows.filter((c) => getRelStatus(c.diasSem, c.periodDays).key === "emdia"),    [rows]);
+
+  const atrasadoCount = atrasadoRows.length;
+  const atencaoCount  = atencaoRows.length;
+  const emDiaCount    = emDiaRows.length;
+
+  const pendentesAtrasado = atrasadoRows.slice(0, 5);
+  const pendentesAtencao  = atencaoRows.slice(0, 5);
 
   const proximos = rows.filter((c) => {
     const d = daysUntil(c.proximo_relatorio || c.proximoRelatorio);
     return d !== null && d >= 0 && d <= 7;
   }).slice(0, 5);
 
-  const atrasadoCount = rows.filter((c) => { const st = getRelStatus(c.diasSem, c.periodDays); return st.key === "atrasado"; }).length;
-  const atencaoCount  = rows.filter((c) => { const st = getRelStatus(c.diasSem, c.periodDays); return st.key === "atencao";  }).length;
-  const emDiaCount    = rows.filter((c) => { const st = getRelStatus(c.diasSem, c.periodDays); return st.key === "emdia";    }).length;
+  // ─── Tabela filtrada pelo card de stat selecionado ───
+  const displayRows = useMemo(() => {
+    if (!statFilter) return rows;
+    if (statFilter === "atrasado") return atrasadoRows;
+    if (statFilter === "atencao")  return atencaoRows;
+    if (statFilter === "emdia")    return emDiaRows;
+    return rows;
+  }, [statFilter, rows, atrasadoRows, atencaoRows, emDiaRows]);
 
   const marcarEnviado = async (c) => {
     await saveClient({ ...c, ultimo_relatorio: today() }, false);
@@ -158,12 +172,26 @@ export default function Relatorios() {
       <SecH eyebrow="Carteira" title="Relatórios" desc="Acompanhe o envio de relatórios para seus clientes." />
 
       {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 18 }}>
-        <MiniStat label="Atrasado" value={atrasadoCount} warn={atrasadoCount > 0} />
-        <MiniStat label="Atenção"  value={atencaoCount}  warn={atencaoCount > 0} />
-        <MiniStat label="Em Dia"   value={emDiaCount} />
-        <MiniStat label="Clientes Ativos" value={active.length} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: statFilter ? 6 : 18 }}>
+        <MiniStat label="Atrasado" value={atrasadoCount} warn={atrasadoCount > 0}
+          idx={0} selected={statFilter === "atrasado"}
+          onClick={() => setStatFilter((v) => v === "atrasado" ? null : "atrasado")} />
+        <MiniStat label="Atenção"  value={atencaoCount}  warn={atencaoCount > 0}
+          idx={1} selected={statFilter === "atencao"}
+          onClick={() => setStatFilter((v) => v === "atencao" ? null : "atencao")} />
+        <MiniStat label="Em Dia"   value={emDiaCount}
+          idx={2} selected={statFilter === "emdia"}
+          onClick={() => setStatFilter((v) => v === "emdia" ? null : "emdia")} />
+        <MiniStat label="Clientes Ativos" value={active.length} idx={3} />
       </div>
+      {statFilter && (
+        <div style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: statFilter === "atrasado" ? "#dc2626" : statFilter === "atencao" ? "#c2410c" : "#16a34a", background: statFilter === "atrasado" ? "#fef2f2" : statFilter === "atencao" ? "#fff7ed" : "#f0fdf4", border: `1px solid ${statFilter === "atrasado" ? "#fecaca" : statFilter === "atencao" ? "#fed7aa" : "#bbf7d0"}`, borderRadius: 999, padding: "3px 12px" }}>
+            {statFilter === "atrasado" ? "🔴 Mostrando: Atrasados" : statFilter === "atencao" ? "🟠 Mostrando: Atenção" : "🟢 Mostrando: Em Dia"}
+          </span>
+          <button onClick={() => setStatFilter(null)} style={{ fontSize: 11, color: B.gray, background: "white", border: `1px solid ${B.border}`, borderRadius: 6, padding: "3px 10px", cursor: "pointer" }}>✕ Ver todos</button>
+        </div>
+      )}
 
       {/* ═══ CHECKLIST MENSAL (colapsável) ═══ */}
       {monthlyClients.length > 0 && (
@@ -390,17 +418,19 @@ export default function Relatorios() {
                 <th onClick={() => toggleSort("nome")} style={{ ...TH, cursor: "pointer" }}>Cliente <SortIcon col="nome" /></th>
                 <th onClick={() => toggleSort("diasSem")} style={{ ...TH, cursor: "pointer" }}>Último Relatório <SortIcon col="diasSem" /></th>
                 <th style={TH}>Periodicidade</th>
+                <th style={{ ...TH, textAlign: "center" }}>Curva</th>
                 <th style={TH}>Dias sem relatório</th>
                 <th style={TH}>Status</th>
                 <th style={TH}></th>
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 && (
-                <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: B.gray }}>Nenhum cliente ativo</td></tr>
+              {displayRows.length === 0 && (
+                <tr><td colSpan={7} style={{ padding: 40, textAlign: "center", color: B.gray }}>Nenhum cliente ativo</td></tr>
               )}
-              {rows.map((c, i) => {
+              {displayRows.map((c, i) => {
                 const st = getRelStatus(c.diasSem, c.periodDays);
+                const curva = getCurva(getCurrentPL(c, history));
                 const diasColor = c.diasSem === null ? "#dc2626" : c.diasSem > c.periodDays + ATRASADO_DAYS ? "#dc2626" : c.diasSem > c.periodDays ? "#c2410c" : "#16a34a";
                 return (
                   <tr key={c.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
@@ -420,6 +450,9 @@ export default function Relatorios() {
                       <span style={{ fontSize: 11, fontWeight: 600, color: B.navy, background: "#f0f4ff", border: `1px solid ${B.border}`, borderRadius: 999, padding: "2px 10px" }}>
                         {c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal"}
                       </span>
+                    </td>
+                    <td style={{ padding: "11px 14px", textAlign: "center" }}>
+                      <CBadge curva={curva} />
                     </td>
                     <td style={{ padding: "11px 14px" }}>
                       <span style={{ fontWeight: 700, fontSize: 13, color: diasColor }}>
