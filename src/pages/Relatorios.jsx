@@ -46,7 +46,7 @@ export default function Relatorios() {
   const [search, setSearch] = useState("");
   const [showSug, setShowSug] = useState(false);
   const [filterClient, setFilterClient] = useState(null);
-  const [checklistOpen, setChecklistOpen] = useState(true); // colapsável
+  const [checklistOpen, setChecklistOpen] = useState(false);
   const [statFilter, setStatFilter] = useState(null); // "atrasado" | "atencao" | "emdia" | null
 
   // ─── Checklist: usa o PRÓXIMO mês ───
