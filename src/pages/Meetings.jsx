@@ -11,7 +11,7 @@ import SearchBox from "../components/ui/SearchBox";
 import { SecH } from "../components/ui/FormFields";
 import { CBadge } from "../components/ui/Badge";
 
-const GRACE_DAYS  = 30; // dias após vencimento antes de virar "Atrasado"
+const GRACE_DAYS  = 25; // dias após vencimento antes de virar "Atrasado"
 const RETRY_DAYS  = 45; // dias após "chamei" antes de virar "Retentativa"
 
 /* ─── Status logic ─── */
@@ -45,8 +45,8 @@ function getStatus(c) {
     return            { key: "agendar",     label: "Agendar",     color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" };
   }
 
-  // Últimos 5% do período → hora de agendar
-  if (diasSem >= Math.round(period * 0.95)) return { key: "agendar", label: "Agendar", color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" };
+  // Faltam 5 dias para o prazo → hora de agendar
+  if (diasSem >= period - 5) return { key: "agendar", label: "Agendar", color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" };
 
   return { key: "emdia", label: "Em dia", color: "#16A34A", bg: "#F0FDF4", border: "#BBF7D0" };
 }
