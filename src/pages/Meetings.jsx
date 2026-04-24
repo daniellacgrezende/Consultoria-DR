@@ -394,6 +394,7 @@ export default function Meetings() {
               {filteredRows.map((c, i) => {
                 const dAv     = daysSince(c.avisado_em || c.avisadoEm);
                 const chameiRecentemente = dAv !== null && dAv <= c.periodDays;
+                const curva = getCurva(getCurrentPL(c, history));
                 return (
                   <tr key={c.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#FAFBFF" }}>
 
@@ -402,7 +403,10 @@ export default function Meetings() {
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <Avatar nome={c.nome} size={28} />
                         <div>
-                          <div style={{ fontWeight: 600, color: B.navy, fontSize: 12 }}>{c.nome}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                            <span style={{ fontWeight: 600, color: B.navy, fontSize: 12 }}>{c.nome}</span>
+                            <CBadge curva={curva} />
+                          </div>
                           <div style={{ fontSize: 10, color: B.muted }}>{c.profissao}</div>
                         </div>
                       </div>
