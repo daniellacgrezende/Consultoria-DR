@@ -15,6 +15,11 @@ const RETRY_DAYS  = 45; // dias após "chamei" antes de virar "Retentativa"
 
 /* ─── Status logic ─── */
 function getStatus(c) {
+  const periodicidade = (c.periodicidade_reuniao || c.periodicidadeReuniao || "").toLowerCase();
+  if (periodicidade === "não se aplica") {
+    return { key: "nao_aplica", label: "N/A", color: "#6B7280", bg: "#F3F4F6", border: "#D1D5DB" };
+  }
+
   const pr = c.proxima_reuniao || c.proximaReuniao;
   // Cliente ainda não alimentado no sistema (marcado com "?")
   if (!pr || pr.trim() === "?") {
@@ -85,7 +90,7 @@ export default function Meetings() {
 
   /* ─── Enriched rows ─── */
   const rows = useMemo(() => {
-    const STATUS_ORDER = { atrasado: 0, retentativa: 1, agendar: 2, aguardando: 3, emdia: 4, pendente: 5 };
+    const STATUS_ORDER = { atrasado: 0, retentativa: 1, agendar: 2, aguardando: 3, emdia: 4, pendente: 5, nao_aplica: 6 };
     const enriched = active.map((c) => ({
       ...c,
       diasSem:    daysSince(c.ultima_reuniao || c.ultimaReuniao),
@@ -109,6 +114,7 @@ export default function Meetings() {
     agendar:     rows.filter((r) => r.st.key === "agendar").length,
     aguardando:  rows.filter((r) => r.st.key === "aguardando").length,
     emdia:       rows.filter((r) => r.st.key === "emdia").length,
+    nao_aplica:  rows.filter((r) => r.st.key === "nao_aplica").length,
   }), [rows]);
 
   // Tabela filtrada pelo badge clicado
@@ -206,6 +212,7 @@ export default function Meetings() {
           { key: "agendar",     label: "Agendar",     value: counts.agendar,     color: "#D97706" },
           { key: "aguardando",  label: "Aguardando",  value: counts.aguardando,  color: "#0891B2" },
           { key: "emdia",       label: "Em dia",      value: counts.emdia,       color: "#16A34A" },
+          { key: "nao_aplica",  label: "N/A",         value: counts.nao_aplica,  color: "#6B7280" },
         ].map((item, i, arr) => {
           const active = statusFilter === item.key;
           return (
