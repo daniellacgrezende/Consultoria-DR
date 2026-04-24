@@ -182,7 +182,7 @@ export default function Relatorios() {
         <MiniStat label="Em Dia"   value={emDiaCount}
           idx={2} selected={statFilter === "emdia"}
           onClick={() => setStatFilter((v) => v === "emdia" ? null : "emdia")} />
-        <MiniStat label="Clientes Ativos" value={active.length} idx={3} />
+        <MiniStat label="Clientes Ativos" value={atrasadoCount + atencaoCount + emDiaCount} idx={3} />
       </div>
       {statFilter && (
         <div style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
