@@ -3,12 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { useData } from "../hooks/useData";
 import { B } from "../utils/constants";
 import { fmtDate } from "../utils/formatters";
-import { daysSince, daysUntil, getPeriodDays, today, slugify, addDays } from "../utils/helpers";
+import { daysSince, daysUntil, getPeriodDays, today, slugify, addDays, getCurva, getCurrentPL } from "../utils/helpers";
 import Card from "../components/ui/Card";
 import Avatar from "../components/ui/Avatar";
 import Modal from "../components/ui/Modal";
 import SearchBox from "../components/ui/SearchBox";
 import { SecH } from "../components/ui/FormFields";
+import { CBadge } from "../components/ui/Badge";
 
 const GRACE_DAYS  = 30; // dias após vencimento antes de virar "Atrasado"
 const RETRY_DAYS  = 45; // dias após "chamei" antes de virar "Retentativa"
@@ -66,7 +67,7 @@ function StatusBadge({ st }) {
 /* ═══════════════════════════════════════════ */
 export default function Meetings() {
   const navigate  = useNavigate();
-  const { clients, reunioes, saveClient, setToast } = useData();
+  const { clients, history, reunioes, saveClient, setToast } = useData();
   const [sortCol, setSortCol]     = useState("status");
   const [sortDir, setSortDir]     = useState("asc");
   const [statusFilter, setStatusFilter] = useState(null); // filtro por status ao clicar no badge
@@ -257,17 +258,22 @@ export default function Meetings() {
                 Atrasado — &gt;30 dias do prazo
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {atrasados.map((c) => (
+                {atrasados.map((c) => {
+                  const curva = getCurva(getCurrentPL(c, history));
+                  return (
                   <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #FECACA", borderRadius: 7, padding: "7px 10px" }}>
                     <Avatar nome={c.nome} size={24} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 1 }}>
+                        <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
+                        <CBadge curva={curva} />
+                      </div>
                       <div style={{ fontSize: 10, color: "#DC2626", fontWeight: 600 }}>
                         {c.diasSem !== null ? `${c.diasSem}d sem reunião` : "Nunca reuniu"} · {c.periodicidade_reuniao || "Trimestral"}
                       </div>
                       {c.diasSem !== null && c.periodDays > 0 && (
                         <div style={{ fontSize: 10, color: "#B91C1C", fontWeight: 700 }}>
-                          ⚠ {c.diasSem - c.periodDays}d de atraso
+                          ⚠ {c.diasSem - c.periodDays}d de atraso · últ. {fmtDate(c.ultima_reuniao || c.ultimaReuniao) || "—"}
                         </div>
                       )}
                     </div>
@@ -276,7 +282,8 @@ export default function Meetings() {
                       style={{ fontSize: 9.5, fontWeight: 700, background: "#ECFEFF", color: "#0891B2", border: "1px solid #A5F3FC", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}
                     >Chamei</button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -289,13 +296,20 @@ export default function Meetings() {
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {retentativas.map((c) => {
                   const dAv = daysSince(c.avisado_em || c.avisadoEm);
+                  const curva = getCurva(getCurrentPL(c, history));
                   return (
                     <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #DDD6FE", borderRadius: 7, padding: "7px 10px" }}>
                       <Avatar nome={c.nome} size={24} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 1 }}>
+                          <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
+                          <CBadge curva={curva} />
+                        </div>
                         <div style={{ fontSize: 10, color: "#7C3AED", fontWeight: 600 }}>
                           Último contato há {dAv}d · {c.periodicidade_reuniao || "Trimestral"}
+                        </div>
+                        <div style={{ fontSize: 10, color: "#6D28D9" }}>
+                          últ. reunião: {fmtDate(c.ultima_reuniao || c.ultimaReuniao) || "—"}
                         </div>
                       </div>
                       <button
@@ -315,18 +329,27 @@ export default function Meetings() {
                 Hora de agendar
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {aAgendar.map((c) => (
+                {aAgendar.map((c) => {
+                  const curva = getCurva(getCurrentPL(c, history));
+                  return (
                   <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #FDE68A", borderRadius: 7, padding: "7px 10px" }}>
                     <Avatar nome={c.nome} size={24} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 1 }}>
+                        <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
+                        <CBadge curva={curva} />
+                      </div>
                       <div style={{ fontSize: 10, color: "#D97706", fontWeight: 600 }}>
                         Próxima: {fmtDate(c.proxima_reuniao || c.proximaReuniao)}
                         {c.diasAte !== null && ` · em ${c.diasAte}d`}
                       </div>
+                      <div style={{ fontSize: 10, color: "#92400E" }}>
+                        últ. reunião: {fmtDate(c.ultima_reuniao || c.ultimaReuniao) || "—"}
+                      </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
