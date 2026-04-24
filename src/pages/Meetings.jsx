@@ -45,8 +45,8 @@ function getStatus(c) {
     return            { key: "agendar",     label: "Agendar",     color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" };
   }
 
-  // Últimos 20% do período → hora de agendar
-  if (diasSem >= Math.round(period * 0.80)) return { key: "agendar", label: "Agendar", color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" };
+  // Últimos 5% do período → hora de agendar
+  if (diasSem >= Math.round(period * 0.95)) return { key: "agendar", label: "Agendar", color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" };
 
   return { key: "emdia", label: "Em dia", color: "#16A34A", bg: "#F0FDF4", border: "#BBF7D0" };
 }
