@@ -131,7 +131,7 @@ export default function Relatorios() {
   }, [active, filterClient, sortCol, sortDir]);
 
   // ─── Arrays derivados: calculados UMA VEZ, usados em contadores E painéis ───
-  const atrasadoRows = useMemo(() => rows.filter((c) => getRelStatus(c.diasSem, c.periodDays).key === "atrasado"), [rows]);
+  const atrasadoRows = useMemo(() => rows.filter((c) => c.diasSem !== null && getRelStatus(c.diasSem, c.periodDays).key === "atrasado"), [rows]);
   const atencaoRows  = useMemo(() => rows.filter((c) => getRelStatus(c.diasSem, c.periodDays).key === "atencao"),  [rows]);
   const emDiaRows    = useMemo(() => rows.filter((c) => getRelStatus(c.diasSem, c.periodDays).key === "emdia"),    [rows]);
 
