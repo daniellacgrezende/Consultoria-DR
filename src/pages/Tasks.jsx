@@ -137,6 +137,8 @@ export default function Tasks() {
   const [notaDia, setNotaDia]           = useState(() => localStorage.getItem(NOTA_KEY()) || "");
   const [notaOpen, setNotaOpen]         = useState(false);
   const [clientSearch, setClientSearch] = useState("");
+  const [collapsedSections, setCollapsedSections] = useState(() => new Set(["futAmanha", "futSemana", "futAlem", "concluidas"]));
+  const toggleSection = (key) => setCollapsedSections(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
 
   const saveNota = (v) => { setNotaDia(v); localStorage.setItem(NOTA_KEY(), v); };
 
@@ -236,6 +238,8 @@ export default function Tasks() {
   );
   const concluidas   = useMemo(() => todos.filter((t) => t.done).sort((a, b) => (b.done_at || "").localeCompare(a.done_at || "")), [todos]);
   const atrasadasSet = useMemo(() => new Set(pendentes.filter((t) => (t.vencimento || t.data || today()) < today()).map((t) => t.id)), [pendentes]);
+  const tomorrowStr  = useMemo(() => { const d = new Date(today() + "T12:00:00"); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); }, []);
+  const weekOutStr   = useMemo(() => { const d = new Date(today() + "T12:00:00"); d.setDate(d.getDate() + 7); return d.toISOString().slice(0, 10); }, []);
 
   /* ── Filtro por mês ── */
   const monthRange = useMemo(() => {
@@ -269,11 +273,26 @@ export default function Tasks() {
   const visConcluidas = filterStatus !== "vencidas" ? applyFilters(concluidas) : [];
   const totalVisible  = (filterDate ? visAllDate.length : visAtrasadas.length + visHoje.length + visFuturas.length) + visConcluidas.length;
 
+  const visAmanha = visFuturas.filter(t => (t.vencimento || t.data || "") === tomorrowStr);
+  const visSemana = visFuturas.filter(t => { const d = t.vencimento || t.data || ""; return d > tomorrowStr && d <= weekOutStr; });
+  const visAlem   = visFuturas.filter(t => (t.vencimento || t.data || "") > weekOutStr);
+
   const itemProps = { atrasadasSet, toggle, postpone, openEdit, remove, moveItem, clients, navigate };
 
-  const GroupLabel = ({ label, color, count }) => count === 0 ? null : (
-    <div style={{ fontSize: 10, fontWeight: 700, color, textTransform: "uppercase", marginTop: 4 }}>{label} ({count})</div>
-  );
+  const CollapsibleGroup = ({ sectionKey, label, color, count, children }) => {
+    if (count === 0) return null;
+    const open = !collapsedSections.has(sectionKey);
+    return (
+      <>
+        <div onClick={() => toggleSection(sectionKey)}
+          style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 6, marginTop: 6, userSelect: "none" }}>
+          <span style={{ fontSize: 9, color, display: "inline-block", transition: "transform 0.2s", transform: open ? "rotate(90deg)" : "rotate(0deg)" }}>▶</span>
+          <span style={{ fontSize: 10, fontWeight: 700, color, textTransform: "uppercase" }}>{label} ({count})</span>
+        </div>
+        {open && <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 2 }}>{children}</div>}
+      </>
+    );
+  };
 
   const btnStyle = (active) => ({
     padding: "5px 14px", fontSize: 11, fontWeight: 600, cursor: "pointer", borderRadius: 6,
@@ -419,26 +438,32 @@ export default function Tasks() {
           </>
         ) : (
           <>
-            <GroupLabel label="Atrasadas" color="#dc2626" count={visAtrasadas.length} />
-            {visAtrasadas.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visAtrasadas} {...itemProps} />)}
+            <CollapsibleGroup sectionKey="atrasadas" label="Atrasadas" color="#dc2626" count={visAtrasadas.length}>
+              {visAtrasadas.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visAtrasadas} {...itemProps} />)}
+            </CollapsibleGroup>
 
-            <GroupLabel label="Hoje" color={B.navy} count={visHoje.length} />
-            {visHoje.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visHoje} {...itemProps} />)}
+            <CollapsibleGroup sectionKey="hoje" label="Hoje" color={B.navy} count={visHoje.length}>
+              {visHoje.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visHoje} {...itemProps} />)}
+            </CollapsibleGroup>
 
-            <GroupLabel label="Próximas" color="#6b7280" count={visFuturas.length} />
-            {visFuturas.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visFuturas} {...itemProps} />)}
+            <CollapsibleGroup sectionKey="futAmanha" label="Amanhã" color="#6b7280" count={visAmanha.length}>
+              {visAmanha.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visFuturas} {...itemProps} />)}
+            </CollapsibleGroup>
+
+            <CollapsibleGroup sectionKey="futSemana" label="Esta semana" color="#6b7280" count={visSemana.length}>
+              {visSemana.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visFuturas} {...itemProps} />)}
+            </CollapsibleGroup>
+
+            <CollapsibleGroup sectionKey="futAlem" label="Mais adiante" color="#6b7280" count={visAlem.length}>
+              {visAlem.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visFuturas} {...itemProps} />)}
+            </CollapsibleGroup>
           </>
         )}
 
         {/* Concluídas */}
-        {visConcluidas.length > 0 && (
-          <>
-            <div style={{ fontSize: 10, fontWeight: 700, color: "#16a34a", textTransform: "uppercase", marginTop: 8 }}>Concluídas ({visConcluidas.length})</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {visConcluidas.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visConcluidas} {...itemProps} />)}
-            </div>
-          </>
-        )}
+        <CollapsibleGroup sectionKey="concluidas" label="Concluídas" color="#16a34a" count={visConcluidas.length}>
+          {visConcluidas.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visConcluidas} {...itemProps} />)}
+        </CollapsibleGroup>
       </div>
 
       {concluidas.length > 0 && filterStatus !== "vencidas" && (
