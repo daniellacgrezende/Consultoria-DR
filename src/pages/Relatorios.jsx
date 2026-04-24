@@ -324,7 +324,9 @@ export default function Relatorios() {
                         <CBadge curva={curva} />
                       </div>
                       <div style={{ fontSize: 10, color: "#dc2626", fontWeight: 600 }}>
-                        {c.diasSem === null ? "Nunca enviado" : `${c.diasSem}d sem relatório`}
+                        {c.diasSem === null
+                          ? `Nunca enviado · ${c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal"}`
+                          : `${c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal"} · ${c.diasSem - c.periodDays}d de atraso`}
                       </div>
                       <div style={{ fontSize: 10, color: B.muted }}>
                         Último envio: {fmtDate(c.ultimo_relatorio || c.ultimoRelatorio) || "—"}
@@ -358,7 +360,7 @@ export default function Relatorios() {
                         <CBadge curva={curva} />
                       </div>
                       <div style={{ fontSize: 10, color: "#c2410c", fontWeight: 600 }}>
-                        {c.diasSem}d sem relatório · {c.periodicidade_relatorio || "Mensal"}
+                        {c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal"} · {c.diasSem > c.periodDays ? `${c.diasSem - c.periodDays}d de atraso` : `vence em ${c.periodDays - c.diasSem}d`}
                       </div>
                       <div style={{ fontSize: 10, color: B.muted }}>
                         Último envio: {fmtDate(c.ultimo_relatorio || c.ultimoRelatorio) || "—"}
