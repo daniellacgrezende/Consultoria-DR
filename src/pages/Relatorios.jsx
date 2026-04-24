@@ -135,10 +135,14 @@ export default function Relatorios() {
   const atencaoRows  = useMemo(() => rows.filter((c) => getRelStatus(c.diasSem, c.periodDays).key === "atencao"),  [rows]);
   const emDiaRows    = useMemo(() => rows.filter((c) => getRelStatus(c.diasSem, c.periodDays).key === "emdia"),    [rows]);
 
+  const naoAplicaRows  = useMemo(() => active.filter(naoAplicaRel).map((c) => ({
+    ...c, diasSem: daysSince(c.ultimo_relatorio || c.ultimoRelatorio), periodDays: Infinity, _naoAplica: true,
+  })), [active]);
+
   const atrasadoCount  = atrasadoRows.length;
   const atencaoCount   = atencaoRows.length;
   const emDiaCount     = emDiaRows.length;
-  const naoAplicaCount = useMemo(() => active.filter(naoAplicaRel).length, [active]);
+  const naoAplicaCount = naoAplicaRows.length;
 
   const pendentesAtrasado = atrasadoRows.slice(0, 5);
   const pendentesAtencao  = atencaoRows.slice(0, 5);
@@ -151,11 +155,12 @@ export default function Relatorios() {
   // ─── Tabela filtrada pelo card de stat selecionado ───
   const displayRows = useMemo(() => {
     if (!statFilter) return rows;
-    if (statFilter === "atrasado") return atrasadoRows;
-    if (statFilter === "atencao")  return atencaoRows;
-    if (statFilter === "emdia")    return emDiaRows;
+    if (statFilter === "atrasado")   return atrasadoRows;
+    if (statFilter === "atencao")    return atencaoRows;
+    if (statFilter === "emdia")      return emDiaRows;
+    if (statFilter === "nao_aplica") return naoAplicaRows;
     return rows;
-  }, [statFilter, rows, atrasadoRows, atencaoRows, emDiaRows]);
+  }, [statFilter, rows, atrasadoRows, atencaoRows, emDiaRows, naoAplicaRows]);
 
   const marcarEnviado = async (c) => {
     await saveClient({ ...c, ultimo_relatorio: today() }, false);
@@ -183,7 +188,9 @@ export default function Relatorios() {
         <MiniStat label="Em Dia"   value={emDiaCount}
           idx={2} selected={statFilter === "emdia"}
           onClick={() => setStatFilter((v) => v === "emdia" ? null : "emdia")} />
-        <MiniStat label="N/A"      value={naoAplicaCount} idx={3} />
+        <MiniStat label="N/A"      value={naoAplicaCount} idx={3}
+          selected={statFilter === "nao_aplica"}
+          onClick={() => setStatFilter((v) => v === "nao_aplica" ? null : "nao_aplica")} />
         <MiniStat label="Clientes Ativos" value={active.length} idx={4} />
       </div>
       {statFilter && (
@@ -431,9 +438,11 @@ export default function Relatorios() {
                 <tr><td colSpan={7} style={{ padding: 40, textAlign: "center", color: B.gray }}>Nenhum cliente ativo</td></tr>
               )}
               {displayRows.map((c, i) => {
-                const st = getRelStatus(c.diasSem, c.periodDays);
+                const st = c._naoAplica
+                  ? { label: "N/A", bg: "#f3f4f6", color: "#6b7280" }
+                  : getRelStatus(c.diasSem, c.periodDays);
                 const curva = getCurva(getCurrentPL(c, history));
-                const diasColor = c.diasSem === null ? "#dc2626" : c.diasSem > c.periodDays + ATRASADO_DAYS ? "#dc2626" : c.diasSem > c.periodDays ? "#c2410c" : "#16a34a";
+                const diasColor = c._naoAplica ? "#9ca3af" : c.diasSem === null ? "#dc2626" : c.diasSem > c.periodDays + ATRASADO_DAYS ? "#dc2626" : c.diasSem > c.periodDays ? "#c2410c" : "#16a34a";
                 return (
                   <tr key={c.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
                     <td style={{ padding: "11px 14px" }}>
