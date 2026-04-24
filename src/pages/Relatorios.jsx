@@ -115,20 +115,28 @@ export default function Relatorios() {
   const naoAplicaRel = (c) => (c.periodicidade_relatorio || c.periodicidadeRelatorio || "").toLowerCase() === "não se aplica";
 
   const rows = useMemo(() => {
-    let r = active.filter((c) => !naoAplicaRel(c)).map((c) => ({
-      ...c,
-      diasSem: daysSince(c.ultimo_relatorio || c.ultimoRelatorio),
-      periodDays: getPeriodDays(c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal"),
-    }));
+    const CURVA_ORDER = { A: 1, B: 2, C: 3, D: 4 };
+    const STATUS_ORDER = { atrasado: 0, atencao: 1, emdia: 2 };
+    let r = active.filter((c) => !naoAplicaRel(c)).map((c) => {
+      const diasSem = daysSince(c.ultimo_relatorio || c.ultimoRelatorio);
+      const periodDays = getPeriodDays(c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal");
+      const pl = getCurrentPL(c, history);
+      const curva = getCurva(pl);
+      const statusKey = getRelStatus(diasSem, periodDays).key;
+      return { ...c, diasSem, periodDays, pl, curva, statusKey };
+    });
     if (filterClient) r = r.filter((c) => c.id === filterClient);
     const dir = sortDir === "asc" ? 1 : -1;
     r.sort((a, b) => {
-      if (sortCol === "diasSem") { const da = a.diasSem ?? 99999, db = b.diasSem ?? 99999; return dir * (db - da); }
-      if (sortCol === "nome") return dir * a.nome.localeCompare(b.nome);
+      if (sortCol === "diasSem")    { const da = a.diasSem ?? 99999, db = b.diasSem ?? 99999; return dir * (db - da); }
+      if (sortCol === "nome")       return dir * a.nome.localeCompare(b.nome);
+      if (sortCol === "periodDays") return dir * (a.periodDays - b.periodDays);
+      if (sortCol === "curva")      return dir * ((CURVA_ORDER[a.curva] || 5) - (CURVA_ORDER[b.curva] || 5));
+      if (sortCol === "status")     return dir * ((STATUS_ORDER[a.statusKey] || 0) - (STATUS_ORDER[b.statusKey] || 0));
       return 0;
     });
     return r;
-  }, [active, filterClient, sortCol, sortDir]);
+  }, [active, filterClient, sortCol, sortDir, history]);
 
   // ─── Arrays derivados: calculados UMA VEZ, usados em contadores E painéis ───
   const atrasadoRows = useMemo(() => rows.filter((c) => c.diasSem !== null && getRelStatus(c.diasSem, c.periodDays).key === "atrasado"), [rows]);
@@ -145,12 +153,12 @@ export default function Relatorios() {
   const naoAplicaCount = naoAplicaRows.length;
 
   const pendentesAtrasado = useMemo(() =>
-    [...atrasadoRows].sort((a, b) => (getCurrentPL(b, history) || 0) - (getCurrentPL(a, history) || 0)),
-    [atrasadoRows, history]
+    [...atrasadoRows].sort((a, b) => (b.pl || 0) - (a.pl || 0)),
+    [atrasadoRows]
   );
   const pendentesAtencao = useMemo(() =>
-    [...atencaoRows].sort((a, b) => (getCurrentPL(b, history) || 0) - (getCurrentPL(a, history) || 0)),
-    [atencaoRows, history]
+    [...atencaoRows].sort((a, b) => (b.pl || 0) - (a.pl || 0)),
+    [atencaoRows]
   );
 
   const proximos = rows.filter((c) => {
@@ -434,10 +442,10 @@ export default function Relatorios() {
               <tr>
                 <th onClick={() => toggleSort("nome")} style={{ ...TH, cursor: "pointer" }}>Cliente <SortIcon col="nome" /></th>
                 <th onClick={() => toggleSort("diasSem")} style={{ ...TH, cursor: "pointer" }}>Último Relatório <SortIcon col="diasSem" /></th>
-                <th style={TH}>Periodicidade</th>
-                <th style={{ ...TH, textAlign: "center" }}>Curva</th>
-                <th style={TH}>Dias sem relatório</th>
-                <th style={TH}>Status</th>
+                <th onClick={() => toggleSort("periodDays")} style={{ ...TH, cursor: "pointer" }}>Periodicidade <SortIcon col="periodDays" /></th>
+                <th onClick={() => toggleSort("curva")} style={{ ...TH, cursor: "pointer", textAlign: "center" }}>Curva <SortIcon col="curva" /></th>
+                <th onClick={() => toggleSort("diasSem")} style={{ ...TH, cursor: "pointer" }}>Dias sem relatório <SortIcon col="diasSem" /></th>
+                <th onClick={() => toggleSort("status")} style={{ ...TH, cursor: "pointer" }}>Status <SortIcon col="status" /></th>
                 <th style={TH}></th>
               </tr>
             </thead>
@@ -449,7 +457,7 @@ export default function Relatorios() {
                 const st = c._naoAplica
                   ? { label: "N/A", bg: "#f3f4f6", color: "#6b7280" }
                   : getRelStatus(c.diasSem, c.periodDays);
-                const curva = getCurva(getCurrentPL(c, history));
+                const curva = c.curva ?? getCurva(getCurrentPL(c, history));
                 const diasColor = c._naoAplica ? "#9ca3af" : c.diasSem === null ? "#dc2626" : c.diasSem > c.periodDays + ATRASADO_DAYS ? "#dc2626" : c.diasSem > c.periodDays ? "#c2410c" : "#16a34a";
                 return (
                   <tr key={c.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
