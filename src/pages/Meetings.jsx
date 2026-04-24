@@ -169,12 +169,10 @@ export default function Meetings() {
 
   /* ─── Alertas rápidos ─── */
   const atrasados    = rows.filter((r) => r.st.key === "atrasado")
-                           .sort((a, b) => (b.diasSem ?? 0) - (a.diasSem ?? 0))
-                           .slice(0, 6);
+                           .sort((a, b) => (b.diasSem ?? 0) - (a.diasSem ?? 0));
   const aAgendar     = rows.filter((r) => r.st.key === "agendar")
-                           .sort((a, b) => (b.diasSem ?? 0) - (a.diasSem ?? 0))
-                           .slice(0, 6);
-  const retentativas = rows.filter((r) => r.st.key === "retentativa").slice(0, 6);
+                           .sort((a, b) => (b.diasSem ?? 0) - (a.diasSem ?? 0));
+  const retentativas = rows.filter((r) => r.st.key === "retentativa");
 
   /* ─── Histórico ─── */
   const rhFiltered = useMemo(() =>
@@ -269,13 +267,11 @@ export default function Meetings() {
                         <CBadge curva={curva} />
                       </div>
                       <div style={{ fontSize: 10, color: "#DC2626", fontWeight: 600 }}>
-                        {c.diasSem !== null ? `${c.diasSem}d sem reunião` : "Nunca reuniu"} · {c.periodicidade_reuniao || "Trimestral"}
+                        {c.periodicidade_reuniao || c.periodicidadeReuniao || "Trimestral"}{c.diasSem !== null && c.periodDays > 0 ? ` · ${c.diasSem - c.periodDays}d de atraso` : " · nunca reuniu"}
                       </div>
-                      {c.diasSem !== null && c.periodDays > 0 && (
-                        <div style={{ fontSize: 10, color: "#B91C1C", fontWeight: 700 }}>
-                          ⚠ {c.diasSem - c.periodDays}d de atraso · últ. {fmtDate(c.ultima_reuniao || c.ultimaReuniao) || "—"}
-                        </div>
-                      )}
+                      <div style={{ fontSize: 10, color: "#B91C1C" }}>
+                        Últ. reunião: {fmtDate(c.ultima_reuniao || c.ultimaReuniao) || "—"}
+                      </div>
                     </div>
                     <button
                       onClick={() => openAction("chamei", c)}
@@ -340,11 +336,10 @@ export default function Meetings() {
                         <CBadge curva={curva} />
                       </div>
                       <div style={{ fontSize: 10, color: "#D97706", fontWeight: 600 }}>
-                        Próxima: {fmtDate(c.proxima_reuniao || c.proximaReuniao)}
-                        {c.diasAte !== null && ` · em ${c.diasAte}d`}
+                        {c.periodicidade_reuniao || c.periodicidadeReuniao || "Trimestral"} · {c.diasSem !== null && c.diasSem > c.periodDays ? `${c.diasSem - c.periodDays}d de atraso` : c.diasAte !== null ? `vence em ${c.diasAte}d` : "—"}
                       </div>
                       <div style={{ fontSize: 10, color: "#92400E" }}>
-                        últ. reunião: {fmtDate(c.ultima_reuniao || c.ultimaReuniao) || "—"}
+                        Últ. reunião: {fmtDate(c.ultima_reuniao || c.ultimaReuniao) || "—"}
                       </div>
                     </div>
                   </div>
