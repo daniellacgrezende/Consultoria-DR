@@ -19,9 +19,7 @@ const ATRASADO_DAYS = 15;
 function getRelStatus(diasSem, periodDays) {
   if (diasSem === null)                     return { key: "atrasado", label: "Atrasado", color: "#dc2626", bg: "#fef2f2" };
   if (diasSem > periodDays + ATRASADO_DAYS) return { key: "atrasado", label: "Atrasado", color: "#dc2626", bg: "#fef2f2" };
-  if (diasSem > periodDays)                 return { key: "atencao",  label: "Atenção",  color: "#c2410c", bg: "#fff7ed" };
-  const warn = Math.round(periodDays * 0.83);
-  if (diasSem > warn)                       return { key: "atencao",  label: "Atenção",  color: "#c2410c", bg: "#fff7ed" };
+  if (diasSem >= periodDays - 5)            return { key: "atencao",  label: "Atenção",  color: "#c2410c", bg: "#fff7ed" };
   return                                           { key: "emdia",    label: "Em Dia",   color: "#16a34a", bg: "#f0fdf4" };
 }
 
