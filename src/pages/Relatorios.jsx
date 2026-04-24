@@ -135,9 +135,10 @@ export default function Relatorios() {
   const atencaoRows  = useMemo(() => rows.filter((c) => getRelStatus(c.diasSem, c.periodDays).key === "atencao"),  [rows]);
   const emDiaRows    = useMemo(() => rows.filter((c) => getRelStatus(c.diasSem, c.periodDays).key === "emdia"),    [rows]);
 
-  const atrasadoCount = atrasadoRows.length;
-  const atencaoCount  = atencaoRows.length;
-  const emDiaCount    = emDiaRows.length;
+  const atrasadoCount  = atrasadoRows.length;
+  const atencaoCount   = atencaoRows.length;
+  const emDiaCount     = emDiaRows.length;
+  const naoAplicaCount = useMemo(() => active.filter(naoAplicaRel).length, [active]);
 
   const pendentesAtrasado = atrasadoRows.slice(0, 5);
   const pendentesAtencao  = atencaoRows.slice(0, 5);
@@ -172,7 +173,7 @@ export default function Relatorios() {
       <SecH eyebrow="Carteira" title="Relatórios" desc="Acompanhe o envio de relatórios para seus clientes." />
 
       {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: statFilter ? 6 : 18 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginBottom: statFilter ? 6 : 18 }}>
         <MiniStat label="Atrasado" value={atrasadoCount} warn={atrasadoCount > 0}
           idx={0} selected={statFilter === "atrasado"}
           onClick={() => setStatFilter((v) => v === "atrasado" ? null : "atrasado")} />
@@ -182,7 +183,8 @@ export default function Relatorios() {
         <MiniStat label="Em Dia"   value={emDiaCount}
           idx={2} selected={statFilter === "emdia"}
           onClick={() => setStatFilter((v) => v === "emdia" ? null : "emdia")} />
-        <MiniStat label="Clientes Ativos" value={atrasadoCount + atencaoCount + emDiaCount} idx={3} />
+        <MiniStat label="N/A"      value={naoAplicaCount} idx={3} />
+        <MiniStat label="Clientes Ativos" value={active.length} idx={4} />
       </div>
       {statFilter && (
         <div style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
