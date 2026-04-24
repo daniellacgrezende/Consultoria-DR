@@ -247,7 +247,7 @@ export default function Relatorios() {
                       <button onClick={(e) => { e.stopPropagation(); navigate(`/clients/${slugify(c.nome)}`); }}
                         style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 600, cursor: "pointer" }}>Ficha</button>
                     </div>
-                  );})
+                  );})}
                 </div>
               )}
 
