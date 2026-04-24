@@ -144,8 +144,14 @@ export default function Relatorios() {
   const emDiaCount     = emDiaRows.length;
   const naoAplicaCount = naoAplicaRows.length;
 
-  const pendentesAtrasado = atrasadoRows;
-  const pendentesAtencao  = atencaoRows;
+  const pendentesAtrasado = useMemo(() =>
+    [...atrasadoRows].sort((a, b) => (getCurrentPL(b, history) || 0) - (getCurrentPL(a, history) || 0)),
+    [atrasadoRows, history]
+  );
+  const pendentesAtencao = useMemo(() =>
+    [...atencaoRows].sort((a, b) => (getCurrentPL(b, history) || 0) - (getCurrentPL(a, history) || 0)),
+    [atencaoRows, history]
+  );
 
   const proximos = rows.filter((c) => {
     const d = daysUntil(c.proximo_relatorio || c.proximoRelatorio);
@@ -312,7 +318,7 @@ export default function Relatorios() {
               <div style={{ fontSize: 11, fontWeight: 800, color: "#dc2626", textTransform: "uppercase", marginBottom: 10 }}>
                 Relatório Atrasado — +{ATRASADO_DAYS}d do prazo
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 420, overflowY: "auto" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {pendentesAtrasado.map((c) => {
                   const curva = getCurva(getCurrentPL(c, history));
                   return (
@@ -348,7 +354,7 @@ export default function Relatorios() {
               <div style={{ fontSize: 11, fontWeight: 800, color: "#c2410c", textTransform: "uppercase", marginBottom: 10 }}>
                 Atenção — enviar em breve
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 420, overflowY: "auto" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {pendentesAtencao.map((c) => {
                   const curva = getCurva(getCurrentPL(c, history));
                   return (
