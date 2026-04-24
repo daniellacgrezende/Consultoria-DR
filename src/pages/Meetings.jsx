@@ -176,15 +176,6 @@ export default function Meetings() {
                            .slice(0, 6);
   const retentativas = rows.filter((r) => r.st.key === "retentativa").slice(0, 6);
 
-  /* ─── Última reunião por cliente (para os painéis) ─── */
-  const lastMeetingMap = useMemo(() => {
-    const map = {};
-    [...reunioes].sort((a, b) => b.data.localeCompare(a.data)).forEach((r) => {
-      if (!map[r.client_id]) map[r.client_id] = r;
-    });
-    return map;
-  }, [reunioes]);
-
   /* ─── Histórico ─── */
   const rhFiltered = useMemo(() =>
     reunioes.filter((r) => !rhFilter || r.client_id === rhFilter)
@@ -269,35 +260,27 @@ export default function Meetings() {
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {atrasados.map((c) => {
                   const curva = getCurva(getCurrentPL(c, history));
-                  const lastReu = lastMeetingMap[c.id];
                   return (
-                  <div key={c.id} style={{ background: "white", border: "1px solid #FECACA", borderRadius: 7, padding: "7px 10px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <Avatar nome={c.nome} size={24} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 1 }}>
-                          <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
-                          <CBadge curva={curva} />
-                        </div>
-                        <div style={{ fontSize: 10, color: "#DC2626", fontWeight: 600 }}>
-                          {c.diasSem !== null ? `${c.diasSem}d sem reunião` : "Nunca reuniu"} · {c.periodicidade_reuniao || "Trimestral"}
-                        </div>
-                        {c.diasSem !== null && c.periodDays > 0 && (
-                          <div style={{ fontSize: 10, color: "#B91C1C", fontWeight: 700 }}>
-                            ⚠ {c.diasSem - c.periodDays}d de atraso · últ. {fmtDate(c.ultima_reuniao || c.ultimaReuniao) || "—"}
-                          </div>
-                        )}
+                  <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #FECACA", borderRadius: 7, padding: "7px 10px" }}>
+                    <Avatar nome={c.nome} size={24} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 1 }}>
+                        <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
+                        <CBadge curva={curva} />
                       </div>
-                      <button
-                        onClick={() => openAction("chamei", c)}
-                        style={{ fontSize: 9.5, fontWeight: 700, background: "#ECFEFF", color: "#0891B2", border: "1px solid #A5F3FC", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap", alignSelf: "flex-start" }}
-                      >Chamei</button>
+                      <div style={{ fontSize: 10, color: "#DC2626", fontWeight: 600 }}>
+                        {c.diasSem !== null ? `${c.diasSem}d sem reunião` : "Nunca reuniu"} · {c.periodicidade_reuniao || "Trimestral"}
+                      </div>
+                      {c.diasSem !== null && c.periodDays > 0 && (
+                        <div style={{ fontSize: 10, color: "#B91C1C", fontWeight: 700 }}>
+                          ⚠ {c.diasSem - c.periodDays}d de atraso · últ. {fmtDate(c.ultima_reuniao || c.ultimaReuniao) || "—"}
+                        </div>
+                      )}
                     </div>
-                    {lastReu?.texto && (
-                      <div style={{ marginTop: 5, fontSize: 10, color: "#6b7280", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 5, padding: "4px 8px", lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
-                        <span style={{ fontWeight: 700, color: "#B91C1C" }}>{fmtDate(lastReu.data)}: </span>{lastReu.texto}
-                      </div>
-                    )}
+                    <button
+                      onClick={() => openAction("chamei", c)}
+                      style={{ fontSize: 9.5, fontWeight: 700, background: "#ECFEFF", color: "#0891B2", border: "1px solid #A5F3FC", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}
+                    >Chamei</button>
                   </div>
                   );
                 })}
@@ -348,30 +331,22 @@ export default function Meetings() {
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {aAgendar.map((c) => {
                   const curva = getCurva(getCurrentPL(c, history));
-                  const lastReu = lastMeetingMap[c.id];
                   return (
-                  <div key={c.id} style={{ background: "white", border: "1px solid #FDE68A", borderRadius: 7, padding: "7px 10px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <Avatar nome={c.nome} size={24} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 1 }}>
-                          <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
-                          <CBadge curva={curva} />
-                        </div>
-                        <div style={{ fontSize: 10, color: "#D97706", fontWeight: 600 }}>
-                          Próxima: {fmtDate(c.proxima_reuniao || c.proximaReuniao)}
-                          {c.diasAte !== null && ` · em ${c.diasAte}d`}
-                        </div>
-                        <div style={{ fontSize: 10, color: "#92400E" }}>
-                          últ. reunião: {fmtDate(c.ultima_reuniao || c.ultimaReuniao) || "—"}
-                        </div>
+                  <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #FDE68A", borderRadius: 7, padding: "7px 10px" }}>
+                    <Avatar nome={c.nome} size={24} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 1 }}>
+                        <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
+                        <CBadge curva={curva} />
+                      </div>
+                      <div style={{ fontSize: 10, color: "#D97706", fontWeight: 600 }}>
+                        Próxima: {fmtDate(c.proxima_reuniao || c.proximaReuniao)}
+                        {c.diasAte !== null && ` · em ${c.diasAte}d`}
+                      </div>
+                      <div style={{ fontSize: 10, color: "#92400E" }}>
+                        últ. reunião: {fmtDate(c.ultima_reuniao || c.ultimaReuniao) || "—"}
                       </div>
                     </div>
-                    {lastReu?.texto && (
-                      <div style={{ marginTop: 5, fontSize: 10, color: "#6b7280", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 5, padding: "4px 8px", lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
-                        <span style={{ fontWeight: 700, color: "#92400E" }}>{fmtDate(lastReu.data)}: </span>{lastReu.texto}
-                      </div>
-                    )}
                   </div>
                   );
                 })}
