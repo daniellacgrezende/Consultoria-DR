@@ -61,6 +61,7 @@ export default function Repasse() {
     else entry.id = editId;
     await saveRepasse(entry, !editId);
     setModal(false);
+    if (!editId && form.competencia) setAnoFilter(form.competencia.slice(0, 4));
     setToast({ type: "success", text: editId ? "Atualizado." : "Adicionado." });
   };
 
