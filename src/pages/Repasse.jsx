@@ -25,19 +25,19 @@ export default function Repasse() {
   const filtrado = useMemo(() => anoFilter === "todos" ? sorted : sorted.filter((r) => r.competencia?.startsWith(anoFilter)), [sorted, anoFilter]);
 
   const chartData = useMemo(() => filtrado.map((r) => ({ name: fmtComp(r.competencia), receitaBruta: Number(r.receita_bruta || 0) })), [filtrado]);
-  const maiorRep = useMemo(() => filtrado.length ? filtrado.reduce((mx, r) => Number(r.receita_liquida || 0) > Number(mx.receita_liquida || 0) ? r : mx, filtrado[0]) : null, [filtrado]);
+  const maiorRep = useMemo(() => filtrado.length ? filtrado.reduce((mx, r) => Number(r.receita_bruta || 0) > Number(mx.receita_bruta || 0) ? r : mx, filtrado[0]) : null, [filtrado]);
   const acumulado = useMemo(() => filtrado.reduce((s, r) => s + Number(r.receita_bruta || 0), 0), [filtrado]);
   const crescUltimoMes = useMemo(() => {
     if (filtrado.length < 2) return null;
-    const curr = Number(filtrado[filtrado.length - 1].receita_liquida || 0);
-    const prev = Number(filtrado[filtrado.length - 2].receita_liquida || 0);
+    const curr = Number(filtrado[filtrado.length - 1].receita_bruta || 0);
+    const prev = Number(filtrado[filtrado.length - 2].receita_bruta || 0);
     if (!prev) return null;
     return { pct: ((curr - prev) / prev) * 100, val: curr - prev, curr, prev };
   }, [filtrado]);
 
   const RF = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const openNew = () => { setEditId(null); setForm({ competencia: "", receita_bruta: "", impostos: "", receita_liquida: "" }); setModal(true); };
+  const openNew = () => { setEditId(null); setForm({ competencia: "", receita_bruta: "" }); setModal(true); };
   const openEdit = (r) => { setEditId(r.id); setForm({ competencia: r.competencia, receita_bruta: r.receita_bruta }); setModal(true); };
 
   const save = async () => {
@@ -76,8 +76,8 @@ export default function Repasse() {
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
         <div style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: "3px solid #b45309" }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 5 }}>Maior Líquido</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: "#b45309" }}>{maiorRep ? money(maiorRep.receita_liquida) : "—"}</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 5 }}>Maior Repasse</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: "#b45309" }}>{maiorRep ? money(maiorRep.receita_bruta) : "—"}</div>
           {maiorRep && <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>{fmtComp(maiorRep.competencia)}</div>}
         </div>
         <div style={{ background: "white", border: `1px solid ${crescUltimoMes ? (crescUltimoMes.pct >= 0 ? "#bbf7d0" : "#fecaca") : B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${crescUltimoMes ? (crescUltimoMes.pct >= 0 ? "#16a34a" : "#dc2626") : B.navy}` }}>
