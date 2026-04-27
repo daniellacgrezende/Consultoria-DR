@@ -3,7 +3,6 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { useData } from "../hooks/useData";
 import { B } from "../utils/constants";
 import { money, moneyDec, fmtComp } from "../utils/formatters";
-import { parseNum } from "../utils/formatters";
 import { huid } from "../utils/helpers";
 import Card from "../components/ui/Card";
 import MiniStat from "../components/ui/MiniStat";
@@ -14,7 +13,7 @@ export default function Repasse() {
   const { repasse, saveRepasse, deleteRepasse, setToast } = useData();
   const [modal, setModal] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ competencia: "", receita_bruta: "", impostos: "", receita_liquida: "" });
+  const [form, setForm] = useState({ competencia: "", receita_bruta: "" });
   const [anoFilter, setAnoFilter] = useState("todos");
   const [delConf, setDelConf] = useState(null);
 
@@ -25,7 +24,7 @@ export default function Repasse() {
   }, [repasse]);
   const filtrado = useMemo(() => anoFilter === "todos" ? sorted : sorted.filter((r) => r.competencia?.startsWith(anoFilter)), [sorted, anoFilter]);
 
-  const chartData = useMemo(() => filtrado.map((r) => ({ name: fmtComp(r.competencia), receitaBruta: Number(r.receita_bruta || 0), impostos: Number(r.impostos || 0), receitaLiquida: Number(r.receita_liquida || 0) })), [filtrado]);
+  const chartData = useMemo(() => filtrado.map((r) => ({ name: fmtComp(r.competencia), receitaBruta: Number(r.receita_bruta || 0) })), [filtrado]);
   const maiorRep = useMemo(() => filtrado.length ? filtrado.reduce((mx, r) => Number(r.receita_liquida || 0) > Number(mx.receita_liquida || 0) ? r : mx, filtrado[0]) : null, [filtrado]);
   const acumulado = useMemo(() => filtrado.reduce((s, r) => s + Number(r.receita_bruta || 0), 0), [filtrado]);
   const crescUltimoMes = useMemo(() => {
@@ -36,29 +35,15 @@ export default function Repasse() {
     return { pct: ((curr - prev) / prev) * 100, val: curr - prev, curr, prev };
   }, [filtrado]);
 
-  const RF = (k) => (e) => {
-    const val = e.target.value;
-    setForm((f) => {
-      const nf = { ...f, [k]: val };
-      if (k === "receita_bruta" || k === "impostos") {
-        const rb = parseNum(k === "receita_bruta" ? val : nf.receita_bruta);
-        const im = parseNum(k === "impostos" ? val : nf.impostos);
-        nf.receita_liquida = String((rb - im).toFixed(2));
-      }
-      return nf;
-    });
-  };
+  const RF = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const openNew = () => { setEditId(null); setForm({ competencia: "", receita_bruta: "", impostos: "", receita_liquida: "" }); setModal(true); };
-  const openEdit = (r) => { setEditId(r.id); setForm({ ...r }); setModal(true); };
+  const openEdit = (r) => { setEditId(r.id); setForm({ competencia: r.competencia, receita_bruta: r.receita_bruta }); setModal(true); };
 
   const save = async () => {
     if (!form.competencia) { setToast({ type: "error", text: "Informe a competência." }); return; }
     if (!editId && repasse.some((r) => r.competencia === form.competencia)) { setToast({ type: "error", text: "Já existe lançamento para esta competência." }); return; }
-    const liq = parseNum(form.receita_bruta) - parseNum(form.impostos);
-    const entry = { ...form, receita_liquida: String(liq.toFixed(2)) };
-    if (!editId) entry.id = huid();
-    else entry.id = editId;
+    const entry = { competencia: form.competencia, receita_bruta: form.receita_bruta, id: editId || huid() };
     await saveRepasse(entry, !editId);
     setModal(false);
     if (!editId && form.competencia) setAnoFilter(form.competencia.slice(0, 4));
@@ -100,31 +85,24 @@ export default function Repasse() {
           <div style={{ fontSize: 20, fontWeight: 700, color: crescUltimoMes ? (crescUltimoMes.pct >= 0 ? "#16a34a" : "#dc2626") : B.navy }}>{crescUltimoMes ? `${crescUltimoMes.pct >= 0 ? "+" : ""}${crescUltimoMes.pct.toFixed(1)}%` : "—"}</div>
           {crescUltimoMes && <div style={{ fontSize: 11, color: crescUltimoMes.pct >= 0 ? "#16a34a" : "#dc2626", fontWeight: 600, marginTop: 2 }}>{crescUltimoMes.val >= 0 ? "+" : ""}{money(crescUltimoMes.val)}</div>}
         </div>
-        <MiniStat label="Média Mensal" value={money(filtrado.length ? acumulado / filtrado.length : 0)} sub="bruta por mês" />
-        <MiniStat label={`Acumulado ${anoFilter === "todos" ? "(Todos)" : anoFilter}`} value={money(acumulado)} sub="receita bruta total" />
+        <MiniStat label="Média Mensal" value={money(filtrado.length ? acumulado / filtrado.length : 0)} sub="por mês" />
+        <MiniStat label={`Acumulado ${anoFilter === "todos" ? "(Todos)" : anoFilter}`} value={money(acumulado)} sub="total" />
       </div>
 
       {/* Gráfico */}
       {chartData.length > 0 && (
         <Card style={{ marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between" }}>
-            <span>Evolução Mensal</span>
-            <div style={{ display: "flex", gap: 8 }}>
-              {[{ c: "#16a34a", l: "Líquida" }, { c: "#2563eb", l: "Bruta" }, { c: "#dc2626", l: "Impostos" }].map(({ c, l }) => (
-                <div key={l} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: B.gray }}><div style={{ width: 8, height: 8, borderRadius: "50%", background: c }} />{l}</div>
-              ))}
-            </div>
+          <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${B.border}` }}>
+            Evolução Mensal
           </div>
           <ResponsiveContainer width="100%" height={230}>
             <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 4 }}>
-              <GradDef id="rl" c="#16a34a" /><GradDef id="rb" c="#2563eb" />
+              <GradDef id="rb" c="#2563eb" />
               <CartesianGrid strokeDasharray="3 3" stroke={B.border} />
               <XAxis dataKey="name" tick={{ fontSize: 10, fill: B.gray }} />
               <YAxis tick={{ fontSize: 9, fill: B.gray }} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v} />
-              <Tooltip formatter={(v, n) => [moneyDec(v), n === "receitaLiquida" ? "Líquida" : n === "receitaBruta" ? "Bruta" : "Impostos"]} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-              <Area type="monotone" dataKey="receitaBruta" stroke="#2563eb" strokeWidth={1.5} fill="url(#rb)" fillOpacity={0.12} strokeDasharray="4 2" />
-              <Area type="monotone" dataKey="impostos" stroke="#dc2626" strokeWidth={1.5} fill="none" strokeDasharray="4 2" />
-              <Area type="monotone" dataKey="receitaLiquida" stroke="#16a34a" strokeWidth={2.5} fill="url(#rl)" />
+              <Tooltip formatter={(v) => [moneyDec(v), "Receita Bruta"]} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+              <Area type="monotone" dataKey="receitaBruta" stroke="#2563eb" strokeWidth={2.5} fill="url(#rb)" />
             </AreaChart>
           </ResponsiveContainer>
         </Card>
@@ -136,14 +114,12 @@ export default function Repasse() {
         {filtrado.length === 0 ? <div style={{ padding: 40, textAlign: "center", color: B.gray }}>Nenhum lançamento{anoFilter !== "todos" ? ` em ${anoFilter}` : ""}.</div> : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-              <thead><tr style={{ background: "#f5f7ff" }}>{["Competência", "Receita Bruta", "Impostos", "Receita Líquida", ""].map((h) => (<th key={h} style={{ padding: "11px 16px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}` }}>{h}</th>))}</tr></thead>
+              <thead><tr style={{ background: "#f5f7ff" }}>{["Competência", "Receita Bruta", ""].map((h) => (<th key={h} style={{ padding: "11px 16px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}` }}>{h}</th>))}</tr></thead>
               <tbody>
                 {[...filtrado].reverse().map((r, i) => (
                   <tr key={r.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
                     <td style={{ padding: "12px 16px", fontWeight: 700, color: B.navy, fontSize: 14 }}>{fmtComp(r.competencia)}</td>
-                    <td style={{ padding: "12px 16px", color: "#2563eb", fontWeight: 600 }}>{r.receita_bruta ? money(r.receita_bruta) : "—"}</td>
-                    <td style={{ padding: "12px 16px", color: "#dc2626", fontWeight: 600 }}>{r.impostos ? `- ${money(r.impostos)}` : "—"}</td>
-                    <td style={{ padding: "12px 16px" }}><span style={{ fontWeight: 800, fontSize: 16, color: Number(r.receita_liquida || 0) >= 0 ? "#16a34a" : "#dc2626" }}>{r.receita_liquida ? money(r.receita_liquida) : "—"}</span></td>
+                    <td style={{ padding: "12px 16px" }}><span style={{ fontWeight: 800, fontSize: 16, color: "#2563eb" }}>{r.receita_bruta ? money(r.receita_bruta) : "—"}</span></td>
                     <td style={{ padding: "12px 16px" }}>
                       <div style={{ display: "flex", gap: 6 }}>
                         <button onClick={() => openEdit(r)} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "5px 11px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Editar</button>
@@ -156,9 +132,7 @@ export default function Repasse() {
               {filtrado.length > 0 && (
                 <tfoot><tr style={{ background: "#f0f4ff", borderTop: `2px solid ${B.border}` }}>
                   <td style={{ padding: "12px 16px", fontWeight: 700, color: B.navy }}>TOTAL</td>
-                  <td style={{ padding: "12px 16px", fontWeight: 700, color: "#2563eb" }}>{money(filtrado.reduce((s, r) => s + Number(r.receita_bruta || 0), 0))}</td>
-                  <td style={{ padding: "12px 16px", fontWeight: 700, color: "#dc2626" }}>- {money(filtrado.reduce((s, r) => s + Number(r.impostos || 0), 0))}</td>
-                  <td style={{ padding: "12px 16px", fontWeight: 800, color: "#16a34a", fontSize: 15 }}>{money(filtrado.reduce((s, r) => s + Number(r.receita_liquida || 0), 0))}</td>
+                  <td style={{ padding: "12px 16px", fontWeight: 800, color: "#2563eb", fontSize: 15 }}>{money(filtrado.reduce((s, r) => s + Number(r.receita_bruta || 0), 0))}</td>
                   <td></td>
                 </tr></tfoot>
               )}
@@ -174,17 +148,8 @@ export default function Repasse() {
             <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: B.navy }}>{editId ? "Editar" : "Novo Lançamento"}</h3>
             <button onClick={() => setModal(false)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: B.gray }}>×</button>
           </div>
-          <div style={{ background: `linear-gradient(135deg,${B.navy},${B.navy2})`, borderRadius: 10, padding: "12px 16px", marginBottom: 18, fontSize: 12, color: "rgba(255,255,255,0.7)" }}>
-            <span style={{ color: "#60a5fa", fontWeight: 700 }}>Receita Bruta</span> → (−) Impostos → <span style={{ color: "#4ade80", fontWeight: 700 }}>Receita Líquida (auto)</span>
-          </div>
           <Inp label="Competência *" type="month" value={form.competencia} onChange={RF("competencia")} />
           <Inp label="Receita Bruta (R$) *" type="number" value={form.receita_bruta} onChange={RF("receita_bruta")} placeholder="Valor total" />
-          <Inp label="Impostos PJ (R$)" type="number" value={form.impostos} onChange={RF("impostos")} placeholder="Ex: 500" />
-          <div style={{ background: "#f0fdf4", border: "2px solid #bbf7d0", borderRadius: 8, padding: "14px 16px", marginBottom: 18 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: "#16a34a", textTransform: "uppercase", marginBottom: 4 }}>Receita Líquida</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: "#16a34a" }}>{money(parseNum(form.receita_bruta) - parseNum(form.impostos))}</div>
-            <div style={{ fontSize: 11, color: "#15803d", marginTop: 2 }}>= Bruta − Impostos</div>
-          </div>
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => setModal(false)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>
             <button onClick={save} style={{ flex: 2, padding: "10px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>{editId ? "SALVAR" : "ADICIONAR"}</button>
