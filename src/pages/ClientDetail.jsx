@@ -125,14 +125,11 @@ export default function ClientDetail() {
   const totalRe = filteredClientAportes.filter((a) => a.tipo === "resgate").reduce((s, a) => s + Number(a.valor || 0), 0);
   const liquido = totalAp - totalRe;
 
-  // Média/mês: sempre baseada no líquido do ano corrente (independe do filtro)
+  // Média/mês: líquido do período filtrado ÷ meses decorridos no ano corrente
   const mediaMes = (() => {
-    const now = new Date();
-    const anoAtual = now.getFullYear().toString();
-    const movAno = clientAportes.filter((a) => (a.data || "").startsWith(anoAtual));
-    const liquidoAno = movAno.reduce((s, a) => s + (a.tipo === "aporte" ? Number(a.valor || 0) : -Number(a.valor || 0)), 0);
-    const months = Math.max(1, now.getMonth() + 1);
-    return liquidoAno / months;
+    const liquidoFiltrado = filteredClientAportes.reduce((s, a) => s + (a.tipo === "aporte" ? Number(a.valor || 0) : -Number(a.valor || 0)), 0);
+    const months = Math.max(1, new Date().getMonth() + 1);
+    return liquidoFiltrado / months;
   })();
 
   // PGBL: aportes do ano corrente marcados is_pgbl
