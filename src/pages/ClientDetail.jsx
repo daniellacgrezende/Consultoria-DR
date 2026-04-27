@@ -125,31 +125,14 @@ export default function ClientDetail() {
   const totalRe = filteredClientAportes.filter((a) => a.tipo === "resgate").reduce((s, a) => s + Number(a.valor || 0), 0);
   const liquido = totalAp - totalRe;
 
-  // Média/mês líquida (aportes - resgates) coerente com o filtro ativo
+  // Média/mês: sempre baseada no líquido do ano corrente (independe do filtro)
   const mediaMes = (() => {
-    const allMov = filteredClientAportes;
-    const liquidoFiltrado = allMov.reduce((s, a) => s + (a.tipo === "aporte" ? Number(a.valor || 0) : -Number(a.valor || 0)), 0);
     const now = new Date();
-    if (aptFilter.mode === "todos") {
-      if (allMov.length === 0) return 0;
-      const earliest = [...allMov].sort((a, b) => a.data.localeCompare(b.data))[0].data;
-      const start = new Date(earliest);
-      const months = Math.max(1, (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth()) + 1);
-      return liquidoFiltrado / months;
-    }
-    if (aptFilter.mode === "ano") {
-      const ano = parseInt(aptFilter.ano);
-      const months = ano === now.getFullYear() ? now.getMonth() + 1 : 12;
-      return liquidoFiltrado / Math.max(1, months);
-    }
-    if (aptFilter.mode === "periodo") {
-      const de = aptFilter.de ? new Date(aptFilter.de) : null;
-      const ate = aptFilter.ate ? new Date(aptFilter.ate) : now;
-      if (!de) return allMov.length === 0 ? 0 : liquidoFiltrado;
-      const months = Math.max(1, (ate.getFullYear() - de.getFullYear()) * 12 + (ate.getMonth() - de.getMonth()) + 1);
-      return liquidoFiltrado / months;
-    }
-    return liquidoFiltrado;
+    const anoAtual = now.getFullYear().toString();
+    const movAno = clientAportes.filter((a) => (a.data || "").startsWith(anoAtual));
+    const liquidoAno = movAno.reduce((s, a) => s + (a.tipo === "aporte" ? Number(a.valor || 0) : -Number(a.valor || 0)), 0);
+    const months = Math.max(1, now.getMonth() + 1);
+    return liquidoAno / months;
   })();
 
   // PGBL: aportes do ano corrente marcados is_pgbl
