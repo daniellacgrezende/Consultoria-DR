@@ -125,10 +125,12 @@ export function DataProvider({ children }) {
   const saveRepasse = useCallback(async (entry, isNew = false) => {
     if (isNew) {
       entry.id = entry.id || huid();
-      const { data } = await supabase.from("repasse").insert(entry).select();
-      if (data) setRepasseRaw((p) => [...p, data[0]]);
+      const { data, error } = await supabase.from("repasse").insert(entry).select();
+      if (error) { console.error("saveRepasse insert error:", error); return; }
+      setRepasseRaw((p) => [...p, (data && data[0]) ? data[0] : entry]);
     } else {
-      await supabase.from("repasse").update(entry).eq("id", entry.id);
+      const { error } = await supabase.from("repasse").update(entry).eq("id", entry.id);
+      if (error) { console.error("saveRepasse update error:", error); return; }
       setRepasseRaw((p) => p.map((r) => (r.id === entry.id ? { ...r, ...entry } : r)));
     }
   }, []);
