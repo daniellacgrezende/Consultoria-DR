@@ -195,8 +195,13 @@ export default function Dashboard() {
           <Card>
             <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 8, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Clientes por Perfil</div>
             {perfilData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={130}>
-                <PieChart><Pie data={perfilData} cx="50%" cy="50%" outerRadius={52} dataKey="value" label={({ name, percent }) => `${name}: ${Math.round(percent * 100)}%`} labelLine={false} fontSize={9}>{perfilData.map((_, i) => (<Cell key={i} fill={PCOLS[i % PCOLS.length]} />))}</Pie><Tooltip formatter={(v, n) => [`${v}cl`, n]} /></PieChart>
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie data={perfilData} cx="50%" cy="50%" outerRadius={95} dataKey="value" label={({ name, percent }) => `${name}: ${Math.round(percent * 100)}%`} labelLine={true} fontSize={12}>
+                    {perfilData.map((_, i) => (<Cell key={i} fill={PCOLS[i % PCOLS.length]} />))}
+                  </Pie>
+                  <Tooltip formatter={(v, n) => [`${v} clientes`, n]} contentStyle={{ borderRadius: 8, fontSize: 13 }} />
+                </PieChart>
               </ResponsiveContainer>
             ) : (
               <div style={{ padding: 20, textAlign: "center", color: B.gray, fontSize: 12 }}>Sem dados</div>
