@@ -296,7 +296,7 @@ function PipelineSummaryBar({ leads }) {
 
 /* ═══════════════════════════════════════════ */
 export default function Pipeline() {
-  const { leads, saveLead, deleteLead, pipelineStages, saveClient, setToast } = useData();
+  const { leads, saveLead, deleteLead, pipelineStages, saveClient, saveReuniao, setToast } = useData();
 
   // Derived stage lists from DB (fallback to constants if not yet loaded)
   const stagesMain = pipelineStages.filter((s) => s.tipo === "main");
@@ -378,7 +378,16 @@ export default function Pipeline() {
         plInicial: lead.patrimonio_estimado ? String(lead.patrimonio_estimado) : "",
         inicioCarteira: today(),
       };
-      saveClient(novoCliente, true);
+      const clientId = novoCliente.id;
+      await saveClient(novoCliente, true);
+      if (lead.notas?.trim()) {
+        await saveReuniao({
+          client_id: clientId,
+          data: lead.notas_data || today(),
+          titulo: "Kick Off",
+          texto: lead.notas,
+        }, true);
+      }
       setToast({ type: "success", text: `✅ ${lead.nome} convertido! Cliente criado na lista de Clientes.` });
     } else {
       setToast({ type: "success", text: `Movido para ${etapa}` });
@@ -698,7 +707,13 @@ export default function Pipeline() {
             <Sel label="Origem" value={form.origem || "Indicação"} onChange={F("origem")} opts={LEAD_ORIGENS.map((o) => ({ v: o, l: o }))} />
             <Inp label="Patrimônio Estimado (R$)" type="number" value={form.patrimonio_estimado || ""} onChange={F("patrimonio_estimado")} />
             <Sel label="Etapa" value={form.etapa || "Lead"} onChange={F("etapa")} opts={allStageNames.map((e) => ({ v: e, l: e }))} />
-            <div style={{ gridColumn: "1/-1" }}><Tarea label="Notas" value={form.notas || ""} onChange={F("notas")} placeholder="Registre tudo sobre o lead..." /></div>
+            <div style={{ gridColumn: "1/-1" }}>
+              <Tarea label="Notas" value={form.notas || ""} onChange={F("notas")} placeholder="Registre tudo sobre o lead..." />
+            </div>
+            <div>
+              <Inp label="Data das notas (Kick Off)" type="date" value={form.notas_data || ""} onChange={F("notas_data")} />
+              <div style={{ fontSize: 10, color: "#9baabf", marginTop: 2 }}>Usada como data do Kick Off ao converter em cliente</div>
+            </div>
           </div>
           <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
             <button onClick={() => setModal(false)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.muted, borderRadius: 7, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
