@@ -353,7 +353,7 @@ export default function Pipeline() {
     setToast({ type: "success", text: "Lead removido." });
   };
 
-  const moveEtapa = (id, etapa) => {
+  const moveEtapa = async (id, etapa) => {
     const lead = leads.find((l) => l.id === id);
     if (!lead) return;
     const etapaNorm = etapa.toLowerCase().normalize("NFC");
