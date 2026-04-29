@@ -708,11 +708,10 @@ export default function Pipeline() {
             <Inp label="Patrimônio Estimado (R$)" type="number" value={form.patrimonio_estimado || ""} onChange={F("patrimonio_estimado")} />
             <Sel label="Etapa" value={form.etapa || "Lead"} onChange={F("etapa")} opts={allStageNames.map((e) => ({ v: e, l: e }))} />
             <div style={{ gridColumn: "1/-1" }}>
-              <Tarea label="Notas" value={form.notas || ""} onChange={F("notas")} placeholder="Registre tudo sobre o lead..." />
+              <Inp label="Data do Kick Off" type="date" value={form.notas_data || ""} onChange={F("notas_data")} />
             </div>
-            <div>
-              <Inp label="Data das notas (Kick Off)" type="date" value={form.notas_data || ""} onChange={F("notas_data")} />
-              <div style={{ fontSize: 10, color: "#9baabf", marginTop: 2 }}>Usada como data do Kick Off ao converter em cliente</div>
+            <div style={{ gridColumn: "1/-1" }}>
+              <Tarea label="Notas" value={form.notas || ""} onChange={F("notas")} placeholder="Registre tudo sobre o lead..." />
             </div>
           </div>
           <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
