@@ -95,14 +95,21 @@ export default function Repasse() {
           <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${B.border}` }}>
             Evolução Mensal
           </div>
-          <ResponsiveContainer width="100%" height={230}>
-            <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 4 }}>
+          <ResponsiveContainer width="100%" height={380}>
+            <AreaChart data={chartData} margin={{ top: 20, right: 24, left: 16, bottom: 8 }}>
               <GradDef id="rb" c="#2563eb" />
               <CartesianGrid strokeDasharray="3 3" stroke={B.border} />
-              <XAxis dataKey="name" tick={{ fontSize: 10, fill: B.gray }} />
-              <YAxis tick={{ fontSize: 9, fill: B.gray }} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v} />
-              <Tooltip formatter={(v) => [moneyDec(v), "Receita Bruta"]} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-              <Area type="monotone" dataKey="receitaBruta" stroke="#2563eb" strokeWidth={2.5} fill="url(#rb)" />
+              <XAxis dataKey="name" tick={{ fontSize: 12, fill: B.gray }} />
+              <YAxis
+                tick={{ fontSize: 11, fill: B.gray }}
+                tickFormatter={(v) => v >= 1000 ? `R$${(v / 1000).toFixed(0)}K` : `R$${v}`}
+                width={70}
+              />
+              <Tooltip
+                formatter={(v) => [moneyDec(v), "Receita Bruta"]}
+                contentStyle={{ borderRadius: 8, fontSize: 13 }}
+              />
+              <Area type="monotone" dataKey="receitaBruta" stroke="#2563eb" strokeWidth={3} fill="url(#rb)" dot={{ r: 5, fill: "#2563eb", strokeWidth: 2, stroke: "white" }} activeDot={{ r: 7 }} />
             </AreaChart>
           </ResponsiveContainer>
         </Card>
