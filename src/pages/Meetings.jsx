@@ -76,6 +76,7 @@ export default function Meetings() {
   const [rhShowSug, setRhShowSug] = useState(false);
   const [rhOpen, setRhOpen]       = useState(false);
   const [tableOpen, setTableOpen] = useState(true);
+  const [alertSort, setAlertSort] = useState("diasSem"); // "diasSem" | "curva"
 
   // Modal de confirmação de data
   const [actionModal, setActionModal] = useState(null); // { type, client, date }
@@ -90,6 +91,8 @@ export default function Meetings() {
   const active = useMemo(() => clients.filter((c) => c.status === "ativo"), [clients]);
 
   /* ─── Enriched rows ─── */
+  const CURVA_ORDER = { A: 0, B: 1, C: 2, D: 3 };
+
   const rows = useMemo(() => {
     const STATUS_ORDER = { atrasado: 0, retentativa: 1, agendar: 2, aguardando: 3, emdia: 4, pendente: 5, nao_aplica: 6 };
     const enriched = active.map((c) => ({
@@ -98,6 +101,7 @@ export default function Meetings() {
       diasAte:    daysUntil(c.proxima_reuniao || c.proximaReuniao),
       periodDays: getPeriodDays(c.periodicidade_reuniao || c.periodicidadeReuniao),
       st:         getStatus(c),
+      curva:      getCurva(getCurrentPL(c, history)),
     }));
     const dir = sortDir === "asc" ? 1 : -1;
     enriched.sort((a, b) => {
@@ -168,11 +172,13 @@ export default function Meetings() {
   };
 
   /* ─── Alertas rápidos ─── */
-  const atrasados    = rows.filter((r) => r.st.key === "atrasado")
-                           .sort((a, b) => (b.diasSem ?? 0) - (a.diasSem ?? 0));
-  const aAgendar     = rows.filter((r) => r.st.key === "agendar")
-                           .sort((a, b) => (b.diasSem ?? 0) - (a.diasSem ?? 0));
-  const retentativas = rows.filter((r) => r.st.key === "retentativa");
+  const alertSortFn = alertSort === "curva"
+    ? (a, b) => (CURVA_ORDER[a.curva] ?? 3) - (CURVA_ORDER[b.curva] ?? 3)
+    : (a, b) => (b.diasSem ?? 0) - (a.diasSem ?? 0);
+
+  const atrasados    = rows.filter((r) => r.st.key === "atrasado").sort(alertSortFn);
+  const aAgendar     = rows.filter((r) => r.st.key === "agendar").sort(alertSortFn);
+  const retentativas = rows.filter((r) => r.st.key === "retentativa").sort(alertSortFn);
 
   /* ─── Histórico ─── */
   const rhFiltered = useMemo(() =>
@@ -252,12 +258,20 @@ export default function Meetings() {
         }}>
           {atrasados.length > 0 && (
             <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, padding: "14px 16px" }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: "#DC2626", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
-                Atrasado — &gt;25 dias do prazo
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: "#DC2626", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  Atrasado — &gt;25 dias do prazo
+                </div>
+                <button
+                  onClick={() => setAlertSort((s) => s === "curva" ? "diasSem" : "curva")}
+                  style={{ fontSize: 9, fontWeight: 700, background: alertSort === "curva" ? "#DC2626" : "white", color: alertSort === "curva" ? "white" : "#DC2626", border: "1px solid #FECACA", borderRadius: 5, padding: "3px 8px", cursor: "pointer", whiteSpace: "nowrap" }}
+                >
+                  {alertSort === "curva" ? "Curva A→D ✓" : "Ordenar por Curva"}
+                </button>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {atrasados.map((c) => {
-                  const curva = getCurva(getCurrentPL(c, history));
+                  const curva = c.curva;
                   return (
                   <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #FECACA", borderRadius: 7, padding: "7px 10px" }}>
                     <Avatar nome={c.nome} size={24} />
@@ -286,13 +300,21 @@ export default function Meetings() {
 
           {retentativas.length > 0 && (
             <div style={{ background: "#F5F3FF", border: "1px solid #DDD6FE", borderRadius: 10, padding: "14px 16px" }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: "#7C3AED", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
-                Retentativa — tente contato novamente
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: "#7C3AED", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  Retentativa — tente contato novamente
+                </div>
+                <button
+                  onClick={() => setAlertSort((s) => s === "curva" ? "diasSem" : "curva")}
+                  style={{ fontSize: 9, fontWeight: 700, background: alertSort === "curva" ? "#7C3AED" : "white", color: alertSort === "curva" ? "white" : "#7C3AED", border: "1px solid #DDD6FE", borderRadius: 5, padding: "3px 8px", cursor: "pointer", whiteSpace: "nowrap" }}
+                >
+                  {alertSort === "curva" ? "Curva A→D ✓" : "Ordenar por Curva"}
+                </button>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {retentativas.map((c) => {
                   const dAv = daysSince(c.avisado_em || c.avisadoEm);
-                  const curva = getCurva(getCurrentPL(c, history));
+                  const curva = c.curva;
                   return (
                     <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #DDD6FE", borderRadius: 7, padding: "7px 10px" }}>
                       <Avatar nome={c.nome} size={24} />
@@ -321,12 +343,20 @@ export default function Meetings() {
 
           {aAgendar.length > 0 && (
             <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "14px 16px" }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: "#D97706", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
-                Hora de agendar
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: "#D97706", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  Hora de agendar
+                </div>
+                <button
+                  onClick={() => setAlertSort((s) => s === "curva" ? "diasSem" : "curva")}
+                  style={{ fontSize: 9, fontWeight: 700, background: alertSort === "curva" ? "#D97706" : "white", color: alertSort === "curva" ? "white" : "#D97706", border: "1px solid #FDE68A", borderRadius: 5, padding: "3px 8px", cursor: "pointer", whiteSpace: "nowrap" }}
+                >
+                  {alertSort === "curva" ? "Curva A→D ✓" : "Ordenar por Curva"}
+                </button>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {aAgendar.map((c) => {
-                  const curva = getCurva(getCurrentPL(c, history));
+                  const curva = c.curva;
                   return (
                   <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #FDE68A", borderRadius: 7, padding: "7px 10px" }}>
                     <Avatar nome={c.nome} size={24} />
