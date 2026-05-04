@@ -107,6 +107,7 @@ function getNextRecorrencia(vencimento, recorrencia) {
   if (recorrencia === "diária")  base.setDate(base.getDate() + 1);
   if (recorrencia === "semanal") base.setDate(base.getDate() + 7);
   if (recorrencia === "mensal")  base.setMonth(base.getMonth() + 1);
+  if (recorrencia === "anual")   base.setFullYear(base.getFullYear() + 1);
 
   const next = base.toISOString().slice(0, 10);
 
@@ -116,6 +117,7 @@ function getNextRecorrencia(vencimento, recorrencia) {
     if (recorrencia === "diária")  fallback.setDate(fallback.getDate() + 1);
     if (recorrencia === "semanal") fallback.setDate(fallback.getDate() + 7);
     if (recorrencia === "mensal")  fallback.setMonth(fallback.getMonth() + 1);
+    if (recorrencia === "anual")   fallback.setFullYear(fallback.getFullYear() + 1);
     return fallback.toISOString().slice(0, 10);
   }
   return next;
