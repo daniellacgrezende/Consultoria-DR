@@ -138,9 +138,10 @@ export default function ClientDetail() {
     .filter((a) => a.tipo === "aporte" && a.is_pgbl && a.data?.startsWith(anoAtual))
     .reduce((s, a) => s + Number(a.valor || 0), 0);
   const hasPgbl = client.pgbl === true || client.pgbl === "true";
-  const rendaBruta = Number(client.receita_mensal || 0);
-  // Limite PGBL: 12% da renda bruta tributável anual (renda mensal × 12 + 1/3 renda mensal)
-  const rendaBrutaAnual = rendaBruta * 12 + rendaBruta / 3;
+  const rendaMensal = Number(client.receita_mensal || 0);
+  const rendaBrutaTributavel = Number(client.renda_bruta_tributavel || 0);
+  // Renda bruta anual: usa campo direto se preenchido, senão calcula da receita mensal (×12 + 1/3 férias)
+  const rendaBrutaAnual = rendaBrutaTributavel > 0 ? rendaBrutaTributavel : (rendaMensal * 12 + rendaMensal / 3);
   const pgblLimite = rendaBrutaAnual * 0.12;
   const pgblPct = pgblLimite > 0 ? Math.min(100, Math.round((pgblAnoAtual / pgblLimite) * 100)) : null;
 
@@ -342,6 +343,19 @@ export default function ClientDetail() {
                   }
                 </div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Receita Mensal</div><InlineMoney value={client.receita_mensal} onSave={(v) => updateField("receita_mensal", v)} /></div>
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>
+                    Renda Bruta Tributável/Ano
+                    {rendaBrutaTributavel === 0 && rendaMensal > 0 && <span style={{ fontWeight: 400, color: B.muted, textTransform: "none" }}> (calculado)</span>}
+                  </div>
+                  <InlineMoney value={rendaBrutaTributavel > 0 ? client.renda_bruta_tributavel : rendaBrutaAnual} onSave={(v) => updateField("renda_bruta_tributavel", v)} />
+                  {rendaBrutaTributavel === 0 && rendaMensal > 0 && (
+                    <div style={{ fontSize: 9, color: B.muted, marginTop: 2 }}>da Receita Mensal · 12% = {money(pgblLimite)}</div>
+                  )}
+                  {rendaBrutaTributavel > 0 && (
+                    <div style={{ fontSize: 9, color: B.muted, marginTop: 2 }}>manual · 12% = {money(pgblLimite)}</div>
+                  )}
+                </div>
               </div>
               {/* Linha 2: IR / Corretoras / Pagamento / Produtos Reserva / Taxa / Mínimo */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 }}>
@@ -461,13 +475,13 @@ export default function ClientDetail() {
               );
             })()}
             {hasPgbl && pgblPct !== null && (
-              <span style={{ padding: "3px 12px", borderRadius: 999, fontSize: 11, fontWeight: 700, background: pgblPct >= 100 ? "#f0fdf4" : "#f5f3ff", color: pgblPct >= 100 ? "#16a34a" : "#7c3aed", border: `1px solid ${pgblPct >= 100 ? "#bbf7d0" : "#ddd6fe"}` }}>
-                ⏳ PGBL {pgblPct}%
+              <span title={`Aportado: ${money(pgblAnoAtual)} · Limite: ${money(pgblLimite)}`} style={{ padding: "3px 12px", borderRadius: 999, fontSize: 11, fontWeight: 700, background: pgblPct >= 100 ? "#f0fdf4" : "#f5f3ff", color: pgblPct >= 100 ? "#16a34a" : "#7c3aed", border: `1px solid ${pgblPct >= 100 ? "#bbf7d0" : "#ddd6fe"}`, cursor: "default" }}>
+                ⏳ PGBL {pgblPct}% <span style={{ fontWeight: 400, opacity: 0.75 }}>· limite {money(pgblLimite)}</span>
               </span>
             )}
-            {hasPgbl && pgblPct === null && rendaBruta === 0 && (
+            {hasPgbl && pgblPct === null && (
               <span style={{ padding: "3px 12px", borderRadius: 999, fontSize: 11, fontWeight: 700, background: "#f5f3ff", color: "#7c3aed", border: "1px solid #ddd6fe" }}>
-                ⏳ PGBL — preencha Receita Mensal
+                ⏳ PGBL — preencha Receita Mensal ou Renda Bruta Tributável
               </span>
             )}
           </div>
@@ -637,6 +651,17 @@ export default function ClientDetail() {
             <Inp label="Liquidez Atual (R$)" value={editForm.liquidez_atual ?? ""} onChange={EF("liquidez_atual")} type="number" />
             <Inp label="Taxa Contratada" value={editForm.taxa_contratada ?? editForm.taxaContratada ?? ""} onChange={EF("taxa_contratada")} />
             <Inp label="Receita Mensal (R$)" value={editForm.receita_mensal ?? editForm.receitaMensal ?? ""} onChange={EF("receita_mensal")} type="number" />
+            <div>
+              <Inp label="Renda Bruta Tributável/Ano (R$)" value={editForm.renda_bruta_tributavel ?? editForm.rendaBrutaTributavel ?? ""} onChange={EF("renda_bruta_tributavel")} type="number" placeholder="Se vazio, calculado da Receita Mensal" />
+              {(() => {
+                const rm = Number(editForm.receita_mensal || editForm.receitaMensal || 0);
+                const rbt = Number(editForm.renda_bruta_tributavel || editForm.rendaBrutaTributavel || 0);
+                const base = rbt > 0 ? rbt : (rm * 12 + rm / 3);
+                const lim = base * 0.12;
+                if (lim === 0) return null;
+                return <div style={{ fontSize: 10, color: "#7c3aed", marginTop: 3, fontWeight: 600 }}>Limite PGBL: {money(lim)} {rbt === 0 && rm > 0 ? "(calculado)" : "(manual)"}</div>;
+              })()}
+            </div>
             <Sel label="Forma Pagamento" value={editForm.forma_pagamento ?? editForm.formaPagamento ?? "XP"} onChange={EF("forma_pagamento")} opts={["XP", "BTG", "Boleto", "Outros"].map((v) => ({ v, l: v }))} />
             <Sel label="Declaração IR" value={editForm.declaracao_ir ?? editForm.declaracaoIR ?? "Simplificada"} onChange={EF("declaracao_ir")} opts={["Simplificada", "Completa"].map((v) => ({ v, l: v }))} />
             <div style={{ gridColumn: "1/-1" }}><Inp label="Corretoras" value={editForm.corretoras || ""} onChange={EF("corretoras")} placeholder="XP, BTG, Avenue…" /></div>
