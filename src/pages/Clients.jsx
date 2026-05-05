@@ -66,6 +66,7 @@ export default function Clients() {
     const d = sortDir === "asc" ? 1 : -1;
     r.sort((a, b) => {
       if (sortCol === "nome") return d * a.nome.localeCompare(b.nome);
+      if (sortCol === "cidade") return d * (`${a.cidade || ""}/${a.uf || ""}`).localeCompare(`${b.cidade || ""}/${b.uf || ""}`);
       if (sortCol === "pl") return d * (a._pl - b._pl);
       if (sortCol === "curva") return d * a._curva.localeCompare(b._curva);
       if (sortCol === "perfil") return d * (a.perfil || "").localeCompare(b.perfil || "");
@@ -410,7 +411,7 @@ export default function Clients() {
             <thead>
               <tr>
                 <th onClick={() => toggleSort("nome")} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer" }}>Nome <SortIcon col="nome" /></th>
-                <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff" }}>Cidade/UF</th>
+                <th onClick={() => toggleSort("cidade")} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer", userSelect: "none" }}>Cidade/UF <SortIcon col="cidade" /></th>
                 <th onClick={() => toggleSort("pl")} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, background: "#f5f7ff", cursor: "pointer", userSelect: "none" }}>
                   PL <SortIcon col="pl" />
                   <span onClick={(e) => { e.stopPropagation(); setShowPL((v) => !v); }} style={{ marginLeft: 6, fontSize: 11, cursor: "pointer" }}>{showPL ? "🙈" : "👁"}</span>
