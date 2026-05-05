@@ -474,11 +474,40 @@ export default function ClientDetail() {
                 </span>
               );
             })()}
-            {hasPgbl && pgblPct !== null && (
-              <span title={`Aportado: ${money(pgblAnoAtual)} · Limite: ${money(pgblLimite)}`} style={{ padding: "3px 12px", borderRadius: 999, fontSize: 11, fontWeight: 700, background: pgblPct >= 100 ? "#f0fdf4" : "#f5f3ff", color: pgblPct >= 100 ? "#16a34a" : "#7c3aed", border: `1px solid ${pgblPct >= 100 ? "#bbf7d0" : "#ddd6fe"}`, cursor: "default" }}>
-                ⏳ PGBL {pgblPct}% <span style={{ fontWeight: 400, opacity: 0.75 }}>· limite {money(pgblLimite)}</span>
-              </span>
-            )}
+            {hasPgbl && pgblPct !== null && (() => {
+              const restante = Math.max(0, pgblLimite - pgblAnoAtual);
+              const concluido = pgblPct >= 100;
+              return (
+                <div style={{ background: concluido ? "#f0fdf4" : "#f5f3ff", border: `1px solid ${concluido ? "#bbf7d0" : "#ddd6fe"}`, borderRadius: 8, padding: "8px 14px", display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
+                  {/* Progresso */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: concluido ? "#16a34a" : "#7c3aed" }}>⏳ PGBL {pgblPct}%</span>
+                    </div>
+                    <div style={{ width: 140, height: 5, background: concluido ? "#bbf7d0" : "#ddd6fe", borderRadius: 99 }}>
+                      <div style={{ width: `${pgblPct}%`, height: "100%", background: concluido ? "#16a34a" : "#7c3aed", borderRadius: 99, transition: "width .3s" }} />
+                    </div>
+                  </div>
+                  {/* Valores */}
+                  <div style={{ display: "flex", gap: 16 }}>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 2 }}>Limite (12%)</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: concluido ? "#16a34a" : "#7c3aed" }}>{money(pgblLimite)}</div>
+                    </div>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 2 }}>Aportado</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#1e293b" }}>{money(pgblAnoAtual)}</div>
+                    </div>
+                    {!concluido && (
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 2 }}>Restante</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#c2410c" }}>{money(restante)}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
             {hasPgbl && pgblPct === null && (
               <span style={{ padding: "3px 12px", borderRadius: 999, fontSize: 11, fontWeight: 700, background: "#f5f3ff", color: "#7c3aed", border: "1px solid #ddd6fe" }}>
                 ⏳ PGBL — preencha Receita Mensal ou Renda Bruta Tributável
