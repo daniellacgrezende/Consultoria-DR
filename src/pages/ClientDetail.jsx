@@ -343,6 +343,7 @@ export default function ClientDetail() {
                   }
                 </div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Receita Mensal</div><InlineMoney value={client.receita_mensal} onSave={(v) => updateField("receita_mensal", v)} /></div>
+                {hasPgbl && (
                 <div>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>
                     Renda Bruta Tributável/Ano
@@ -356,6 +357,7 @@ export default function ClientDetail() {
                     <div style={{ fontSize: 9, color: B.muted, marginTop: 2 }}>manual · 12% = {money(pgblLimite)}</div>
                   )}
                 </div>
+                )}
               </div>
               {/* Linha 2: IR / Corretoras / Pagamento / Produtos Reserva / Taxa / Mínimo */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 }}>
