@@ -217,7 +217,7 @@ export const mapClientToDB = (c) => {
 const LEAD_DB_COLS = new Set([
   "id", "nome", "telefone", "email", "origem", "suborigem", "patrimonio_estimado",
   "etapa", "data_primeira_reuniao", "data_ultima_interacao", "motivo_negativa",
-  "notas", "convertido_em", "tipo_reuniao", "valor_estimado", "temperatura", "responsavel",
+  "notas", "notas_data", "convertido_em", "tipo_reuniao", "valor_estimado", "temperatura", "responsavel",
 ]);
 
 // Campos numéricos da tabela leads
