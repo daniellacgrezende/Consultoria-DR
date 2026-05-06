@@ -4,7 +4,7 @@ import { supabase } from "../lib/supabase";
 import { useData } from "../hooks/useData";
 import { B } from "../utils/constants";
 import { fmtDate } from "../utils/formatters";
-import { daysSince, getPeriodDays, daysUntil, today, slugify, huid, getCurva, getCurrentPL } from "../utils/helpers";
+import { daysSince, getPeriodDays, today, slugify, huid, getCurva, getCurrentPL } from "../utils/helpers";
 import Card from "../components/ui/Card";
 import MiniStat from "../components/ui/MiniStat";
 import Avatar from "../components/ui/Avatar";
@@ -46,6 +46,7 @@ export default function Relatorios() {
   const [filterClient, setFilterClient] = useState(null);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [statFilter, setStatFilter] = useState(null); // "atrasado" | "atencao" | "emdia" | null
+  const [atencaoOpen, setAtencaoOpen] = useState(false);
 
   // ─── Checklist: usa o PRÓXIMO mês ───
   const now = new Date();
@@ -159,10 +160,6 @@ export default function Relatorios() {
     [atencaoRows]
   );
 
-  const proximos = rows.filter((c) => {
-    const d = daysUntil(c.proximo_relatorio || c.proximoRelatorio);
-    return d !== null && d >= 0 && d <= 7;
-  }).slice(0, 5);
 
   // ─── Tabela filtrada pelo card de stat selecionado ───
   const displayRows = useMemo(() => {
@@ -314,98 +311,78 @@ export default function Relatorios() {
         </Card>
       )}
 
-      {/* ═══ PAINÉIS DE ALERTA ═══ */}
-      {(pendentesAtrasado.length > 0 || pendentesAtencao.length > 0 || proximos.length > 0) && (
-        <div style={{ display: "grid", gridTemplateColumns: [pendentesAtrasado.length, pendentesAtencao.length, proximos.length].filter(Boolean).length > 1 ? "1fr 1fr" : "1fr", gap: 12, marginBottom: 18 }}>
-
-          {/* Atrasado */}
-          {pendentesAtrasado.length > 0 && (
-            <div style={{ background: "#fff5f5", border: "1px solid #fecaca", borderRadius: 10, padding: "14px 16px" }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#dc2626", textTransform: "uppercase", marginBottom: 10 }}>
-                Relatório Atrasado — +{ATRASADO_DAYS}d do prazo
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {pendentesAtrasado.map((c) => {
-                  const curva = getCurva(getCurrentPL(c, history));
-                  return (
-                  <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 7, background: "white", border: "1px solid #fecaca" }}>
-                    <Avatar nome={c.nome} size={26} />
-                    <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={() => navigate(`/clients/${slugify(c.nome)}`)}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
-                        <CBadge curva={curva} />
-                      </div>
-                      <div style={{ fontSize: 10, color: "#dc2626", fontWeight: 600 }}>
-                        {c.diasSem === null
-                          ? `Nunca enviado · ${c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal"}`
-                          : `${c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal"} · ${c.diasSem - c.periodDays}d de atraso`}
-                      </div>
-                      <div style={{ fontSize: 10, color: B.muted }}>
-                        Último envio: {fmtDate(c.ultimo_relatorio || c.ultimoRelatorio) || "—"}
-                      </div>
-                    </div>
-                    <button onClick={() => marcarEnviado(c)}
-                      style={{ fontSize: 9.5, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
-                      ✓ Enviado
-                    </button>
+      {/* ═══ PAINEL ATRASADO ═══ */}
+      {pendentesAtrasado.length > 0 && (
+        <div style={{ background: "#fff5f5", border: "1px solid #fecaca", borderRadius: 10, padding: "14px 16px", marginBottom: 12 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "#dc2626", textTransform: "uppercase", marginBottom: 10 }}>
+            🔴 Relatório Atrasado ({pendentesAtrasado.length}) — +{ATRASADO_DAYS}d do prazo
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 420, overflowY: "auto" }}>
+            {pendentesAtrasado.map((c) => {
+              const curva = getCurva(getCurrentPL(c, history));
+              return (
+              <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 7, background: "white", border: "1px solid #fecaca" }}>
+                <Avatar nome={c.nome} size={26} />
+                <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={() => navigate(`/clients/${slugify(c.nome)}`)}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
+                    <CBadge curva={curva} />
                   </div>
-                );})}
-              </div>
-            </div>
-          )}
-
-          {/* Atenção */}
-          {pendentesAtencao.length > 0 && (
-            <div style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 10, padding: "14px 16px" }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#c2410c", textTransform: "uppercase", marginBottom: 10 }}>
-                Atenção — enviar em breve
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {pendentesAtencao.map((c) => {
-                  const curva = getCurva(getCurrentPL(c, history));
-                  return (
-                  <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 7, background: "white", border: "1px solid #fed7aa" }}>
-                    <Avatar nome={c.nome} size={26} />
-                    <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={() => navigate(`/clients/${slugify(c.nome)}`)}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
-                        <CBadge curva={curva} />
-                      </div>
-                      <div style={{ fontSize: 10, color: "#c2410c", fontWeight: 600 }}>
-                        {c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal"} · {c.diasSem > c.periodDays ? `${c.diasSem - c.periodDays}d de atraso` : `vence em ${c.periodDays - c.diasSem}d`}
-                      </div>
-                      <div style={{ fontSize: 10, color: B.muted }}>
-                        Último envio: {fmtDate(c.ultimo_relatorio || c.ultimoRelatorio) || "—"}
-                      </div>
-                    </div>
-                    <button onClick={() => marcarEnviado(c)}
-                      style={{ fontSize: 9.5, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
-                      ✓ Enviado
-                    </button>
+                  <div style={{ fontSize: 10, color: "#dc2626", fontWeight: 600 }}>
+                    {c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal"} · {c.diasSem !== null ? `${c.diasSem - c.periodDays}d de atraso` : "Nunca enviado"}
                   </div>
-                );})}
+                  <div style={{ fontSize: 10, color: B.muted }}>
+                    Último envio: {fmtDate(c.ultimo_relatorio || c.ultimoRelatorio) || "—"}
+                  </div>
+                </div>
+                <button onClick={() => marcarEnviado(c)}
+                  style={{ fontSize: 9.5, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
+                  ✓ Enviado
+                </button>
               </div>
-            </div>
-          )}
+            );})}
+          </div>
+        </div>
+      )}
 
-          {/* Próximos 7 dias */}
-          {proximos.length > 0 && (
-            <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "14px 16px" }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#1d4ed8", textTransform: "uppercase", marginBottom: 10 }}>Próximos relatórios (7 dias)</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {proximos.map((c) => {
-                  const d = daysUntil(c.proximo_relatorio || c.proximoRelatorio);
-                  return (
-                    <div key={c.id} onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "6px 8px", borderRadius: 7, background: "white", border: "1px solid #bfdbfe" }}>
-                      <Avatar nome={c.nome} size={26} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
-                        <div style={{ fontSize: 10, color: "#1d4ed8", fontWeight: 600 }}>{fmtDate(c.proximo_relatorio || c.proximoRelatorio)} · em {d}d</div>
-                      </div>
+      {/* ═══ PAINEL ATENÇÃO (recolhido por padrão) ═══ */}
+      {pendentesAtencao.length > 0 && (
+        <div style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 10, marginBottom: 12, overflow: "hidden" }}>
+          <div
+            onClick={() => setAtencaoOpen((v) => !v)}
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", cursor: "pointer", userSelect: "none" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 13, display: "inline-block", transition: "transform 0.2s", transform: atencaoOpen ? "rotate(90deg)" : "rotate(0deg)", color: "#c2410c" }}>▶</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: "#c2410c", textTransform: "uppercase" }}>
+                🟠 Atenção — enviar em breve ({pendentesAtencao.length})
+              </span>
+            </div>
+          </div>
+          {atencaoOpen && (
+            <div style={{ padding: "0 16px 14px", display: "flex", flexDirection: "column", gap: 8, maxHeight: 360, overflowY: "auto" }}>
+              {pendentesAtencao.map((c) => {
+                const curva = getCurva(getCurrentPL(c, history));
+                return (
+                <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 7, background: "white", border: "1px solid #fed7aa" }}>
+                  <Avatar nome={c.nome} size={26} />
+                  <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={() => navigate(`/clients/${slugify(c.nome)}`)}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
+                      <CBadge curva={curva} />
                     </div>
-                  );
-                })}
-              </div>
+                    <div style={{ fontSize: 10, color: "#c2410c", fontWeight: 600 }}>
+                      {c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal"} · {c.diasSem > c.periodDays ? `${c.diasSem - c.periodDays}d de atraso` : `vence em ${c.periodDays - c.diasSem}d`}
+                    </div>
+                    <div style={{ fontSize: 10, color: B.muted }}>
+                      Último envio: {fmtDate(c.ultimo_relatorio || c.ultimoRelatorio) || "—"}
+                    </div>
+                  </div>
+                  <button onClick={() => marcarEnviado(c)}
+                    style={{ fontSize: 9.5, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
+                    ✓ Enviado
+                  </button>
+                </div>
+              );})}
             </div>
           )}
         </div>
