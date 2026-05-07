@@ -12,6 +12,15 @@ import { SecH } from "../components/ui/FormFields";
 import { CBadge } from "../components/ui/Badge";
 
 const GRACE_DAYS  = 25; // dias após vencimento antes de virar "Atrasado"
+
+function buildOutlookUrl({ title, start, end }) {
+  const p = new URLSearchParams();
+  p.set("subject", title);
+  p.set("startdt", new Date(start).toISOString());
+  p.set("enddt",   new Date(end).toISOString());
+  p.set("path", "/calendar/action/compose");
+  return `https://outlook.office.com/calendar/0/deeplink/compose?path=%2Fcalendar%2Faction%2Fcompose&${p.toString()}`;
+}
 const RETRY_DAYS  = 45; // dias após "chamei" antes de virar "Retentativa"
 
 /* ─── Status logic ─── */
@@ -82,6 +91,8 @@ export default function Meetings() {
   const [actionModal, setActionModal] = useState(null); // { type, client, date }
   // Barra de desfazer
   const [undoBar, setUndoBar] = useState(null); // { label, snapshot }
+  const [retAgModal, setRetAgModal] = useState(null); // { client } — modal agendar retentativa
+  const [retAgForm, setRetAgForm]   = useState({ data: today(), horaInicio: "10:00", horaFim: "11:00" });
   useEffect(() => {
     if (!undoBar) return;
     const t = setTimeout(() => setUndoBar(null), 6000);
@@ -251,10 +262,11 @@ export default function Meetings() {
 
       {/* ─── Alert panels ─── */}
       {(atrasados.length > 0 || aAgendar.length > 0 || retentativas.length > 0) && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 18 }}>
         <div style={{
           display: "grid",
-          gridTemplateColumns: [atrasados.length, retentativas.length, aAgendar.length].filter(Boolean).length > 1 ? "1fr 1fr" : "1fr",
-          gap: 12, marginBottom: 18,
+          gridTemplateColumns: (atrasados.length > 0 && aAgendar.length > 0) ? "1fr 1fr" : "1fr",
+          gap: 12,
         }}>
           {atrasados.length > 0 && (
             <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, padding: "14px 16px" }}>
@@ -298,49 +310,6 @@ export default function Meetings() {
             </div>
           )}
 
-          {retentativas.length > 0 && (
-            <div style={{ background: "#F5F3FF", border: "1px solid #DDD6FE", borderRadius: 10, padding: "14px 16px" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                <div style={{ fontSize: 10, fontWeight: 800, color: "#7C3AED", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                  Retentativa — tente contato novamente
-                </div>
-                <button
-                  onClick={() => setAlertSort((s) => s === "curva" ? "diasSem" : "curva")}
-                  style={{ fontSize: 9, fontWeight: 700, background: alertSort === "curva" ? "#7C3AED" : "white", color: alertSort === "curva" ? "white" : "#7C3AED", border: "1px solid #DDD6FE", borderRadius: 5, padding: "3px 8px", cursor: "pointer", whiteSpace: "nowrap" }}
-                >
-                  {alertSort === "curva" ? "Curva A→D ✓" : "Ordenar por Curva"}
-                </button>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {retentativas.map((c) => {
-                  const dAv = daysSince(c.avisado_em || c.avisadoEm);
-                  const curva = c.curva;
-                  return (
-                    <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #DDD6FE", borderRadius: 7, padding: "7px 10px" }}>
-                      <Avatar nome={c.nome} size={24} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 1 }}>
-                          <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
-                          <CBadge curva={curva} />
-                        </div>
-                        <div style={{ fontSize: 10, color: "#7C3AED", fontWeight: 600 }}>
-                          Último contato há {dAv}d · {c.periodicidade_reuniao || "Trimestral"}
-                        </div>
-                        <div style={{ fontSize: 10, color: "#6D28D9" }}>
-                          últ. reunião: {fmtDate(c.ultima_reuniao || c.ultimaReuniao) || "—"}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => openAction("chamei", c)}
-                        style={{ fontSize: 9.5, fontWeight: 700, background: "#ECFEFF", color: "#0891B2", border: "1px solid #A5F3FC", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}
-                      >Chamei</button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
           {aAgendar.length > 0 && (
             <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "14px 16px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
@@ -378,6 +347,57 @@ export default function Meetings() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* ─── Retentativa (abaixo do grid, largura total) ─── */}
+        {retentativas.length > 0 && (
+          <div style={{ background: "#F5F3FF", border: "1px solid #DDD6FE", borderRadius: 10, padding: "14px 16px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: "#7C3AED", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                🔁 Retentativa — já chamei, aguardando retorno ({retentativas.length})
+              </div>
+              <button
+                onClick={() => setAlertSort((s) => s === "curva" ? "diasSem" : "curva")}
+                style={{ fontSize: 9, fontWeight: 700, background: alertSort === "curva" ? "#7C3AED" : "white", color: alertSort === "curva" ? "white" : "#7C3AED", border: "1px solid #DDD6FE", borderRadius: 5, padding: "3px 8px", cursor: "pointer" }}
+              >{alertSort === "curva" ? "Curva A→D ✓" : "Ordenar por Curva"}</button>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 8 }}>
+              {retentativas.map((c) => {
+                const dAv = daysSince(c.avisado_em || c.avisadoEm);
+                return (
+                  <div key={c.id} style={{ display: "flex", flexDirection: "column", gap: 6, background: "white", border: "1px solid #DDD6FE", borderRadius: 8, padding: "10px 12px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <Avatar nome={c.nome} size={24} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                          <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
+                          <CBadge curva={c.curva} />
+                        </div>
+                        <div style={{ fontSize: 10, color: "#7C3AED", fontWeight: 600 }}>
+                          Chamei há {dAv}d · {c.periodicidade_reuniao || "Trimestral"}
+                        </div>
+                        <div style={{ fontSize: 10, color: "#6D28D9" }}>
+                          Últ. reunião: {fmtDate(c.ultima_reuniao || c.ultimaReuniao) || "—"}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, paddingTop: 4, borderTop: "1px solid #EDE9FE" }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "#7C3AED" }}>Agendou?</span>
+                      <button
+                        onClick={() => openAction("chamei", c)}
+                        style={{ fontSize: 10, fontWeight: 700, background: "#F5F3FF", color: "#7C3AED", border: "1px solid #DDD6FE", borderRadius: 5, padding: "3px 10px", cursor: "pointer" }}
+                      >Chamei de novo</button>
+                      <button
+                        onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00" }); }}
+                        style={{ fontSize: 10, fontWeight: 700, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "3px 10px", cursor: "pointer" }}
+                      >✓ Sim, agendar</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
         </div>
       )}
 
@@ -639,6 +659,56 @@ export default function Meetings() {
             ×
           </button>
         </div>
+      )}
+
+      {/* ─── Modal Agendar (Retentativa → Sim) ─── */}
+      {retAgModal && (
+        <Modal open={!!retAgModal} onClose={() => setRetAgModal(null)}>
+          <div style={{ padding: "26px 30px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: B.navy }}>Agendar reunião — {retAgModal.client.nome.split(" ")[0]}</h3>
+              <button onClick={() => setRetAgModal(null)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: B.muted }}>×</button>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0 12px" }}>
+              <div style={{ gridColumn: "1/-1", marginBottom: 12 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Data</div>
+                <input type="date" value={retAgForm.data} onChange={(e) => setRetAgForm((f) => ({ ...f, data: e.target.value }))}
+                  style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: 7, padding: "8px 10px", fontSize: 13, boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Início</div>
+                <input type="time" value={retAgForm.horaInicio} onChange={(e) => setRetAgForm((f) => ({ ...f, horaInicio: e.target.value }))}
+                  style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: 7, padding: "8px 10px", fontSize: 13, boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Fim</div>
+                <input type="time" value={retAgForm.horaFim} onChange={(e) => setRetAgForm((f) => ({ ...f, horaFim: e.target.value }))}
+                  style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: 7, padding: "8px 10px", fontSize: 13, boxSizing: "border-box" }} />
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+              <button onClick={() => setRetAgModal(null)} style={{ flex: 1, padding: "10px", background: "white", border: "1px solid #d1d5db", borderRadius: 7, cursor: "pointer", fontWeight: 600, color: B.muted }}>Cancelar</button>
+              <button
+                onClick={async () => {
+                  const c = retAgModal.client;
+                  const start = `${retAgForm.data}T${retAgForm.horaInicio}:00`;
+                  const end   = `${retAgForm.data}T${retAgForm.horaFim}:00`;
+                  const title = `Reunião com ${c.nome}`;
+                  const pDays = getPeriodDays(c.periodicidade_reuniao || c.periodicidadeReuniao || "Trimestral");
+                  const proxima = addDays(retAgForm.data, pDays);
+                  // Salva reunião como agendada e limpa avisado_em
+                  await saveClient({ ...c, proxima_reuniao: retAgForm.data, avisado_em: "" }, false);
+                  // Abre Outlook
+                  const url = buildOutlookUrl({ title, start, end });
+                  window.open(url, "_blank");
+                  setRetAgModal(null);
+                  setToast({ type: "success", text: `Reunião agendada e Outlook aberto!` });
+                }}
+                style={{ flex: 2, padding: "10px", background: "#7C3AED", color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}
+              >📅 Abrir Outlook</button>
+            </div>
+          </div>
+        </Modal>
       )}
     </>
   );
