@@ -50,6 +50,7 @@ export default function ClientDetail() {
   const [aptHistOpen, setAptHistOpen] = useState(false);
   const [aptFilter, setAptFilter] = useState({ mode: "todos", ano: "", de: "", ate: "" });
   const [rhExpandedIds, setRhExpandedIds] = useState(new Set());
+  const [rhNotesEditing, setRhNotesEditing] = useState(new Set());
   const [rhInline, setRhInline] = useState({}); // { [id]: { data, titulo, texto, dirty } }
   const [finOpen, setFinOpen] = useState(true);
   const [notasOpen, setNotasOpen] = useState(true);
@@ -70,6 +71,7 @@ export default function ClientDetail() {
     const orig = clientReunioes.find((r) => r.id === rid);
     await saveReuniao({ ...orig, data: ed.data, titulo: ed.titulo, texto: ed.texto }, false);
     setRhInline((prev) => ({ ...prev, [rid]: { ...prev[rid], dirty: false } }));
+    setRhNotesEditing((prev) => { const n = new Set(prev); n.delete(rid); return n; });
     setToast({ type: "success", text: "Histórico atualizado." });
   };
 
@@ -619,9 +621,30 @@ export default function ClientDetail() {
 
       {/* Histórico — último, conteúdo colapsável por entrada */}
       <Card style={{ marginBottom: 12 }}>
-        <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between" }}>
+        <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span>Histórico ({clientReunioes.length})</span>
-          <button onClick={() => { setRhEditId(null); setRhForm({ client_id: id, data: today(), titulo: "", texto: "" }); setRhModal(true); }} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Registrar</button>
+          <div style={{ display: "flex", gap: 6 }}>
+            {clientReunioes.length > 0 && (
+              <button onClick={() => {
+                const allIds = clientReunioes.map((r) => r.id);
+                const allExpanded = allIds.every((rid) => rhExpandedIds.has(rid));
+                if (allExpanded) {
+                  setRhExpandedIds(new Set());
+                } else {
+                  setRhExpandedIds(new Set(allIds));
+                  // pre-load rhInline for all
+                  setRhInline((prev) => {
+                    const next = { ...prev };
+                    allIds.forEach((rid) => { if (!next[rid]) { const r = clientReunioes.find((x) => x.id === rid); if (r) next[rid] = { data: r.data || "", titulo: r.titulo || "", texto: r.texto || "", dirty: false }; } });
+                    return next;
+                  });
+                }
+              }} style={{ padding: "3px 10px", background: "white", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer" }}>
+                {clientReunioes.every((r) => rhExpandedIds.has(r.id)) ? "Recolher tudo" : "Expandir tudo"}
+              </button>
+            )}
+            <button onClick={() => { setRhEditId(null); setRhForm({ client_id: id, data: today(), titulo: "", texto: "" }); setRhModal(true); }} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Registrar</button>
+          </div>
         </div>
         {clientReunioes.length === 0 ? <div style={{ padding: 16, textAlign: "center", color: B.gray, fontSize: 12 }}>Nenhum registro.</div> : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -646,30 +669,30 @@ export default function ClientDetail() {
                   </div>
                   {isExpanded && (() => {
                     const ed = rhInline[r.id] || { data: r.data || "", titulo: r.titulo || "", texto: r.texto || "", dirty: false };
+                    const isEditingNotes = rhNotesEditing.has(r.id);
                     return (
                     <div style={{ padding: "10px 14px 14px", borderTop: `1px solid ${B.border}` }}>
-                      <div style={{ display: "flex", gap: 10, marginBottom: 8 }}>
-                        <div style={{ flex: "0 0 auto" }}>
-                          <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Data</div>
-                          <input type="date" value={ed.data} onChange={(e) => rhInlineChange(r.id, "data", e.target.value)}
-                            style={{ border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 8px", fontSize: 12, color: B.navy, outline: "none", background: "white" }} />
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Título</div>
-                          <input value={ed.titulo} onChange={(e) => rhInlineChange(r.id, "titulo", e.target.value)}
-                            placeholder="Ex: Kick Off, Acompanhamento..."
-                            style={{ width: "100%", border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 8px", fontSize: 12, color: B.navy, outline: "none", background: "white", boxSizing: "border-box" }} />
-                        </div>
-                      </div>
-                      <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Notas</div>
-                      <textarea value={ed.texto} onChange={(e) => rhInlineChange(r.id, "texto", e.target.value)} rows={6}
-                        style={{ width: "100%", border: `1px solid ${B.border}`, borderRadius: 6, padding: "8px", fontSize: 12, color: "#445566", lineHeight: 1.7, resize: "vertical", outline: "none", background: "white", boxSizing: "border-box", fontFamily: "inherit" }} />
-                      {ed.dirty && (
-                        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
-                          <button onClick={() => rhInlineSave(r.id)}
-                            style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "6px 18px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                            Salvar
-                          </button>
+                      {isEditingNotes ? (
+                        <>
+                          <textarea value={ed.texto} onChange={(e) => rhInlineChange(r.id, "texto", e.target.value)} rows={6} autoFocus
+                            onKeyDown={(e) => { if (e.key === "Escape") { setRhNotesEditing((prev) => { const n = new Set(prev); n.delete(r.id); return n; }); } }}
+                            style={{ width: "100%", border: `1px solid ${B.border}`, borderRadius: 6, padding: "8px", fontSize: 12, color: "#445566", lineHeight: 1.7, resize: "vertical", outline: "none", background: "white", boxSizing: "border-box", fontFamily: "inherit" }} />
+                          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
+                            <button onClick={() => { setRhInline((prev) => ({ ...prev, [r.id]: { ...prev[r.id], texto: r.texto || "", dirty: false } })); setRhNotesEditing((prev) => { const n = new Set(prev); n.delete(r.id); return n; }); }} style={{ background: "white", color: B.gray, border: `1px solid ${B.border}`, borderRadius: 6, padding: "6px 14px", fontSize: 12, cursor: "pointer" }}>Cancelar</button>
+                            <button onClick={() => rhInlineSave(r.id)} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "6px 18px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Salvar</button>
+                          </div>
+                        </>
+                      ) : (
+                        <div
+                          onClick={() => {
+                            setRhNotesEditing((prev) => { const n = new Set(prev); n.add(r.id); return n; });
+                            setRhInline((prev) => prev[r.id] ? prev : { ...prev, [r.id]: { data: r.data || "", titulo: r.titulo || "", texto: r.texto || "", dirty: false } });
+                          }}
+                          title="Clique para editar as notas"
+                          style={{ fontSize: 12, color: r.texto ? "#445566" : "#aaa", lineHeight: 1.7, cursor: "text", whiteSpace: "pre-wrap", minHeight: 36, padding: "6px 8px", borderRadius: 6, border: "1px dashed transparent" }}
+                          onMouseEnter={(e) => e.currentTarget.style.borderColor = "#cbd5e1"}
+                          onMouseLeave={(e) => e.currentTarget.style.borderColor = "transparent"}>
+                          {r.texto || <span style={{ fontStyle: "italic", color: "#bbb" }}>Clique para adicionar notas…</span>}
                         </div>
                       )}
                     </div>
