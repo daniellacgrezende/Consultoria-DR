@@ -75,20 +75,16 @@ export function InlineDate({ value, onSave, style = {} }) {
   const [val, setVal] = useState(value || "");
   useEffect(() => { setVal(value || ""); }, [value]);
 
+  const commit = (v) => { if (v && v.length === 10) { onSave(v); } setEditing(false); };
+
   if (editing) return (
-    <input type="date" value={val} autoFocus
-      onChange={(e) => {
-        const v = e.target.value;
-        setVal(v);
-        // Salva imediatamente quando o picker nativo seleciona uma data completa
-        if (v && v.length === 10) { onSave(v); setEditing(false); }
+    <input type="date" value={val}
+      onChange={(e) => setVal(e.target.value)}
+      onBlur={(e) => commit(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") commit(val);
+        if (e.key === "Escape") { setVal(value || ""); setEditing(false); }
       }}
-      onBlur={() => {
-        // Protege contra blur vazio (picker abre e fecha sem seleção)
-        if (val && val.length === 10) onSave(val);
-        setEditing(false);
-      }}
-      onKeyDown={(e) => { if (e.key === "Escape") { setVal(value || ""); setEditing(false); } }}
       style={{ padding: "3px 8px", border: "1px solid #D30000", borderRadius: 6, fontSize: 12, fontFamily: "inherit", outline: "none", boxShadow: "0 0 0 3px rgba(211,0,0,0.08)", ...style }} />
   );
   return (
