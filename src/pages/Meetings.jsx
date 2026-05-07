@@ -733,7 +733,7 @@ export default function Meetings() {
                 onClick={async () => {
                   const c = retAgModal.client;
                   await saveClient({ ...c, reuniao_agendada_em: retAgForm.data, avisado_em: "" }, false);
-                  await saveTodo({ id: huid(), texto: `Reunião com ${c.nome}`, vencimento: retAgForm.data, recorrencia: "", descricao: `Horário: ${retAgForm.horaInicio}–${retAgForm.horaFim}`, prioridade: "alta", client_id: c.id, done: false, ordem: 0 }, true);
+                  await saveTodo({ id: huid(), texto: `Reunião com ${c.nome}`, vencimento: retAgForm.data, recorrencia: "", descricao: `Horário: ${retAgForm.horaInicio}–${retAgForm.horaFim}`, prioridade: "normal", client_id: c.id, done: false, ordem: 0 }, true);
                   setRetAgModal(null);
                   setToast({ type: "success", text: `${c.nome.split(" ")[0]} movido para Próximas Reuniões.` });
                 }}
@@ -746,7 +746,7 @@ export default function Meetings() {
                   const end   = `${retAgForm.data}T${retAgForm.horaFim}:00`;
                   const title = `Reunião com ${c.nome}`;
                   await saveClient({ ...c, reuniao_agendada_em: retAgForm.data, avisado_em: "" }, false);
-                  await saveTodo({ id: huid(), texto: `Reunião com ${c.nome}`, vencimento: retAgForm.data, recorrencia: "", descricao: `Horário: ${retAgForm.horaInicio}–${retAgForm.horaFim}`, prioridade: "alta", client_id: c.id, done: false, ordem: 0 }, true);
+                  await saveTodo({ id: huid(), texto: `Reunião com ${c.nome}`, vencimento: retAgForm.data, recorrencia: "", descricao: `Horário: ${retAgForm.horaInicio}–${retAgForm.horaFim}`, prioridade: "normal", client_id: c.id, done: false, ordem: 0 }, true);
                   const url = buildOutlookUrl({ title, start, end });
                   window.open(url, "_blank");
                   setRetAgModal(null);
