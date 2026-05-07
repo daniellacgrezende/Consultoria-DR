@@ -10,6 +10,7 @@ import MiniStat from "../components/ui/MiniStat";
 import Avatar from "../components/ui/Avatar";
 import SearchBox from "../components/ui/SearchBox";
 import { SecH } from "../components/ui/FormFields";
+import Modal from "../components/ui/Modal";
 import { CBadge } from "../components/ui/Badge";
 
 // Atenção: passou o prazo mas ainda dentro de ATRASADO_DAYS (15d) → "Atenção"
@@ -38,7 +39,7 @@ const TH = { padding: "10px 14px", textAlign: "left", fontSize: 10, fontWeight: 
 
 export default function Relatorios() {
   const navigate = useNavigate();
-  const { clients, history, saveClient, setToast } = useData();
+  const { clients, history, saveClient, saveTodo, setToast } = useData();
   const [sortCol, setSortCol] = useState("diasSem");
   const [sortDir, setSortDir] = useState("desc");
   const [search, setSearch] = useState("");
@@ -49,6 +50,7 @@ export default function Relatorios() {
   const [statFilter, setStatFilter] = useState(null); // "atrasado" | "atencao" | "emdia" | null
   const [atencaoOpen, setAtencaoOpen] = useState(false);
   const [atrasadoOpen, setAtrasadoOpen] = useState(true);
+  const [taskModal, setTaskModal] = useState(null); // { texto, data }
 
   // ─── Checklist: usa o PRÓXIMO mês ───
   const now = new Date();
@@ -362,10 +364,16 @@ export default function Relatorios() {
                       Último envio: {fmtDate(c.ultimo_relatorio || c.ultimoRelatorio) || "—"}
                     </div>
                   </div>
-                  <button onClick={() => marcarEnviado(c)}
-                    style={{ fontSize: 9.5, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
-                    ✓ Enviado
-                  </button>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <button onClick={() => marcarEnviado(c)}
+                      style={{ fontSize: 9.5, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
+                      ✓ Enviado
+                    </button>
+                    <button onClick={() => setTaskModal({ texto: `Enviar relatório para ${c.nome}`, data: today() })}
+                      style={{ fontSize: 9.5, fontWeight: 700, background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
+                      + Tarefa
+                    </button>
+                  </div>
                 </div>
               );})}
             </div>
@@ -405,10 +413,16 @@ export default function Relatorios() {
                       Último envio: {fmtDate(c.ultimo_relatorio || c.ultimoRelatorio) || "—"}
                     </div>
                   </div>
-                  <button onClick={() => marcarEnviado(c)}
-                    style={{ fontSize: 9.5, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
-                    ✓ Enviado
-                  </button>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <button onClick={() => marcarEnviado(c)}
+                      style={{ fontSize: 9.5, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
+                      ✓ Enviado
+                    </button>
+                    <button onClick={() => setTaskModal({ texto: `Enviar relatório para ${c.nome}`, data: today() })}
+                      style={{ fontSize: 9.5, fontWeight: 700, background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
+                      + Tarefa
+                    </button>
+                  </div>
                 </div>
               );})}
             </div>
@@ -513,6 +527,31 @@ export default function Relatorios() {
           </table>
         </div>
       </Card>
+
+      {/* ─── Mini modal criar tarefa ─── */}
+      <Modal open={!!taskModal} onClose={() => setTaskModal(null)}>
+        <div style={{ padding: "24px 28px", minWidth: 320 }}>
+          <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 700, color: B.navy }}>Criar Tarefa</h3>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: "#8899bb", textTransform: "uppercase" }}>Descrição</label>
+            <input value={taskModal?.texto || ""} onChange={(e) => setTaskModal((m) => ({ ...m, texto: e.target.value }))}
+              style={{ display: "block", width: "100%", marginTop: 4, padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 7, fontSize: 13, boxSizing: "border-box" }} />
+          </div>
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: "#8899bb", textTransform: "uppercase" }}>Data</label>
+            <input type="date" value={taskModal?.data || ""} onChange={(e) => setTaskModal((m) => ({ ...m, data: e.target.value }))}
+              style={{ display: "block", width: "100%", marginTop: 4, padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 7, fontSize: 13, boxSizing: "border-box" }} />
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={() => setTaskModal(null)} style={{ flex: 1, padding: "9px", background: "white", border: "1px solid #d1d5db", borderRadius: 7, cursor: "pointer", color: "#6b7280", fontWeight: 600 }}>Cancelar</button>
+            <button onClick={async () => {
+              await saveTodo({ id: huid(), texto: taskModal.texto, vencimento: taskModal.data, recorrencia: "", descricao: "", prioridade: "normal", done: false, ordem: 0 }, true);
+              setTaskModal(null);
+              setToast({ type: "success", text: "Tarefa criada!" });
+            }} style={{ flex: 2, padding: "9px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>Criar Tarefa</button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }
