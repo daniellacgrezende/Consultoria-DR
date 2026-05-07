@@ -558,6 +558,9 @@ export default function Pipeline() {
       return;
     }
     const updates = { etapa, data_ultima_interacao: today() };
+    if (etapa === "Contrato Enviado" && !lead.data_contrato_enviado) {
+      updates.data_contrato_enviado = today();
+    }
     if (etapa === "Cliente") {
       updates.convertido_em = today();
       // Cria cliente automaticamente na lista de Clientes
@@ -621,6 +624,8 @@ export default function Pipeline() {
     };
     if (!reuniaoLead.data_primeira_reuniao) {
       updates.data_primeira_reuniao = reuniaoForm.data;
+    } else if (reuniaoEtapa === "R2 Agendada" && !reuniaoLead.data_segunda_reuniao) {
+      updates.data_segunda_reuniao = reuniaoForm.data;
     }
     await saveLead({ ...reuniaoLead, ...updates }, false);
     setReuniaoModal(false);
@@ -915,8 +920,9 @@ export default function Pipeline() {
             <Inp label="Patrimônio Estimado (R$)" type="number" value={form.patrimonio_estimado || ""} onChange={F("patrimonio_estimado")} />
             <Sel label="Etapa" value={form.etapa || "Lead"} onChange={F("etapa")} opts={allStageNames.map((e) => ({ v: e, l: e }))} />
             <Inp label="Data da R1" type="date" value={form.data_primeira_reuniao || ""} onChange={F("data_primeira_reuniao")} />
+            <Inp label="Data da R2" type="date" value={form.data_segunda_reuniao || ""} onChange={F("data_segunda_reuniao")} />
             <div style={{ gridColumn: "1/-1" }}>
-              <Inp label="Data do Kick Off" type="date" value={form.notas_data || ""} onChange={F("notas_data")} />
+              <Inp label="Data Contrato Enviado" type="date" value={form.data_contrato_enviado || ""} onChange={F("data_contrato_enviado")} />
             </div>
             <div style={{ gridColumn: "1/-1" }}>
               <Tarea label="Notas" value={form.notas || ""} onChange={F("notas")} placeholder="Registre tudo sobre o lead..." />

@@ -140,7 +140,7 @@ const CLIENT_DB_COLS = new Set([
   "periodicidade_relatorio", "pgbl", "vgbl", "renda_bruta_tributavel", "reserva_emergencia_valor",
   "reserva_emergencia_meta", "reserva_emergencia_produto", "grupo_id", "grupo_nome",
   "corretoras", "origem_cliente", "proximo_relatorio", "indicado_por", "aporte_mensal_max",
-  "seguro_nao_aplica", "ips_nao_aplica", "prev_nao_aplica",
+  "seguro_nao_aplica", "ips_nao_aplica", "prev_nao_aplica", "reuniao_agendada_em",
 ]);
 
 // Converte valor para número, retornando 0 se vazio/inválido
@@ -217,7 +217,8 @@ export const mapClientToDB = (c) => {
 const LEAD_DB_COLS = new Set([
   "id", "nome", "telefone", "email", "origem", "suborigem", "patrimonio_estimado",
   "etapa", "data_primeira_reuniao", "data_ultima_interacao", "motivo_negativa",
-  "notas", "notas_data", "convertido_em", "tipo_reuniao", "valor_estimado", "temperatura", "responsavel",
+  "notas", "convertido_em", "tipo_reuniao", "valor_estimado", "temperatura", "responsavel",
+  "data_segunda_reuniao", "data_contrato_enviado",
 ]);
 
 // Campos numéricos da tabela leads
