@@ -264,76 +264,99 @@ export default function Meetings() {
 
       {/* ─── Alert panels ─── */}
       {(atrasados.length > 0 || aAgendar.length > 0 || retentativas.length > 0 || aguardando.length > 0 || agendadas.length > 0) && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 18 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 18, alignItems: "start" }}>
 
-          {/* Grid 3 colunas: Atrasado | Retentativa | Hora de Agendar */}
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: [atrasados.length, retentativas.length, (aguardando.length > 0 || aAgendar.length > 0)].filter(Boolean).length === 3 ? "1fr 1fr 1fr" :
-              [atrasados.length, retentativas.length, (aguardando.length > 0 || aAgendar.length > 0)].filter(Boolean).length === 2 ? "1fr 1fr" : "1fr",
-            gap: 12,
-          }}>
-
-            {/* ATRASADO */}
-            {atrasados.length > 0 && (
-              <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, padding: "14px 16px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: "#DC2626", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                    Atrasado — &gt;25 dias do prazo
-                  </div>
-                  <button onClick={() => setAlertSort((s) => s === "curva" ? "diasSem" : "curva")}
-                    style={{ fontSize: 9, fontWeight: 700, background: alertSort === "curva" ? "#DC2626" : "white", color: alertSort === "curva" ? "white" : "#DC2626", border: "1px solid #FECACA", borderRadius: 5, padding: "3px 8px", cursor: "pointer" }}>
-                    {alertSort === "curva" ? "Curva A→D ✓" : "Ordenar por Curva"}
-                  </button>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {atrasados.map((c) => (
-                    <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #FECACA", borderRadius: 7, padding: "7px 10px" }}>
-                      <Avatar nome={c.nome} size={24} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 1 }}>
-                          <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
-                          <CBadge curva={c.curva} />
-                        </div>
-                        <div style={{ fontSize: 10, color: "#DC2626", fontWeight: 600 }}>
-                          {c.periodicidade_reuniao || "Trimestral"}{c.diasSem !== null && c.periodDays > 0 ? ` · ${c.diasSem - c.periodDays}d de atraso` : " · nunca reuniu"}
-                        </div>
-                        <div style={{ fontSize: 10, color: "#B91C1C" }}>Últ. reunião: {fmtDate(c.ultima_reuniao || c.ultimaReuniao) || "—"}</div>
+          {/* COL ESQUERDA: Reuniões Atrasadas */}
+          <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, padding: "14px 16px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: "#DC2626", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                🔴 Reuniões Atrasadas ({atrasados.length})
+              </div>
+              <button onClick={() => setAlertSort((s) => s === "curva" ? "diasSem" : "curva")}
+                style={{ fontSize: 9, fontWeight: 700, background: alertSort === "curva" ? "#DC2626" : "white", color: alertSort === "curva" ? "white" : "#DC2626", border: "1px solid #FECACA", borderRadius: 5, padding: "3px 8px", cursor: "pointer" }}>
+                {alertSort === "curva" ? "Curva A→D ✓" : "Ordenar por Curva"}
+              </button>
+            </div>
+            {atrasados.length === 0 ? (
+              <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 600, textAlign: "center", padding: "12px 0" }}>✓ Nenhum cliente atrasado</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 480, overflowY: "auto" }}>
+                {atrasados.map((c) => (
+                  <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #FECACA", borderRadius: 7, padding: "7px 10px" }}>
+                    <Avatar nome={c.nome} size={24} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 1 }}>
+                        <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
+                        <CBadge curva={c.curva} />
                       </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
-                        <button onClick={() => openAction("chamei", c)}
-                          style={{ fontSize: 9.5, fontWeight: 700, background: "#ECFEFF", color: "#0891B2", border: "1px solid #A5F3FC", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>Chamei</button>
+                      <div style={{ fontSize: 10, color: "#DC2626", fontWeight: 600 }}>
+                        {c.periodicidade_reuniao || "Trimestral"}{c.diasSem !== null && c.periodDays > 0 ? ` · ${c.diasSem - c.periodDays}d de atraso` : " · nunca reuniu"}
+                      </div>
+                      <div style={{ fontSize: 10, color: "#B91C1C" }}>Últ. reunião: {fmtDate(c.ultima_reuniao || c.ultimaReuniao) || "—"}</div>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
+                      <button onClick={() => openAction("chamei", c)}
+                        style={{ fontSize: 9.5, fontWeight: 700, background: "#ECFEFF", color: "#0891B2", border: "1px solid #A5F3FC", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>Chamei</button>
+                      <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00" }); }}
+                        style={{ fontSize: 9.5, fontWeight: 700, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>✓ Agendou</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* COL DIREITA: empilhados */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+
+            {/* AGUARDANDO RETORNO */}
+            {aguardando.some((c) => { const d = daysSince(c.avisado_em || c.avisadoEm); return d !== null && d <= 7; }) && (
+              <div style={{ background: "#ECFEFF", border: "1px solid #A5F3FC", borderRadius: 10, padding: "12px 14px" }}>
+                <div style={{ fontSize: 9, fontWeight: 800, color: "#0891B2", textTransform: "uppercase", marginBottom: 8 }}>
+                  📞 Aguardando Retorno ({aguardando.filter((c) => { const d = daysSince(c.avisado_em || c.avisadoEm); return d !== null && d <= 7; }).length})
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  {aguardando.filter((c) => { const d = daysSince(c.avisado_em || c.avisadoEm); return d !== null && d <= 7; }).map((c) => {
+                    const dAv = daysSince(c.avisado_em || c.avisadoEm);
+                    return (
+                      <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #A5F3FC", borderRadius: 7, padding: "6px 10px" }}>
+                        <Avatar nome={c.nome} size={22} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                            <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 11, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
+                            <CBadge curva={c.curva} />
+                          </div>
+                          <div style={{ fontSize: 10, color: "#0891B2", fontWeight: 600 }}>Chamei há {dAv}d · {c.periodicidade_reuniao || "Trimestral"}</div>
+                        </div>
                         <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00" }); }}
                           style={{ fontSize: 9.5, fontWeight: 700, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>✓ Agendou</button>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
 
             {/* RETENTATIVA */}
             {retentativas.length > 0 && (
-              <div style={{ background: "#F5F3FF", border: "1px solid #DDD6FE", borderRadius: 10, padding: "14px 16px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: "#7C3AED", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                    🔁 Retentativa ({retentativas.length})
-                  </div>
+              <div style={{ background: "#F5F3FF", border: "1px solid #DDD6FE", borderRadius: 10, padding: "12px 14px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                  <div style={{ fontSize: 9, fontWeight: 800, color: "#7C3AED", textTransform: "uppercase" }}>🔁 Retentativa ({retentativas.length})</div>
                   <button onClick={() => setAlertSort((s) => s === "curva" ? "diasSem" : "curva")}
-                    style={{ fontSize: 9, fontWeight: 700, background: alertSort === "curva" ? "#7C3AED" : "white", color: alertSort === "curva" ? "white" : "#7C3AED", border: "1px solid #DDD6FE", borderRadius: 5, padding: "3px 8px", cursor: "pointer" }}>
-                    {alertSort === "curva" ? "Curva A→D ✓" : "Ordenar por Curva"}
+                    style={{ fontSize: 9, fontWeight: 700, background: alertSort === "curva" ? "#7C3AED" : "white", color: alertSort === "curva" ? "white" : "#7C3AED", border: "1px solid #DDD6FE", borderRadius: 5, padding: "2px 7px", cursor: "pointer" }}>
+                    {alertSort === "curva" ? "Curva A→D ✓" : "Por Curva"}
                   </button>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                   {retentativas.map((c) => {
                     const dAv = daysSince(c.avisado_em || c.avisadoEm);
                     return (
-                      <div key={c.id} style={{ background: "white", border: "1px solid #DDD6FE", borderRadius: 8, padding: "8px 10px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                          <Avatar nome={c.nome} size={24} />
+                      <div key={c.id} style={{ background: "white", border: "1px solid #DDD6FE", borderRadius: 7, padding: "7px 10px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+                          <Avatar nome={c.nome} size={22} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                              <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
+                              <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 11, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
                               <CBadge curva={c.curva} />
                             </div>
                             <div style={{ fontSize: 10, color: "#7C3AED", fontWeight: 600 }}>Chamei há {dAv}d · {c.periodicidade_reuniao || "Trimestral"}</div>
@@ -342,9 +365,9 @@ export default function Meetings() {
                         </div>
                         <div style={{ display: "flex", gap: 5, paddingTop: 5, borderTop: "1px solid #EDE9FE" }}>
                           <button onClick={() => openAction("chamei", c)}
-                            style={{ flex: 1, fontSize: 9.5, fontWeight: 700, background: "#F5F3FF", color: "#7C3AED", border: "1px solid #DDD6FE", borderRadius: 5, padding: "4px 6px", cursor: "pointer" }}>Chamei de novo</button>
+                            style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#F5F3FF", color: "#7C3AED", border: "1px solid #DDD6FE", borderRadius: 5, padding: "4px 6px", cursor: "pointer" }}>Chamei de novo</button>
                           <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00" }); }}
-                            style={{ flex: 1, fontSize: 9.5, fontWeight: 700, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 6px", cursor: "pointer" }}>✓ Agendou</button>
+                            style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 6px", cursor: "pointer" }}>✓ Agendou</button>
                         </div>
                       </div>
                     );
@@ -353,51 +376,54 @@ export default function Meetings() {
               </div>
             )}
 
+            {/* REUNIÕES AGENDADAS */}
+            {agendadas.length > 0 && (
+              <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "12px 14px" }}>
+                <div style={{ fontSize: 9, fontWeight: 800, color: "#16a34a", textTransform: "uppercase", marginBottom: 8 }}>
+                  📅 Reuniões Agendadas ({agendadas.length})
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  {agendadas.map((c) => (
+                    <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #bbf7d0", borderRadius: 7, padding: "6px 10px" }}>
+                      <Avatar nome={c.nome} size={22} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                          <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 11, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
+                          <CBadge curva={c.curva} />
+                        </div>
+                        <div style={{ fontSize: 10, color: "#16a34a", fontWeight: 700 }}>📅 {fmtDate(c.reuniao_agendada_em)} · {c.periodicidade_reuniao || "Trimestral"}</div>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          const pDays = getPeriodDays(c.periodicidade_reuniao || c.periodicidadeReuniao || "Trimestral");
+                          const proxima = addDays(c.reuniao_agendada_em, pDays);
+                          await saveClient({ ...c, ultima_reuniao: c.reuniao_agendada_em, proxima_reuniao: proxima, reuniao_agendada_em: "", avisado_em: "" }, false);
+                          setToast({ type: "success", text: `Reunião com ${c.nome.split(" ")[0]} realizada!` });
+                        }}
+                        style={{ fontSize: 9.5, fontWeight: 700, background: "#16a34a", color: "white", border: "none", borderRadius: 5, padding: "5px 9px", cursor: "pointer", whiteSpace: "nowrap" }}>✓ Realizada</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* HORA DE AGENDAR */}
-            {(aguardando.length > 0 || aAgendar.length > 0) && (
-              <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "14px 16px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: "#D97706", textTransform: "uppercase", letterSpacing: "0.06em" }}>Hora de agendar</div>
+            {aAgendar.length > 0 && (
+              <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "12px 14px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                  <div style={{ fontSize: 9, fontWeight: 800, color: "#D97706", textTransform: "uppercase" }}>🟡 Hora de Agendar ({aAgendar.length})</div>
                   <button onClick={() => setAlertSort((s) => s === "curva" ? "diasSem" : "curva")}
-                    style={{ fontSize: 9, fontWeight: 700, background: alertSort === "curva" ? "#D97706" : "white", color: alertSort === "curva" ? "white" : "#D97706", border: "1px solid #FDE68A", borderRadius: 5, padding: "3px 8px", cursor: "pointer" }}>
-                    {alertSort === "curva" ? "Curva A→D ✓" : "Ordenar por Curva"}
+                    style={{ fontSize: 9, fontWeight: 700, background: alertSort === "curva" ? "#D97706" : "white", color: alertSort === "curva" ? "white" : "#D97706", border: "1px solid #FDE68A", borderRadius: 5, padding: "2px 7px", cursor: "pointer" }}>
+                    {alertSort === "curva" ? "Curva A→D ✓" : "Por Curva"}
                   </button>
                 </div>
-                {aguardando.some((c) => { const d = daysSince(c.avisado_em || c.avisadoEm); return d !== null && d <= 7; }) && (
-                  <div style={{ marginBottom: 10 }}>
-                    <div style={{ fontSize: 9, fontWeight: 800, color: "#0891B2", textTransform: "uppercase", marginBottom: 5 }}>
-                      📞 Aguardando retorno ({aguardando.filter((c) => { const d = daysSince(c.avisado_em || c.avisadoEm); return d !== null && d <= 7; }).length})
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                      {aguardando.filter((c) => { const d = daysSince(c.avisado_em || c.avisadoEm); return d !== null && d <= 7; }).map((c) => {
-                        const dAv = daysSince(c.avisado_em || c.avisadoEm);
-                        return (
-                          <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "#ECFEFF", border: "1px solid #A5F3FC", borderRadius: 7, padding: "7px 10px" }}>
-                            <Avatar nome={c.nome} size={24} />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 1 }}>
-                                <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
-                                <CBadge curva={c.curva} />
-                              </div>
-                              <div style={{ fontSize: 10, color: "#0891B2", fontWeight: 600 }}>Chamei há {dAv !== null ? `${dAv}d` : "—"} · {c.periodicidade_reuniao || "Trimestral"}</div>
-                              <div style={{ fontSize: 10, color: "#0e7490" }}>Últ. reunião: {fmtDate(c.ultima_reuniao || c.ultimaReuniao) || "—"}</div>
-                            </div>
-                            <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00" }); }}
-                              style={{ fontSize: 9.5, fontWeight: 700, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>✓ Agendou</button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-                {aAgendar.length > 0 && <div style={{ fontSize: 9, fontWeight: 800, color: "#D97706", textTransform: "uppercase", marginBottom: 5 }}>Para agendar ({aAgendar.length})</div>}
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                   {aAgendar.map((c) => (
-                    <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #FDE68A", borderRadius: 7, padding: "7px 10px" }}>
-                      <Avatar nome={c.nome} size={24} />
+                    <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #FDE68A", borderRadius: 7, padding: "6px 10px" }}>
+                      <Avatar nome={c.nome} size={22} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 1 }}>
-                          <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                          <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 11, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
                           <CBadge curva={c.curva} />
                         </div>
                         <div style={{ fontSize: 10, color: "#D97706", fontWeight: 600 }}>
@@ -413,37 +439,6 @@ export default function Meetings() {
               </div>
             )}
           </div>
-
-          {/* PRÓXIMAS REUNIÕES AGENDADAS */}
-          {agendadas.length > 0 && (
-            <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "14px 16px" }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: "#16a34a", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
-                📅 Próximas Reuniões Agendadas ({agendadas.length})
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 8 }}>
-                {agendadas.map((c) => (
-                  <div key={c.id} style={{ background: "white", border: "1px solid #bbf7d0", borderRadius: 8, padding: "10px 12px", display: "flex", alignItems: "center", gap: 8 }}>
-                    <Avatar nome={c.nome} size={24} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 1 }}>
-                        <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
-                        <CBadge curva={c.curva} />
-                      </div>
-                      <div style={{ fontSize: 10, color: "#16a34a", fontWeight: 700 }}>📅 {fmtDate(c.reuniao_agendada_em)} · {c.periodicidade_reuniao || "Trimestral"}</div>
-                    </div>
-                    <button
-                      onClick={async () => {
-                        const pDays = getPeriodDays(c.periodicidade_reuniao || c.periodicidadeReuniao || "Trimestral");
-                        const proxima = addDays(c.reuniao_agendada_em, pDays);
-                        await saveClient({ ...c, ultima_reuniao: c.reuniao_agendada_em, proxima_reuniao: proxima, reuniao_agendada_em: "", avisado_em: "" }, false);
-                        setToast({ type: "success", text: `Reunião com ${c.nome.split(" ")[0]} marcada como realizada!` });
-                      }}
-                      style={{ fontSize: 9.5, fontWeight: 700, background: "#16a34a", color: "white", border: "none", borderRadius: 5, padding: "5px 9px", cursor: "pointer", whiteSpace: "nowrap" }}>✓ Realizada</button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
 

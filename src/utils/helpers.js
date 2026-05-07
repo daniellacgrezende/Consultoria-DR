@@ -108,6 +108,7 @@ export const mapClientFromDB = (c) => ({
   ultimaReuniao: c.ultima_reuniao,
   proximaReuniao: c.proxima_reuniao,
   avisadoEm: c.avisado_em,
+  reuniao_agendada_em: c.reuniao_agendada_em || "",
   ultimoRelatorio: c.ultimo_relatorio,
   envioIps: c.ips_nao_aplica ? "nao_aplica" : c.envio_ips,
   ipsNaoAplica: c.ips_nao_aplica,
