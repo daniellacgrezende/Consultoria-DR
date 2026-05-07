@@ -4,7 +4,7 @@ import { supabase } from "../lib/supabase";
 import { useData } from "../hooks/useData";
 import { B } from "../utils/constants";
 import { fmtDate } from "../utils/formatters";
-import { huid, today, slugify } from "../utils/helpers";
+import { huid, today, slugify, getPeriodDays, addDays } from "../utils/helpers";
 import Modal from "../components/ui/Modal";
 import { Inp, Sel, Tarea, SecH } from "../components/ui/FormFields";
 
@@ -22,6 +22,37 @@ const PRIOR_COLORS = {
   normal: { bg: "#f8faff", color: "#1D3557", border: "rgba(10,8,9,0.06)" },
   baixa:  { bg: "#f9fafb", color: "#6b7280", border: "#e5e7eb" },
 };
+
+/* ─── Meeting Item (virtual, baseado em reuniao_agendada_em) ─── */
+function MeetingItem({ client, navigate, onRealizada }) {
+  const atrasada = client.reuniao_agendada_em < today();
+  return (
+    <div style={{ borderRadius: 8, background: "#eff6ff", border: `2px solid ${atrasada ? "#dc2626" : "#2563eb"}`, borderLeft: `4px solid ${atrasada ? "#dc2626" : "#2563eb"}`, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px" }}>
+        <span style={{ fontSize: 15, flexShrink: 0 }}>📅</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: atrasada ? "#dc2626" : "#1d4ed8" }}>
+            Reunião com {client.nome}
+          </span>
+          <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 800, background: atrasada ? "#dc2626" : "#2563eb", color: "white", borderRadius: 999, padding: "1px 7px", textTransform: "uppercase" }}>
+            {atrasada ? "ATRASADA" : "CONFIRMADA"}
+          </span>
+        </div>
+        <span style={{ fontSize: 10, color: atrasada ? "#dc2626" : "#1d4ed8", flexShrink: 0, fontWeight: 700 }}>
+          {fmtDate(client.reuniao_agendada_em)}
+        </span>
+        <button onClick={() => navigate(`/clients/${slugify(client.nome)}`)}
+          style={{ background: "white", color: "#1d4ed8", border: "1px solid #bfdbfe", borderRadius: 6, padding: "3px 7px", fontSize: 10, cursor: "pointer", flexShrink: 0 }}>
+          Ficha
+        </button>
+        <button onClick={onRealizada}
+          style={{ background: "#16a34a", color: "white", border: "none", borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+          ✓ Realizada
+        </button>
+      </div>
+    </div>
+  );
+}
 
 /* ─── Item ─── */
 function Item({ t, idx, groupList, atrasadasSet, toggle, postpone, openEdit, remove, moveItem, clients, navigate }) {
@@ -285,12 +316,32 @@ export default function Tasks() {
   const hojeList  = pendentes.filter((t) => (t.vencimento || t.data || today()) === today());
   const futuras   = pendentes.filter((t) => (t.vencimento || t.data || today()) > today()).sort((a, b) => (a.vencimento || a.data || "").localeCompare(b.vencimento || b.data || ""));
 
+  /* ── Reuniões confirmadas (virtual, de reuniao_agendada_em) ── */
+  const meetingClients = useMemo(() =>
+    clients.filter((c) => c.status === "ativo" && c.reuniao_agendada_em)
+      .sort((a, b) => (a.reuniao_agendada_em || "").localeCompare(b.reuniao_agendada_em || "")),
+    [clients]
+  );
+  const handleMeetingRealizada = async (c) => {
+    const pDays = getPeriodDays(c.periodicidade_reuniao || c.periodicidadeReuniao || "Trimestral");
+    const proxima = addDays(c.reuniao_agendada_em, pDays);
+    await saveClient({ ...c, ultima_reuniao: c.reuniao_agendada_em, proxima_reuniao: proxima, reuniao_agendada_em: null, avisado_em: null }, false);
+    setToast({ type: "success", text: `Reunião com ${c.nome.split(" ")[0]} marcada como realizada!` });
+  };
+  const meetAtrasadas = meetingClients.filter((c) => c.reuniao_agendada_em < today());
+  const meetHoje      = meetingClients.filter((c) => c.reuniao_agendada_em === today());
+  const meetAmanha    = meetingClients.filter((c) => c.reuniao_agendada_em === tomorrowStr);
+  const meetSemana    = meetingClients.filter((c) => c.reuniao_agendada_em > tomorrowStr && c.reuniao_agendada_em <= weekOutStr);
+  const meetAlem      = meetingClients.filter((c) => c.reuniao_agendada_em > weekOutStr);
+  const meetFilterDate = filterDate ? meetingClients.filter((c) => c.reuniao_agendada_em === filterDate) : [];
+
   const visAllDate    = filterDate ? applyFilters(pendentes) : [];
   const visAtrasadas  = !filterDate ? applyFilters(atrasadas) : [];
   const visHoje       = !filterDate && filterStatus !== "vencidas" ? applyFilters(hojeList) : [];
   const visFuturas    = !filterDate && filterStatus !== "vencidas" ? applyMonthFilter(applyFilters(futuras)) : [];
   const visConcluidas = filterStatus !== "vencidas" ? applyFilters(concluidas) : [];
-  const totalVisible  = (filterDate ? visAllDate.length : visAtrasadas.length + visHoje.length + visFuturas.length) + visConcluidas.length;
+  const totalMeetings = filterDate ? meetFilterDate.length : meetAtrasadas.length + meetHoje.length + meetAmanha.length + meetSemana.length + meetAlem.length;
+  const totalVisible  = (filterDate ? visAllDate.length + meetFilterDate.length : visAtrasadas.length + visHoje.length + visFuturas.length + totalMeetings) + visConcluidas.length;
 
   const visAmanha = visFuturas.filter(t => (t.vencimento || t.data || "") === tomorrowStr);
   const visSemana = visFuturas.filter(t => { const d = t.vencimento || t.data || ""; return d > tomorrowStr && d <= weekOutStr; });
@@ -446,34 +497,52 @@ export default function Tasks() {
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {filterDate ? (
           <>
-            {visAllDate.length > 0 && (
+            {(visAllDate.length > 0 || meetFilterDate.length > 0) && (
               <div style={{ fontSize: 10, fontWeight: 700, color: B.navy, textTransform: "uppercase", marginTop: 4 }}>
-                {filterDate === today() ? "Hoje" : fmtDate(filterDate)} ({visAllDate.length})
+                {filterDate === today() ? "Hoje" : fmtDate(filterDate)} ({visAllDate.length + meetFilterDate.length})
               </div>
             )}
+            {meetFilterDate.map((c) => (
+              <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} />
+            ))}
             {visAllDate.map((t, i) => (
               <Item key={t.id} t={t} idx={i} groupList={visAllDate} {...itemProps} />
             ))}
           </>
         ) : (
           <>
-            <CollapsibleGroup sectionKey="atrasadas" label="Atrasadas" color="#dc2626" count={visAtrasadas.length}>
+            <CollapsibleGroup sectionKey="atrasadas" label="Atrasadas" color="#dc2626" count={visAtrasadas.length + meetAtrasadas.length}>
+              {meetAtrasadas.map((c) => (
+                <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} />
+              ))}
               {visAtrasadas.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visAtrasadas} {...itemProps} />)}
             </CollapsibleGroup>
 
-            <CollapsibleGroup sectionKey="hoje" label="Hoje" color={B.navy} count={visHoje.length}>
+            <CollapsibleGroup sectionKey="hoje" label="Hoje" color={B.navy} count={visHoje.length + meetHoje.length}>
+              {meetHoje.map((c) => (
+                <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} />
+              ))}
               {visHoje.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visHoje} {...itemProps} />)}
             </CollapsibleGroup>
 
-            <CollapsibleGroup sectionKey="futAmanha" label="Amanhã" color="#6b7280" count={visAmanha.length}>
+            <CollapsibleGroup sectionKey="futAmanha" label="Amanhã" color="#6b7280" count={visAmanha.length + meetAmanha.length}>
+              {meetAmanha.map((c) => (
+                <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} />
+              ))}
               {visAmanha.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visFuturas} {...itemProps} />)}
             </CollapsibleGroup>
 
-            <CollapsibleGroup sectionKey="futSemana" label="Esta semana" color="#6b7280" count={visSemana.length}>
+            <CollapsibleGroup sectionKey="futSemana" label="Esta semana" color="#6b7280" count={visSemana.length + meetSemana.length}>
+              {meetSemana.map((c) => (
+                <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} />
+              ))}
               {visSemana.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visFuturas} {...itemProps} />)}
             </CollapsibleGroup>
 
-            <CollapsibleGroup sectionKey="futAlem" label="Mais adiante" color="#6b7280" count={visAlem.length}>
+            <CollapsibleGroup sectionKey="futAlem" label="Mais adiante" color="#6b7280" count={visAlem.length + meetAlem.length}>
+              {meetAlem.map((c) => (
+                <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} />
+              ))}
               {visAlem.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visFuturas} {...itemProps} />)}
             </CollapsibleGroup>
           </>
