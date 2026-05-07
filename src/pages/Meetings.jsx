@@ -262,7 +262,7 @@ export default function Meetings() {
       )}
 
       {/* ─── Alert panels ─── */}
-      {(atrasados.length > 0 || aAgendar.length > 0 || retentativas.length > 0) && (
+      {(atrasados.length > 0 || aAgendar.length > 0 || retentativas.length > 0 || aguardando.length > 0) && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 18 }}>
         <div style={{
           display: "grid",
@@ -331,13 +331,13 @@ export default function Meetings() {
                 </button>
               </div>
               {/* Aguardando — chamei e espero resposta */}
-              {aguardando.length > 0 && (
+              {aguardando.some((c) => { const d = daysSince(c.avisado_em || c.avisadoEm); return d !== null && d <= 7; }) && (
                 <div style={{ marginBottom: 10 }}>
                   <div style={{ fontSize: 9, fontWeight: 800, color: "#0891B2", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>
-                    📞 Aguardando retorno ({aguardando.length})
+                    📞 Aguardando retorno ({aguardando.filter((c) => { const d = daysSince(c.avisado_em || c.avisadoEm); return d !== null && d <= 7; }).length})
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                    {aguardando.map((c) => {
+                    {aguardando.filter((c) => { const d = daysSince(c.avisado_em || c.avisadoEm); return d !== null && d <= 7; }).map((c) => {
                       const dAv = daysSince(c.avisado_em || c.avisadoEm);
                       return (
                         <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "#ECFEFF", border: "1px solid #A5F3FC", borderRadius: 7, padding: "7px 10px" }}>
