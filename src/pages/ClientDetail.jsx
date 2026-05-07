@@ -669,30 +669,30 @@ export default function ClientDetail() {
                   </div>
                   {isExpanded && (() => {
                     const ed = rhInline[r.id] || { data: r.data || "", titulo: r.titulo || "", texto: r.texto || "", dirty: false };
-                    const isEditingNotes = rhNotesEditing.has(r.id);
                     return (
                     <div style={{ padding: "10px 14px 14px", borderTop: `1px solid ${B.border}` }}>
-                      {isEditingNotes ? (
-                        <>
-                          <textarea value={ed.texto} onChange={(e) => rhInlineChange(r.id, "texto", e.target.value)} rows={6} autoFocus
-                            onKeyDown={(e) => { if (e.key === "Escape") { setRhNotesEditing((prev) => { const n = new Set(prev); n.delete(r.id); return n; }); } }}
-                            style={{ width: "100%", border: `1px solid ${B.border}`, borderRadius: 6, padding: "8px", fontSize: 12, color: "#445566", lineHeight: 1.7, resize: "vertical", outline: "none", background: "white", boxSizing: "border-box", fontFamily: "inherit" }} />
-                          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
-                            <button onClick={() => { setRhInline((prev) => ({ ...prev, [r.id]: { ...prev[r.id], texto: r.texto || "", dirty: false } })); setRhNotesEditing((prev) => { const n = new Set(prev); n.delete(r.id); return n; }); }} style={{ background: "white", color: B.gray, border: `1px solid ${B.border}`, borderRadius: 6, padding: "6px 14px", fontSize: 12, cursor: "pointer" }}>Cancelar</button>
-                            <button onClick={() => rhInlineSave(r.id)} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "6px 18px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Salvar</button>
-                          </div>
-                        </>
-                      ) : (
-                        <div
-                          onClick={() => {
-                            setRhNotesEditing((prev) => { const n = new Set(prev); n.add(r.id); return n; });
-                            setRhInline((prev) => prev[r.id] ? prev : { ...prev, [r.id]: { data: r.data || "", titulo: r.titulo || "", texto: r.texto || "", dirty: false } });
-                          }}
-                          title="Clique para editar as notas"
-                          style={{ fontSize: 12, color: r.texto ? "#445566" : "#aaa", lineHeight: 1.7, cursor: "text", whiteSpace: "pre-wrap", minHeight: 36, padding: "6px 8px", borderRadius: 6, border: "1px dashed transparent" }}
-                          onMouseEnter={(e) => e.currentTarget.style.borderColor = "#cbd5e1"}
-                          onMouseLeave={(e) => e.currentTarget.style.borderColor = "transparent"}>
-                          {r.texto || <span style={{ fontStyle: "italic", color: "#bbb" }}>Clique para adicionar notas…</span>}
+                      <div style={{ display: "flex", gap: 10, marginBottom: 8 }}>
+                        <div style={{ flex: "0 0 auto" }}>
+                          <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Data</div>
+                          <input type="date" value={ed.data} onChange={(e) => rhInlineChange(r.id, "data", e.target.value)}
+                            style={{ border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 8px", fontSize: 12, color: B.navy, outline: "none", background: "white" }} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Título</div>
+                          <input value={ed.titulo} onChange={(e) => rhInlineChange(r.id, "titulo", e.target.value)}
+                            placeholder="Ex: Kick Off, Acompanhamento..."
+                            style={{ width: "100%", border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 8px", fontSize: 12, color: B.navy, outline: "none", background: "white", boxSizing: "border-box" }} />
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Notas</div>
+                      <textarea value={ed.texto} onChange={(e) => rhInlineChange(r.id, "texto", e.target.value)} rows={6}
+                        style={{ width: "100%", border: `1px solid ${B.border}`, borderRadius: 6, padding: "8px", fontSize: 12, color: "#445566", lineHeight: 1.7, resize: "vertical", outline: "none", background: "white", boxSizing: "border-box", fontFamily: "inherit" }} />
+                      {ed.dirty && (
+                        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                          <button onClick={() => rhInlineSave(r.id)}
+                            style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "6px 18px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                            Salvar
+                          </button>
                         </div>
                       )}
                     </div>
