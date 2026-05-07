@@ -619,7 +619,7 @@ export default function Pipeline() {
       data_ultima_interacao: today(),
       tipo_reuniao: reuniaoForm.tipo,
     };
-    if (reuniaoEtapa === "Reunião" && !reuniaoLead.data_primeira_reuniao) {
+    if (!reuniaoLead.data_primeira_reuniao) {
       updates.data_primeira_reuniao = reuniaoForm.data;
     }
     await saveLead({ ...reuniaoLead, ...updates }, false);
@@ -914,6 +914,7 @@ export default function Pipeline() {
             <Sel label="Origem" value={form.origem || "Indicação"} onChange={F("origem")} opts={LEAD_ORIGENS.map((o) => ({ v: o, l: o }))} />
             <Inp label="Patrimônio Estimado (R$)" type="number" value={form.patrimonio_estimado || ""} onChange={F("patrimonio_estimado")} />
             <Sel label="Etapa" value={form.etapa || "Lead"} onChange={F("etapa")} opts={allStageNames.map((e) => ({ v: e, l: e }))} />
+            <Inp label="Data da R1" type="date" value={form.data_primeira_reuniao || ""} onChange={F("data_primeira_reuniao")} />
             <div style={{ gridColumn: "1/-1" }}>
               <Inp label="Data do Kick Off" type="date" value={form.notas_data || ""} onChange={F("notas_data")} />
             </div>
