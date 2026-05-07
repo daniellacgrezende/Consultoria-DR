@@ -444,7 +444,7 @@ function OverlayCard({ lead }) {
 /* ─── Summary Bar (replaces MiniStats) ─── */
 function PipelineSummaryBar({ leads }) {
   // Conta apenas leads em estágios principais conhecidos (exclui saídas e etapas desconhecidas/antigas)
-  const ACTIVE_STAGES = ["Tentativa de Contato", "Qualificação", "R1 Agendada", "FUP 1", "R2 Agendada", "Contrato Enviado", "FUP 2"];
+  const ACTIVE_STAGES = ["Tentativa de Contato", "R1 Agendada", "FUP 1", "R2 Agendada", "Contrato Enviado", "FUP 2"];
   const ativos = leads.filter((l) => ACTIVE_STAGES.includes(l.etapa));
   const convertidos = leads.filter((l) => l.etapa === "Cliente").length;
   const quentes = leads.filter((l) => l.temperatura === "quente" && ACTIVE_STAGES.includes(l.etapa)).length;
