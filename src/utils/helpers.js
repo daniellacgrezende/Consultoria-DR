@@ -146,6 +146,7 @@ const CLIENT_DB_COLS = new Set([
 
 // Converte valor para número, retornando 0 se vazio/inválido
 const toNum = (v) => { const n = Number(v); return (v === "" || v == null || isNaN(n)) ? 0 : n; };
+const toDate = (v) => (v && String(v).trim().length >= 10 ? String(v).trim().slice(0, 10) : null);
 
 // Mapeia do frontend (camelCase) para o banco (snake_case)
 export const mapClientToDB = (c) => {
@@ -154,7 +155,7 @@ export const mapClientToDB = (c) => {
   const db = {
     id: c.id,
     nome: c.nome ?? "",
-    data_nascimento: c.data_nascimento ?? c.dataNascimento ?? "",
+    data_nascimento: toDate(c.data_nascimento ?? c.dataNascimento),
     cidade: c.cidade ?? "",
     uf: c.uf ?? "",
     estado_civil: c.estado_civil ?? c.estadoCivil ?? "",
@@ -183,12 +184,12 @@ export const mapClientToDB = (c) => {
     seguro_observacao: c.seguro_observacao ?? c.seguroObservacao ?? "",
     sucessao: c.sucessao ?? false,
     cliente_desbalanceado: c.cliente_desbalanceado ?? c.clienteDesbalanceado ?? false,
-    inicio_carteira: c.inicio_carteira ?? c.inicioCarteira ?? "",
-    ultima_reuniao: c.ultima_reuniao ?? c.ultimaReuniao ?? "",
-    proxima_reuniao: c.proxima_reuniao ?? c.proximaReuniao ?? "",
-    avisado_em: c.avisado_em ?? c.avisadoEm ?? "",
-    reuniao_agendada_em: c.reuniao_agendada_em ?? "",
-    ultimo_relatorio: c.ultimo_relatorio ?? c.ultimoRelatorio ?? "",
+    inicio_carteira: toDate(c.inicio_carteira ?? c.inicioCarteira),
+    ultima_reuniao: toDate(c.ultima_reuniao ?? c.ultimaReuniao),
+    proxima_reuniao: toDate(c.proxima_reuniao ?? c.proximaReuniao),
+    avisado_em: toDate(c.avisado_em ?? c.avisadoEm),
+    reuniao_agendada_em: toDate(c.reuniao_agendada_em),
+    ultimo_relatorio: toDate(c.ultimo_relatorio ?? c.ultimoRelatorio),
     ips_nao_aplica: (c.envio_ips ?? c.envioIps) === "nao_aplica",
     envio_ips: (c.envio_ips ?? c.envioIps) === "nao_aplica" ? false : !!(c.envio_ips ?? c.envioIps ?? false),
     observacoes: c.observacoes ?? "",
@@ -208,7 +209,7 @@ export const mapClientToDB = (c) => {
     grupo_id: c.grupo_id ?? c.grupoId ?? "",
     corretoras: c.corretoras ?? "",
     origem_cliente: c.origem_cliente ?? c.origemCliente ?? "",
-    proximo_relatorio: c.proximo_relatorio ?? c.proximoRelatorio ?? "",
+    proximo_relatorio: toDate(c.proximo_relatorio ?? c.proximoRelatorio),
     indicado_por: c.indicado_por ?? c.indicadoPor ?? "",
   };
 
