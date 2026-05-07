@@ -156,7 +156,9 @@ export default function Relatorios() {
     [atrasadoRows]
   );
   const pendentesAtencao = useMemo(() =>
-    [...atencaoRows].sort((a, b) => (b.pl || 0) - (a.pl || 0)),
+    [...atencaoRows]
+      .filter((c) => (c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal").toLowerCase() !== "mensal")
+      .sort((a, b) => (b.pl || 0) - (a.pl || 0)),
     [atencaoRows]
   );
 
