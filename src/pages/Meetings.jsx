@@ -190,6 +190,7 @@ export default function Meetings() {
   const atrasados    = rows.filter((r) => r.st.key === "atrasado").sort(alertSortFn);
   const aAgendar     = rows.filter((r) => r.st.key === "agendar").sort(alertSortFn);
   const retentativas = rows.filter((r) => r.st.key === "retentativa").sort(alertSortFn);
+  const aguardando   = rows.filter((r) => r.st.key === "aguardando").sort(alertSortFn);
 
   /* ─── Histórico ─── */
   const rhFiltered = useMemo(() =>
@@ -316,7 +317,7 @@ export default function Meetings() {
             </div>
           )}
 
-          {aAgendar.length > 0 && (
+          {(aguardando.length > 0 || aAgendar.length > 0) && (
             <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "14px 16px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                 <div style={{ fontSize: 10, fontWeight: 800, color: "#D97706", textTransform: "uppercase", letterSpacing: "0.06em" }}>
@@ -329,6 +330,41 @@ export default function Meetings() {
                   {alertSort === "curva" ? "Curva A→D ✓" : "Ordenar por Curva"}
                 </button>
               </div>
+              {/* Aguardando — chamei e espero resposta */}
+              {aguardando.length > 0 && (
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 9, fontWeight: 800, color: "#0891B2", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>
+                    📞 Aguardando retorno ({aguardando.length})
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    {aguardando.map((c) => {
+                      const dAv = daysSince(c.avisado_em || c.avisadoEm);
+                      return (
+                        <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "#ECFEFF", border: "1px solid #A5F3FC", borderRadius: 7, padding: "7px 10px" }}>
+                          <Avatar nome={c.nome} size={24} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 1 }}>
+                              <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
+                              <CBadge curva={c.curva} />
+                            </div>
+                            <div style={{ fontSize: 10, color: "#0891B2", fontWeight: 600 }}>
+                              Chamei há {dAv !== null ? `${dAv}d` : "—"} · {c.periodicidade_reuniao || "Trimestral"}
+                            </div>
+                            <div style={{ fontSize: 10, color: "#0e7490" }}>
+                              Últ. reunião: {fmtDate(c.ultima_reuniao || c.ultimaReuniao) || "—"}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00" }); }}
+                            style={{ fontSize: 9.5, fontWeight: 700, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}
+                          >✓ Agendou</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {aAgendar.length > 0 && <div style={{ fontSize: 9, fontWeight: 800, color: "#D97706", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Hora de agendar ({aAgendar.length})</div>}
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {aAgendar.map((c) => {
                   const curva = c.curva;
