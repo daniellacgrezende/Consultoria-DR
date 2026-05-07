@@ -299,10 +299,16 @@ export default function Meetings() {
                         Últ. reunião: {fmtDate(c.ultima_reuniao || c.ultimaReuniao) || "—"}
                       </div>
                     </div>
-                    <button
-                      onClick={() => openAction("chamei", c)}
-                      style={{ fontSize: 9.5, fontWeight: 700, background: "#ECFEFF", color: "#0891B2", border: "1px solid #A5F3FC", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}
-                    >Chamei</button>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
+                      <button
+                        onClick={() => openAction("chamei", c)}
+                        style={{ fontSize: 9.5, fontWeight: 700, background: "#ECFEFF", color: "#0891B2", border: "1px solid #A5F3FC", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}
+                      >Chamei</button>
+                      <button
+                        onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00" }); }}
+                        style={{ fontSize: 9.5, fontWeight: 700, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}
+                      >✓ Agendou</button>
+                    </div>
                   </div>
                   );
                 })}
