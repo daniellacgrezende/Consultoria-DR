@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase";
 import { useData } from "../hooks/useData";
 import { B } from "../utils/constants";
 import { fmtDate } from "../utils/formatters";
@@ -126,7 +127,7 @@ function getNextRecorrencia(vencimento, recorrencia) {
 /* ─── Tasks page ─── */
 export default function Tasks() {
   const navigate = useNavigate();
-  const { clients, todos, saveTodo, deleteTodo, clearDoneTodos, setToast } = useData();
+  const { clients, todos, saveTodo, saveClient, deleteTodo, clearDoneTodos, setToast } = useData();
   const [modal, setModal]               = useState(false);
   const [editId, setEditId]             = useState(null);
   const [form, setForm]                 = useState(EMPTY_FORM);
@@ -212,6 +213,22 @@ export default function Tasks() {
         data: today(),
         ordem: todos.length,
       }, true);
+    }
+
+    // ─── Auto-sync relatório: atualiza ficha e checklist ───
+    if (markingDone && t.client_id && t.texto && t.texto.toLowerCase().startsWith("enviar relatório")) {
+      const cl = clients.find((c) => c.id === t.client_id);
+      if (cl) {
+        const dataRel = t.vencimento || today();
+        await saveClient({ ...cl, ultimo_relatorio: dataRel }, false);
+        const month = dataRel.slice(0, 7);
+        const { data: existing } = await supabase.from("report_checklist").select("*").eq("client_id", t.client_id).eq("month", month).maybeSingle();
+        if (existing) {
+          await supabase.from("report_checklist").update({ checked: true, checked_at: new Date().toISOString() }).eq("id", existing.id);
+        } else {
+          await supabase.from("report_checklist").insert({ id: huid(), client_id: t.client_id, month, checked: true, checked_at: new Date().toISOString() });
+        }
+      }
     }
   };
   const remove   = async (id) => { await deleteTodo(id); };
