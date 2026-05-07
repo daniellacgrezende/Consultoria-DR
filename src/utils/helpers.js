@@ -187,6 +187,7 @@ export const mapClientToDB = (c) => {
     ultima_reuniao: c.ultima_reuniao ?? c.ultimaReuniao ?? "",
     proxima_reuniao: c.proxima_reuniao ?? c.proximaReuniao ?? "",
     avisado_em: c.avisado_em ?? c.avisadoEm ?? "",
+    reuniao_agendada_em: c.reuniao_agendada_em ?? "",
     ultimo_relatorio: c.ultimo_relatorio ?? c.ultimoRelatorio ?? "",
     ips_nao_aplica: (c.envio_ips ?? c.envioIps) === "nao_aplica",
     envio_ips: (c.envio_ips ?? c.envioIps) === "nao_aplica" ? false : !!(c.envio_ips ?? c.envioIps ?? false),
