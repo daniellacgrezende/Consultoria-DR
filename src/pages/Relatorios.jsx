@@ -45,6 +45,7 @@ export default function Relatorios() {
   const [showSug, setShowSug] = useState(false);
   const [filterClient, setFilterClient] = useState(null);
   const [checklistOpen, setChecklistOpen] = useState(false);
+  const [checklistSort, setChecklistSort] = useState("curva"); // "curva" | "nome"
   const [statFilter, setStatFilter] = useState(null); // "atrasado" | "atencao" | "emdia" | null
   const [atencaoOpen, setAtencaoOpen] = useState(false);
 
@@ -70,12 +71,22 @@ export default function Relatorios() {
 
   const active = useMemo(() => clients.filter((c) => c.status === "ativo"), [clients]);
 
-  const monthlyClients = useMemo(() =>
-    active.filter((c) => {
+  const CURVA_ORD = { A: 1, B: 2, C: 3, D: 4 };
+  const monthlyClients = useMemo(() => {
+    const list = active.filter((c) => {
       const p = (c.periodicidade_relatorio || c.periodicidadeRelatorio || "").toLowerCase();
       return p === "mensal";
-    }).sort((a, b) => a.nome.localeCompare(b.nome)),
-  [active]);
+    });
+    if (checklistSort === "curva") {
+      return list.sort((a, b) => {
+        const ca = getCurva(getCurrentPL(a, history));
+        const cb = getCurva(getCurrentPL(b, history));
+        const diff = (CURVA_ORD[ca] || 5) - (CURVA_ORD[cb] || 5);
+        return diff !== 0 ? diff : a.nome.localeCompare(b.nome);
+      });
+    }
+    return list.sort((a, b) => a.nome.localeCompare(b.nome));
+  }, [active, history, checklistSort]);
 
   const checkedMap = useMemo(() => {
     const m = {};
@@ -236,6 +247,11 @@ export default function Relatorios() {
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <button
+                onClick={(e) => { e.stopPropagation(); setChecklistSort((s) => s === "curva" ? "nome" : "curva"); }}
+                style={{ fontSize: 10, fontWeight: 700, padding: "3px 9px", borderRadius: 6, border: `1px solid ${B.border}`, background: "white", color: B.navy, cursor: "pointer", whiteSpace: "nowrap" }}>
+                {checklistSort === "curva" ? "Curva A→D" : "Nome A→Z"}
+              </button>
               <div style={{ fontSize: 12, fontWeight: 700, color: checkedCount === monthlyClients.length ? "#16a34a" : B.navy }}>
                 {checkedCount}/{monthlyClients.length}
               </div>
