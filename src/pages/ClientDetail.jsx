@@ -50,10 +50,28 @@ export default function ClientDetail() {
   const [aptHistOpen, setAptHistOpen] = useState(false);
   const [aptFilter, setAptFilter] = useState({ mode: "todos", ano: "", de: "", ate: "" });
   const [rhExpandedIds, setRhExpandedIds] = useState(new Set());
+  const [rhInline, setRhInline] = useState({}); // { [id]: { data, titulo, texto, dirty } }
   const [finOpen, setFinOpen] = useState(true);
   const [notasOpen, setNotasOpen] = useState(true);
   const [dgOpen, setDgOpen] = useState(true);
-  const toggleRhExpand = (rid) => setRhExpandedIds((prev) => { const n = new Set(prev); n.has(rid) ? n.delete(rid) : n.add(rid); return n; });
+  const toggleRhExpand = (rid) => {
+    setRhExpandedIds((prev) => { const n = new Set(prev); n.has(rid) ? n.delete(rid) : n.add(rid); return n; });
+    setRhInline((prev) => {
+      if (prev[rid]) return prev;
+      const r = clientReunioes.find((x) => x.id === rid);
+      if (!r) return prev;
+      return { ...prev, [rid]: { data: r.data || "", titulo: r.titulo || "", texto: r.texto || "", dirty: false } };
+    });
+  };
+  const rhInlineChange = (rid, field, val) => setRhInline((prev) => ({ ...prev, [rid]: { ...prev[rid], [field]: val, dirty: true } }));
+  const rhInlineSave = async (rid) => {
+    const ed = rhInline[rid];
+    if (!ed) return;
+    const orig = clientReunioes.find((r) => r.id === rid);
+    await saveReuniao({ ...orig, data: ed.data, titulo: ed.titulo, texto: ed.texto }, false);
+    setRhInline((prev) => ({ ...prev, [rid]: { ...prev[rid], dirty: false } }));
+    setToast({ type: "success", text: "Histórico atualizado." });
+  };
 
   if (!client) return (
     <div style={{ padding: 40, textAlign: "center", color: B.gray }}>
@@ -623,15 +641,40 @@ export default function ClientDetail() {
                       )}
                     </div>
                     <div style={{ display: "flex", gap: 5, flexShrink: 0, marginLeft: 8 }} onClick={(e) => e.stopPropagation()}>
-                      <button onClick={() => { setRhEditId(r.id); setRhForm({ ...r }); setRhModal(true); }} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 5, padding: "3px 9px", fontSize: 10, cursor: "pointer" }}>Editar</button>
-                      <button onClick={async () => { await deleteReuniao(r.id); setToast({ type: "success", text: "Removido." }); }} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 5, padding: "3px 9px", fontSize: 10, cursor: "pointer" }}>Remover</button>
+                      <button onClick={async () => { if (confirm("Remover este registro?")) { await deleteReuniao(r.id); setToast({ type: "success", text: "Removido." }); } }} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 5, padding: "3px 9px", fontSize: 10, cursor: "pointer" }}>Remover</button>
                     </div>
                   </div>
-                  {isExpanded && (
-                    <div style={{ padding: "0 14px 12px", borderTop: `1px solid ${B.border}` }}>
-                      <p style={{ margin: "10px 0 0", fontSize: 12, color: "#445566", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{r.texto}</p>
+                  {isExpanded && (() => {
+                    const ed = rhInline[r.id] || { data: r.data || "", titulo: r.titulo || "", texto: r.texto || "", dirty: false };
+                    return (
+                    <div style={{ padding: "10px 14px 14px", borderTop: `1px solid ${B.border}` }}>
+                      <div style={{ display: "flex", gap: 10, marginBottom: 8 }}>
+                        <div style={{ flex: "0 0 auto" }}>
+                          <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Data</div>
+                          <input type="date" value={ed.data} onChange={(e) => rhInlineChange(r.id, "data", e.target.value)}
+                            style={{ border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 8px", fontSize: 12, color: B.navy, outline: "none", background: "white" }} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Título</div>
+                          <input value={ed.titulo} onChange={(e) => rhInlineChange(r.id, "titulo", e.target.value)}
+                            placeholder="Ex: Kick Off, Acompanhamento..."
+                            style={{ width: "100%", border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 8px", fontSize: 12, color: B.navy, outline: "none", background: "white", boxSizing: "border-box" }} />
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Notas</div>
+                      <textarea value={ed.texto} onChange={(e) => rhInlineChange(r.id, "texto", e.target.value)} rows={6}
+                        style={{ width: "100%", border: `1px solid ${B.border}`, borderRadius: 6, padding: "8px", fontSize: 12, color: "#445566", lineHeight: 1.7, resize: "vertical", outline: "none", background: "white", boxSizing: "border-box", fontFamily: "inherit" }} />
+                      {ed.dirty && (
+                        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                          <button onClick={() => rhInlineSave(r.id)}
+                            style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "6px 18px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                            Salvar
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  )}
+                    );
+                  })()}
                 </div>
               );
             })}
