@@ -73,19 +73,23 @@ export function InlineSelect({ value, onSave, opts = [], placeholder = "—", st
 export function InlineDate({ value, onSave, style = {} }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(value || "");
-  useEffect(() => { setVal(value || ""); }, [value]);
+  useEffect(() => { if (!editing) setVal(value || ""); }, [value, editing]);
 
-  const commit = (v) => { if (v && v.length === 10) { onSave(v); } setEditing(false); };
+  const commit = () => { if (val && val.length === 10) onSave(val); setEditing(false); };
+  const cancel = () => { setVal(value || ""); setEditing(false); };
 
   if (editing) return (
-    <input type="date" value={val}
-      onChange={(e) => setVal(e.target.value)}
-      onBlur={(e) => commit(e.target.value)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") commit(val);
-        if (e.key === "Escape") { setVal(value || ""); setEditing(false); }
-      }}
-      style={{ padding: "3px 8px", border: "1px solid #D30000", borderRadius: 6, fontSize: 12, fontFamily: "inherit", outline: "none", boxShadow: "0 0 0 3px rgba(211,0,0,0.08)", ...style }} />
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+      <input
+        type="date"
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") commit(); if (e.key === "Escape") cancel(); }}
+        style={{ padding: "3px 8px", border: "1px solid #D30000", borderRadius: 6, fontSize: 12, fontFamily: "inherit", outline: "none", ...style }}
+      />
+      <button onClick={commit} title="Salvar" style={{ background: "#16a34a", color: "white", border: "none", borderRadius: 4, padding: "2px 7px", fontSize: 12, cursor: "pointer", fontWeight: 700, lineHeight: 1.4 }}>✓</button>
+      <button onClick={cancel} title="Cancelar" style={{ background: "#e5e7eb", color: "#6b7280", border: "none", borderRadius: 4, padding: "2px 7px", fontSize: 12, cursor: "pointer", fontWeight: 700, lineHeight: 1.4 }}>✕</button>
+    </span>
   );
   return (
     <span onClick={() => setEditing(true)} title="Clique para editar" style={{ cursor: "pointer", borderBottom: "1px dashed rgba(10,8,9,0.2)", paddingBottom: 1, fontSize: 12, color: value ? "inherit" : "#9E9C9E", ...style }}>
