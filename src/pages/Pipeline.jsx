@@ -51,6 +51,190 @@ function DaysBadge({ date }) {
   );
 }
 
+/* ─── Analytics View ─── */
+function PipelineAnalytics({ leads, stagesExit }) {
+  const exitStageNames = stagesExit.map((s) => s.nome);
+  const withMetrics = leads.map((l) => {
+    const isConverted = l.etapa === "Cliente";
+    const isLost = exitStageNames.includes(l.etapa) && !isConverted;
+    const r1 = l.data_primeira_reuniao;
+    const conv = l.convertido_em;
+    const daysR1ToNow = r1 ? daysSince(r1) : null;
+    const daysR1ToConv = (r1 && conv) ? Math.max(0, Math.round((new Date(conv) - new Date(r1)) / 86400000)) : null;
+    return { ...l, isConverted, isLost, daysR1ToNow, daysR1ToConv };
+  });
+
+  const converted = withMetrics.filter((l) => l.isConverted);
+  const convWithTime = converted.filter((l) => l.daysR1ToConv !== null);
+  const avgConvTime = convWithTime.length > 0
+    ? Math.round(convWithTime.reduce((s, l) => s + l.daysR1ToConv, 0) / convWithTime.length) : null;
+  const taxaGeral = leads.length > 0 ? Math.round((converted.length / leads.length) * 100) : 0;
+
+  const allOrigens = [...new Set(leads.map((l) => l.origem || "Não informado"))].sort();
+  const byOrigem = allOrigens.map((origem) => {
+    const g = withMetrics.filter((l) => (l.origem || "Não informado") === origem);
+    const conv = g.filter((l) => l.isConverted);
+    const lost = g.filter((l) => l.isLost);
+    const active = g.filter((l) => !l.isConverted && !l.isLost);
+    const cwt = conv.filter((l) => l.daysR1ToConv !== null);
+    const avgTime = cwt.length > 0 ? Math.round(cwt.reduce((s, l) => s + l.daysR1ToConv, 0) / cwt.length) : null;
+    const taxa = g.length > 0 ? Math.round((conv.length / g.length) * 100) : 0;
+    const maxBarra = allOrigens.length > 0 ? g.length : 1;
+    return { origem, total: g.length, convertidos: conv.length, perdidos: lost.length, ativos: active.length, taxa, avgTime, maxBarra };
+  });
+  const maxTotal = Math.max(...byOrigem.map((r) => r.total), 1);
+
+  const tdC = { padding: "10px 12px", textAlign: "center" };
+  const tdL = { padding: "10px 12px" };
+  const thStyle = (left) => ({ padding: "8px 12px", textAlign: left ? "left" : "center", fontSize: 9.5, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: "1px solid #e8edf5" });
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* KPIs */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+        {[
+          { label: "Total Leads", value: leads.length, color: "#1e3a5f" },
+          { label: "Convertidos", value: converted.length, color: "#15803D" },
+          { label: "Taxa Geral", value: `${taxaGeral}%`, color: taxaGeral >= 25 ? "#15803D" : taxaGeral >= 10 ? "#B45309" : "#DC2626" },
+          { label: "Ciclo médio R1→Conv.", value: avgConvTime !== null ? `${avgConvTime}d` : "—", color: "#1e3a5f" },
+        ].map((kpi, i) => (
+          <div key={i} style={{ background: "white", border: "1px solid #e8edf5", borderRadius: 10, padding: "14px 18px", textAlign: "center", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+            <div style={{ fontSize: 9.5, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>{kpi.label}</div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: kpi.color, letterSpacing: "-1px", lineHeight: 1 }}>{kpi.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Por Origem */}
+      <Card>
+        <div style={{ fontWeight: 700, fontSize: 13, color: "#1e3a5f", marginBottom: 14 }}>Conversão por Origem</div>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: "#F5F7FF" }}>
+                {["Origem", "Leads", "Convertidos", "Taxa", "Em andamento", "Perdidos", "Ciclo médio R1→Conv."].map((h, i) => (
+                  <th key={h} style={thStyle(i === 0)}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {byOrigem.map((row, i) => (
+                <tr key={row.origem} style={{ borderBottom: "1px solid #e8edf5", background: i % 2 === 0 ? "white" : "#FAFBFF" }}>
+                  <td style={{ ...tdL, fontWeight: 700, color: "#1e3a5f" }}>
+                    <div>{row.origem}</div>
+                    <div style={{ marginTop: 4, height: 4, background: "#e8edf5", borderRadius: 99, width: 120 }}>
+                      <div style={{ height: "100%", background: "#3b5bdb", borderRadius: 99, width: `${Math.round((row.total / maxTotal) * 100)}%` }} />
+                    </div>
+                  </td>
+                  <td style={{ ...tdC, color: "#8899bb" }}>{row.total}</td>
+                  <td style={{ ...tdC, fontWeight: 700, color: "#15803D" }}>{row.convertidos}</td>
+                  <td style={tdC}>
+                    <span style={{ fontSize: 11, fontWeight: 700, background: row.taxa >= 30 ? "#f0fdf4" : row.taxa >= 15 ? "#fffbeb" : "#fef2f2", color: row.taxa >= 30 ? "#15803D" : row.taxa >= 15 ? "#B45309" : "#DC2626", borderRadius: 999, padding: "2px 9px" }}>
+                      {row.taxa}%
+                    </span>
+                  </td>
+                  <td style={{ ...tdC, color: "#8899bb" }}>{row.ativos}</td>
+                  <td style={{ ...tdC, fontWeight: row.perdidos > 0 ? 700 : 400, color: row.perdidos > 0 ? "#DC2626" : "#8899bb" }}>{row.perdidos}</td>
+                  <td style={{ ...tdC, fontWeight: 600, color: "#1e3a5f" }}>{row.avgTime !== null ? `${row.avgTime}d` : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Ciclo dos leads ativos com R1 */}
+      {(() => {
+        const comR1 = withMetrics.filter((l) => l.daysR1ToNow !== null && !l.isConverted && !l.isLost)
+          .sort((a, b) => b.daysR1ToNow - a.daysR1ToNow);
+        if (comR1.length === 0) return null;
+        return (
+          <Card>
+            <div style={{ fontWeight: 700, fontSize: 13, color: "#1e3a5f", marginBottom: 14 }}>
+              Leads em andamento — contador desde R1
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                <thead>
+                  <tr style={{ background: "#F5F7FF" }}>
+                    {["Nome", "Origem", "Etapa", "Data R1", "Dias desde R1", "Patrimônio"].map((h, i) => (
+                      <th key={h} style={thStyle(i <= 1)}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {comR1.map((l, i) => {
+                    const d = l.daysR1ToNow;
+                    const color = d > 120 ? "#DC2626" : d > 60 ? "#B45309" : "#15803D";
+                    return (
+                      <tr key={l.id} style={{ borderBottom: "1px solid #e8edf5", background: i % 2 === 0 ? "white" : "#FAFBFF" }}>
+                        <td style={{ ...tdL, fontWeight: 700, color: "#1e3a5f" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                            <Avatar nome={l.nome} size={24} />
+                            {l.nome}
+                          </div>
+                        </td>
+                        <td style={{ ...tdL, color: "#8899bb" }}>{l.origem || "—"}</td>
+                        <td style={tdC}>
+                          <span style={{ fontSize: 10, fontWeight: 700, background: "#f0f4ff", color: "#3b5bdb", borderRadius: 999, padding: "2px 8px" }}>{l.etapa}</span>
+                        </td>
+                        <td style={{ ...tdC, color: "#8899bb" }}>{fmtDate(l.data_primeira_reuniao)}</td>
+                        <td style={tdC}>
+                          <span style={{ fontWeight: 800, fontSize: 14, color }}>{d}d</span>
+                        </td>
+                        <td style={{ ...tdC, fontWeight: 700, color: "#15803D" }}>{Number(l.patrimonio_estimado) > 0 ? money(l.patrimonio_estimado) : "—"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        );
+      })()}
+
+      {/* Convertidos com ciclo R1→conversão */}
+      {converted.length > 0 && (
+        <Card>
+          <div style={{ fontWeight: 700, fontSize: 13, color: "#1e3a5f", marginBottom: 14 }}>Convertidos — Ciclo R1 → Conversão</div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead>
+                <tr style={{ background: "#F5F7FF" }}>
+                  {["Nome", "Origem", "Data R1", "Convertido em", "Ciclo (dias)", "Patrimônio"].map((h, i) => (
+                    <th key={h} style={thStyle(i <= 1)}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {converted.sort((a, b) => (a.daysR1ToConv ?? 999) - (b.daysR1ToConv ?? 999)).map((l, i) => (
+                  <tr key={l.id} style={{ borderBottom: "1px solid #e8edf5", background: i % 2 === 0 ? "white" : "#FAFBFF" }}>
+                    <td style={{ ...tdL, fontWeight: 700, color: "#1e3a5f" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                        <Avatar nome={l.nome} size={24} />
+                        {l.nome}
+                      </div>
+                    </td>
+                    <td style={{ ...tdL, color: "#8899bb" }}>{l.origem || "—"}</td>
+                    <td style={{ ...tdC, color: "#8899bb" }}>{fmtDate(l.data_primeira_reuniao) || "—"}</td>
+                    <td style={{ ...tdC, color: "#8899bb" }}>{fmtDate(l.convertido_em) || "—"}</td>
+                    <td style={tdC}>
+                      {l.daysR1ToConv !== null
+                        ? <span style={{ fontWeight: 800, fontSize: 13, color: l.daysR1ToConv <= 30 ? "#15803D" : l.daysR1ToConv <= 90 ? "#B45309" : "#DC2626" }}>{l.daysR1ToConv}d</span>
+                        : <span style={{ color: "#8899bb" }}>—</span>}
+                    </td>
+                    <td style={{ ...tdC, fontWeight: 700, color: "#15803D" }}>{Number(l.patrimonio_estimado) > 0 ? money(l.patrimonio_estimado) : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
+
 /* ─── Lead Card (draggable) ─── */
 function DraggableLeadCard({ lead, openEdit, moveEtapa }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -98,10 +282,18 @@ function DraggableLeadCard({ lead, openEdit, moveEtapa }) {
           <div style={{ fontSize: 11, color: B.muted, marginBottom: 2 }}>{lead.origem}</div>
         )}
 
-        {/* Patrimônio */}
-        {patrimonio > 0 && (
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#15803D", marginTop: 4 }}>{money(patrimonio)}</div>
-        )}
+        {/* Patrimônio + R1 counter */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
+          {patrimonio > 0
+            ? <div style={{ fontSize: 11, fontWeight: 700, color: "#15803D" }}>{money(patrimonio)}</div>
+            : <span />}
+          {lead.data_primeira_reuniao && (() => {
+            const d = daysSince(lead.data_primeira_reuniao);
+            if (d === null) return null;
+            const color = d > 120 ? "#DC2626" : d > 60 ? "#B45309" : "#15803D";
+            return <span title={`R1 em ${lead.data_primeira_reuniao}`} style={{ fontSize: 9, fontWeight: 700, background: "#f0f4ff", color: "#3b5bdb", borderRadius: 999, padding: "1px 6px" }}>R1 {d}d</span>;
+          })()}
+        </div>
       </div>
     </div>
   );
@@ -457,12 +649,14 @@ export default function Pipeline() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
         <SecH eyebrow="Vendas" title="Leads" desc="Gestão consultiva de leads." />
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button
-            onClick={() => setView((v) => (v === "pipeline" ? "lista" : "pipeline"))}
-            style={{ padding: "8px 14px", background: "white", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
-          >
-            {view === "pipeline" ? "Lista" : "Pipeline"}
-          </button>
+          {["pipeline", "lista", "analytics"].map((v) => (
+            <button key={v}
+              onClick={() => setView(v)}
+              style={{ padding: "8px 14px", background: view === v ? B.brand : "white", color: view === v ? "white" : B.navy, border: `1px solid ${view === v ? B.brand : B.border}`, borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+            >
+              {v === "pipeline" ? "Pipeline" : v === "lista" ? "Lista" : "Analytics"}
+            </button>
+          ))}
           <button
             onClick={openNew}
             style={{ padding: "8px 18px", background: B.brand, color: "white", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
@@ -474,6 +668,11 @@ export default function Pipeline() {
 
       {/* ─── Summary bar (slim, no cards) ─── */}
       <PipelineSummaryBar leads={leads} />
+
+      {/* ═══ ANALYTICS VIEW ═══ */}
+      {view === "analytics" && (
+        <PipelineAnalytics leads={leads} stagesExit={stagesExit} />
+      )}
 
       {/* ─── Filter (list view only) ─── */}
       {view === "lista" && (
@@ -539,7 +738,7 @@ export default function Pipeline() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr style={{ background: "#F5F7FF" }}>
-                  {["Nome", "Patrimônio", "Temperatura", "Etapa", "Origem", "Última Interação", "Dias", ""].map((h) => (
+                  {["Nome", "Patrimônio", "Temperatura", "Etapa", "Origem", "R1 (dias)", "Última Interação", "Dias", ""].map((h) => (
                     <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}` }}>{h}</th>
                   ))}
                 </tr>
@@ -576,6 +775,14 @@ export default function Pipeline() {
                         </span>
                       </td>
                       <td style={{ padding: "10px 14px", color: B.muted, fontSize: 12 }}>{l.origem || "—"}</td>
+                      <td style={{ padding: "10px 14px", textAlign: "center" }}>
+                        {l.data_primeira_reuniao ? (() => {
+                          const d = daysSince(l.data_primeira_reuniao);
+                          if (d === null) return "—";
+                          const color = d > 120 ? "#DC2626" : d > 60 ? "#B45309" : "#15803D";
+                          return <span title={`R1 em ${l.data_primeira_reuniao}`} style={{ fontWeight: 700, fontSize: 12, color }}>{d}d</span>;
+                        })() : <span style={{ color: B.muted }}>—</span>}
+                      </td>
                       <td style={{ padding: "10px 14px", color: B.muted, fontSize: 12 }}>{fmtDate(l.data_ultima_interacao) || "—"}</td>
                       <td style={{ padding: "10px 14px" }}>
                         {dias !== null ? (
