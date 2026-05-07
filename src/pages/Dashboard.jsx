@@ -92,24 +92,7 @@ export default function Dashboard() {
       return ds >= todayStr && ds <= endStr;
     });
 
-    const clientMeetings = active
-      .filter((c) => {
-        const pr = c.proxima_reuniao || c.proximaReuniao;
-        return pr && pr >= todayStr && pr <= endStr;
-      })
-      .map((c) => {
-        const pr = c.proxima_reuniao || c.proximaReuniao;
-        return {
-          id: `reuniao-${c.id}`,
-          title: `Reunião — ${c.nome}`,
-          start_at: `${pr}T00:00`,
-          type: "reuniao",
-          color: "#2563eb",
-          _isReuniao: true,
-        };
-      });
-
-    return [...calFiltered, ...clientMeetings]
+    return [...calFiltered]
       .sort((a, b) => (a.start_at || "").localeCompare(b.start_at || ""));
   }, [calEvents, active]);
 
