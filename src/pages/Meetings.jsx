@@ -280,7 +280,7 @@ export default function Meetings() {
             {atrasados.length === 0 ? (
               <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 600, textAlign: "center", padding: "12px 0" }}>✓ Nenhum cliente atrasado</div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 480, overflowY: "auto" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {atrasados.map((c) => (
                   <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #FECACA", borderRadius: 7, padding: "7px 10px" }}>
                     <Avatar nome={c.nome} size={24} />
