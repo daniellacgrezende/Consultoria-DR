@@ -31,11 +31,6 @@ export default function ClientDetail() {
     if (f.ultima_reuniao) f.proxima_reuniao = addDays(f.ultima_reuniao, getPeriodDays(f.periodicidade_reuniao || "Trimestral"));
     if (f.ultimo_relatorio) { const pd = getPeriodDays(f.periodicidade_relatorio || "Mensal"); if (isFinite(pd)) f.proximo_relatorio = addDays(f.ultimo_relatorio, pd); else f.proximo_relatorio = ""; }
     await saveClient(f, false);
-    // Criar tarefa se próxima reunião foi definida ou alterada
-    const proximaAntes = client.proxima_reuniao || client.proximaReuniao || "";
-    if (f.proxima_reuniao && f.proxima_reuniao !== proximaAntes) {
-      await saveTodo({ id: huid(), texto: `Reunião com ${f.nome}`, vencimento: f.proxima_reuniao, recorrencia: "", descricao: "", prioridade: "normal", client_id: client.id, done: false, ordem: 0 }, true);
-    }
     setEditModal(false);
     setToast({ type: "success", text: "Cadastro atualizado." });
     // Se o nome mudou, o slug mudou — redireciona para a URL correta
@@ -89,24 +84,17 @@ export default function ClientDetail() {
   const updateField = async (field, value) => {
     const updates = { [field]: value };
     let toastMsg = null;
-    let novaProxima = null;
     // Auto-calcular próxima reunião
     if (field === "ultima_reuniao" && value) {
       const pDays = getPeriodDays(client.periodicidade_reuniao || client.periodicidadeReuniao);
       updates.proxima_reuniao = addDays(value, pDays);
-      novaProxima = updates.proxima_reuniao;
       toastMsg = `Próxima reunião calculada: ${updates.proxima_reuniao.split("-").reverse().join("/")}`;
     }
     // Recalcular quando periodicidade muda e já tem última reunião
     if (field === "periodicidade_reuniao" && (client.ultima_reuniao || client.ultimaReuniao)) {
       const base = client.ultima_reuniao || client.ultimaReuniao;
       updates.proxima_reuniao = addDays(base, getPeriodDays(value));
-      novaProxima = updates.proxima_reuniao;
       toastMsg = `Próxima reunião recalculada: ${updates.proxima_reuniao.split("-").reverse().join("/")}`;
-    }
-    // Edição direta da próxima reunião
-    if (field === "proxima_reuniao" && value && value !== (client.proxima_reuniao || client.proximaReuniao)) {
-      novaProxima = value;
     }
     // Auto-calcular próximo relatório (ignora "Não se aplica")
     if (field === "ultimo_relatorio" && value) {
@@ -127,10 +115,6 @@ export default function ClientDetail() {
       }
     }
     await saveClient({ ...client, ...updates }, false);
-    // Criar tarefa automaticamente quando uma nova data de reunião é definida
-    if (novaProxima) {
-      await saveTodo({ id: huid(), texto: `Reunião com ${client.nome}`, vencimento: novaProxima, recorrencia: "", descricao: "", prioridade: "normal", client_id: id, done: false, ordem: 0 }, true);
-    }
     if (toastMsg) setToast({ type: "success", text: toastMsg });
   };
 
