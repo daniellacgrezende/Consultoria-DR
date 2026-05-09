@@ -41,12 +41,16 @@ export default function Calendar() {
   const [fetchKey, setFetchKey] = useState(0);
   useEffect(() => {
     setLoaded(false);
-    supabase.from("calendar_events").select("*").order("start_at").then(({ data, error }) => {
+    const y = viewDate.getFullYear();
+    const m = viewDate.getMonth();
+    const start = `${y}-${String(m + 1).padStart(2, "0")}-01`;
+    const end   = `${y}-${String(m + 1).padStart(2, "0")}-${new Date(y, m + 1, 0).getDate()}`;
+    supabase.from("calendar_events").select("*").gte("start_at", start).lte("start_at", end + "T23:59:59").order("start_at").then(({ data, error }) => {
       if (error) console.error("[Calendar] Erro ao carregar:", error);
       setEvents(data || []);
       setLoaded(true);
     });
-  }, [fetchKey]);
+  }, [fetchKey, viewDate]);
 
   const refresh = () => {
     setFetchKey((k) => k + 1);

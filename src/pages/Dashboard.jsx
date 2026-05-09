@@ -76,7 +76,9 @@ export default function Dashboard() {
     });
   };
   useEffect(() => {
-    supabase.from("calendar_events").select("*").order("start_at").then(({ data }) => {
+    const from = new Date().toISOString();
+    const to = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    supabase.from("calendar_events").select("*").gte("start_at", from).lte("start_at", to).order("start_at").then(({ data }) => {
       setCalEvents(data || []);
     });
   }, [calRefreshKey]);
