@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useData } from "../hooks/useData";
@@ -49,6 +49,32 @@ function MeetingItem({ client, navigate, onRealizada }) {
           style={{ background: "#16a34a", color: "white", border: "none", borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
           ✓ Realizada
         </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Calendar Item (eventos do Outlook/calendar_events) ─── */
+function CalendarItem({ ev }) {
+  const dateUTC = (ev.start_at || "").slice(0, 10);
+  const atrasado = dateUTC < today();
+  const timeLabel = (() => {
+    try {
+      return new Date((ev.start_at || "").replace(" ", "T")).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    } catch { return ""; }
+  })();
+  const color = atrasado ? "#dc2626" : (ev.color || "#7c3aed");
+  const bg    = atrasado ? "#fff5f5" : "#faf5ff";
+  return (
+    <div style={{ borderRadius: 8, background: bg, border: `2px solid ${color}`, borderLeft: `4px solid ${color}`, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px" }}>
+        <span style={{ fontSize: 15, flexShrink: 0 }}>📆</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{ev.title}</span>
+          {ev.location && <span style={{ fontSize: 10, color: "#7c3aed", display: "block", marginTop: 1 }}>{ev.location}</span>}
+        </div>
+        <span style={{ fontSize: 10, color, flexShrink: 0, fontWeight: 700 }}>{timeLabel}</span>
+        {atrasado && <span style={{ fontSize: 9, fontWeight: 800, background: "#dc2626", color: "white", borderRadius: 999, padding: "1px 7px", textTransform: "uppercase", flexShrink: 0 }}>PASSOU</span>}
       </div>
     </div>
   );
@@ -335,13 +361,29 @@ export default function Tasks() {
   const meetAlem      = meetingClients.filter((c) => c.reuniao_agendada_em > weekOutStr);
   const meetFilterDate = filterDate ? meetingClients.filter((c) => c.reuniao_agendada_em === filterDate) : [];
 
+  /* ── Eventos do Outlook (calendar_events) ── */
+  const [calEvents, setCalEvents] = useState([]);
+  useEffect(() => {
+    const from = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const to   = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
+    supabase.from("calendar_events").select("*").gte("start_at", from).lte("start_at", to).order("start_at")
+      .then(({ data }) => setCalEvents(data || []));
+  }, []);
+  const calAtrasadas   = calEvents.filter((e) => (e.start_at || "").slice(0, 10) < today());
+  const calHoje        = calEvents.filter((e) => (e.start_at || "").slice(0, 10) === today());
+  const calAmanha      = calEvents.filter((e) => (e.start_at || "").slice(0, 10) === tomorrowStr);
+  const calSemana      = calEvents.filter((e) => { const d = (e.start_at || "").slice(0, 10); return d > tomorrowStr && d <= weekOutStr; });
+  const calAlem        = calEvents.filter((e) => (e.start_at || "").slice(0, 10) > weekOutStr);
+  const calFilterDate  = filterDate ? calEvents.filter((e) => (e.start_at || "").slice(0, 10) === filterDate) : [];
+
   const visAllDate    = filterDate ? applyFilters(pendentes) : [];
   const visAtrasadas  = !filterDate ? applyFilters(atrasadas) : [];
   const visHoje       = !filterDate && filterStatus !== "vencidas" ? applyFilters(hojeList) : [];
   const visFuturas    = !filterDate && filterStatus !== "vencidas" ? applyMonthFilter(applyFilters(futuras)) : [];
   const visConcluidas = filterStatus !== "vencidas" ? applyFilters(concluidas) : [];
   const totalMeetings = filterDate ? meetFilterDate.length : meetAtrasadas.length + meetHoje.length + meetAmanha.length + meetSemana.length + meetAlem.length;
-  const totalVisible  = (filterDate ? visAllDate.length + meetFilterDate.length : visAtrasadas.length + visHoje.length + visFuturas.length + totalMeetings) + visConcluidas.length;
+  const totalCal      = filterDate ? calFilterDate.length  : calAtrasadas.length  + calHoje.length  + calAmanha.length  + calSemana.length  + calAlem.length;
+  const totalVisible  = (filterDate ? visAllDate.length + meetFilterDate.length + calFilterDate.length : visAtrasadas.length + visHoje.length + visFuturas.length + totalMeetings + totalCal) + visConcluidas.length;
 
   const visAmanha = visFuturas.filter(t => (t.vencimento || t.data || "") === tomorrowStr);
   const visSemana = visFuturas.filter(t => { const d = t.vencimento || t.data || ""; return d > tomorrowStr && d <= weekOutStr; });
@@ -497,11 +539,12 @@ export default function Tasks() {
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {filterDate ? (
           <>
-            {(visAllDate.length > 0 || meetFilterDate.length > 0) && (
+            {(visAllDate.length > 0 || meetFilterDate.length > 0 || calFilterDate.length > 0) && (
               <div style={{ fontSize: 10, fontWeight: 700, color: B.navy, textTransform: "uppercase", marginTop: 4 }}>
-                {filterDate === today() ? "Hoje" : fmtDate(filterDate)} ({visAllDate.length + meetFilterDate.length})
+                {filterDate === today() ? "Hoje" : fmtDate(filterDate)} ({visAllDate.length + meetFilterDate.length + calFilterDate.length})
               </div>
             )}
+            {calFilterDate.map((e) => <CalendarItem key={`cal-${e.id}`} ev={e} />)}
             {meetFilterDate.map((c) => (
               <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} />
             ))}
@@ -511,35 +554,40 @@ export default function Tasks() {
           </>
         ) : (
           <>
-            <CollapsibleGroup sectionKey="atrasadas" label="Atrasadas" color="#dc2626" count={visAtrasadas.length + meetAtrasadas.length}>
+            <CollapsibleGroup sectionKey="atrasadas" label="Atrasadas" color="#dc2626" count={visAtrasadas.length + meetAtrasadas.length + calAtrasadas.length}>
+              {calAtrasadas.map((e) => <CalendarItem key={`cal-${e.id}`} ev={e} />)}
               {meetAtrasadas.map((c) => (
                 <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} />
               ))}
               {visAtrasadas.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visAtrasadas} {...itemProps} />)}
             </CollapsibleGroup>
 
-            <CollapsibleGroup sectionKey="hoje" label="Hoje" color={B.navy} count={visHoje.length + meetHoje.length}>
+            <CollapsibleGroup sectionKey="hoje" label="Hoje" color={B.navy} count={visHoje.length + meetHoje.length + calHoje.length}>
+              {calHoje.map((e) => <CalendarItem key={`cal-${e.id}`} ev={e} />)}
               {meetHoje.map((c) => (
                 <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} />
               ))}
               {visHoje.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visHoje} {...itemProps} />)}
             </CollapsibleGroup>
 
-            <CollapsibleGroup sectionKey="futAmanha" label="Amanhã" color="#6b7280" count={visAmanha.length + meetAmanha.length}>
+            <CollapsibleGroup sectionKey="futAmanha" label="Amanhã" color="#6b7280" count={visAmanha.length + meetAmanha.length + calAmanha.length}>
+              {calAmanha.map((e) => <CalendarItem key={`cal-${e.id}`} ev={e} />)}
               {meetAmanha.map((c) => (
                 <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} />
               ))}
               {visAmanha.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visFuturas} {...itemProps} />)}
             </CollapsibleGroup>
 
-            <CollapsibleGroup sectionKey="futSemana" label="Esta semana" color="#6b7280" count={visSemana.length + meetSemana.length}>
+            <CollapsibleGroup sectionKey="futSemana" label="Esta semana" color="#6b7280" count={visSemana.length + meetSemana.length + calSemana.length}>
+              {calSemana.map((e) => <CalendarItem key={`cal-${e.id}`} ev={e} />)}
               {meetSemana.map((c) => (
                 <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} />
               ))}
               {visSemana.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visFuturas} {...itemProps} />)}
             </CollapsibleGroup>
 
-            <CollapsibleGroup sectionKey="futAlem" label="Mais adiante" color="#6b7280" count={visAlem.length + meetAlem.length}>
+            <CollapsibleGroup sectionKey="futAlem" label="Mais adiante" color="#6b7280" count={visAlem.length + meetAlem.length + calAlem.length}>
+              {calAlem.map((e) => <CalendarItem key={`cal-${e.id}`} ev={e} />)}
               {meetAlem.map((c) => (
                 <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} />
               ))}

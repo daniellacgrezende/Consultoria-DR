@@ -67,10 +67,72 @@ function unfoldLines(text) {
   return text.replace(/\r\n[ \t]/g, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 }
 
+// Expande um evento recorrente (RRULE) em ocorrências individuais
+function expandRecurring(base, rruleStr, exdates, horizonDays = 400) {
+  const parts = {};
+  (rruleStr || "").split(";").forEach((p) => {
+    const eq = p.indexOf("=");
+    if (eq > 0) parts[p.slice(0, eq)] = p.slice(eq + 1);
+  });
+
+  const freq = parts.FREQ;
+  if (!freq) return [base];
+
+  const interval = parseInt(parts.INTERVAL || "1");
+  const maxCount = parts.COUNT ? parseInt(parts.COUNT) : 500;
+
+  const baseStart = new Date(base.start_at);
+  if (isNaN(baseStart)) return [base];
+  const baseEnd   = base.end_at ? new Date(base.end_at) : null;
+  const duration  = baseEnd && !isNaN(baseEnd) ? baseEnd - baseStart : 0;
+
+  const maxDate = new Date();
+  maxDate.setDate(maxDate.getDate() + horizonDays);
+
+  let untilDate = maxDate;
+  if (parts.UNTIL) {
+    const u = parseICSDate(parts.UNTIL);
+    if (u) { const ud = new Date(u); if (ud < maxDate) untilDate = ud; }
+  }
+
+  // Datas excluídas (EXDATE)
+  const excludedSet = new Set(
+    (exdates || []).flatMap((d) => d.split(",")).map((d) => {
+      const p = parseICSDate(d.trim());
+      return p ? p.slice(0, 10) : null;
+    }).filter(Boolean)
+  );
+
+  const results = [];
+  let cur = new Date(baseStart);
+  let n = 0;
+
+  while (cur <= untilDate && n < maxCount) {
+    const dateKey = cur.toISOString().slice(0, 10);
+    if (!excludedSet.has(dateKey)) {
+      results.push({
+        ...base,
+        start_at: cur.toISOString(),
+        end_at: duration > 0 ? new Date(cur.getTime() + duration).toISOString() : cur.toISOString(),
+        // primeira ocorrência mantém o UID original; as demais recebem sufixo de data
+        outlook_event_id: n === 0 ? base.outlook_event_id : `${base.outlook_event_id}_${dateKey.replace(/-/g, "")}`,
+      });
+    }
+    n++;
+    if      (freq === "DAILY")   cur.setDate(cur.getDate() + interval);
+    else if (freq === "WEEKLY")  cur.setDate(cur.getDate() + 7 * interval);
+    else if (freq === "MONTHLY") cur.setMonth(cur.getMonth() + interval);
+    else if (freq === "YEARLY")  cur.setFullYear(cur.getFullYear() + interval);
+    else break;
+  }
+
+  return results.length > 0 ? results : [base];
+}
+
 export function parseICS(text) {
   const unfolded = unfoldLines(text);
   const lines = unfolded.split("\n");
-  const events = [];
+  const rawEvents = [];
   let current = null;
 
   for (const line of lines) {
@@ -81,17 +143,7 @@ export function parseICS(text) {
     }
     if (trimmed === "END:VEVENT") {
       if (current && current.summary) {
-        events.push({
-          title: current.summary || "",
-          description: (current.description || "").replace(/\\n/g, "\n").replace(/\\,/g, ",").replace(/\\\\/g, "\\"),
-          start_at: parseICSDate(current.dtstart, current.dtstart_tzid) || "",
-          end_at: parseICSDate(current.dtend, current.dtend_tzid) || "",
-          location: (current.location || "").replace(/\\,/g, ",").replace(/\\\\/g, "\\"),
-          outlook_event_id: current.uid || "",
-          type: detectEventType(current),
-          color: detectColor(current),
-          is_teams: !!(current.location || "").toLowerCase().includes("teams") || !!(current.description || "").toLowerCase().includes("teams"),
-        });
+        rawEvents.push(current);
       }
       current = null;
       continue;
@@ -104,14 +156,13 @@ export function parseICS(text) {
     const keyPart = trimmed.slice(0, colonIdx).toUpperCase();
     const value = trimmed.slice(colonIdx + 1);
 
-    // Extract base key (before any ;PARAM=value) and extract TZID if present
     const baseKey = keyPart.split(";")[0];
     const tzidMatch = keyPart.match(/TZID=([^;]+)/);
     const tzid = tzidMatch ? tzidMatch[1] : null;
 
     switch (baseKey) {
-      case "SUMMARY":     current.summary = value; break;
-      case "DESCRIPTION": current.description = value; break;
+      case "SUMMARY":       current.summary = value; break;
+      case "DESCRIPTION":   current.description = value; break;
       case "DTSTART":
         current.dtstart = value;
         current.dtstart_tzid = tzid;
@@ -120,10 +171,39 @@ export function parseICS(text) {
         current.dtend = value;
         current.dtend_tzid = tzid;
         break;
-      case "LOCATION":   current.location = value; break;
-      case "UID":        current.uid = value; break;
-      case "ORGANIZER":  current.organizer = value; break;
-      case "STATUS":     current.status = value; break;
+      case "LOCATION":      current.location = value; break;
+      case "UID":           current.uid = value; break;
+      case "ORGANIZER":     current.organizer = value; break;
+      case "STATUS":        current.status = value; break;
+      case "RRULE":         current.rrule = value; break;
+      case "RECURRENCE-ID": current.recurrence_id = value; break;
+      case "EXDATE":
+        current.exdates = current.exdates || [];
+        current.exdates.push(value);
+        break;
+    }
+  }
+
+  // Converte raw → eventos; expande recorrentes
+  const events = [];
+  for (const raw of rawEvents) {
+    const base = {
+      title: raw.summary || "",
+      description: (raw.description || "").replace(/\\n/g, "\n").replace(/\\,/g, ",").replace(/\\\\/g, "\\"),
+      start_at: parseICSDate(raw.dtstart, raw.dtstart_tzid) || "",
+      end_at:   parseICSDate(raw.dtend,   raw.dtend_tzid)   || "",
+      location: (raw.location || "").replace(/\\,/g, ",").replace(/\\\\/g, "\\"),
+      outlook_event_id: raw.uid || "",
+      type:     detectEventType(raw),
+      color:    detectColor(raw),
+      is_teams: !!(raw.location || "").toLowerCase().includes("teams") || !!(raw.description || "").toLowerCase().includes("teams"),
+    };
+
+    if (raw.rrule && !raw.recurrence_id) {
+      // Evento recorrente: expande em ocorrências individuais
+      events.push(...expandRecurring(base, raw.rrule, raw.exdates || []));
+    } else {
+      events.push(base);
     }
   }
 
