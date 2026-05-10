@@ -416,10 +416,21 @@ export default function ClientDetail() {
 
       {/* Aportes */}
       <Card style={{ marginBottom: 12 }}>
-        <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between" }}>
+        <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 8, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span>Aportes e Resgates</span>
           <button onClick={() => { setAptForm({ client_id: id, data: today(), tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false }); setAptModal(true); }} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Registrar</button>
         </div>
+
+        {/* Link Rebalanceamento — logo abaixo do header */}
+        {(client.link_rebalanceamento || true) && (
+          <div style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", whiteSpace: "nowrap" }}>Link Rebalanceamento</span>
+            <InlineText value={client.link_rebalanceamento} onSave={(v) => updateField("link_rebalanceamento", v)} placeholder="https://…" style={{ flex: 1 }} />
+            {client.link_rebalanceamento && String(client.link_rebalanceamento).startsWith("http") && (
+              <a href={client.link_rebalanceamento} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }} onClick={(e) => e.stopPropagation()}>↗ Abrir</a>
+            )}
+          </div>
+        )}
 
         {/* Filtro de período — controla os stats e o histórico */}
         <div style={{ marginBottom: 10 }}>
@@ -471,18 +482,7 @@ export default function ClientDetail() {
           </div>
         </div>
 
-        {/* Link Rebalanceamento */}
-        <div style={{ marginBottom: 10 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Link Rebalanceamento</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <InlineText value={client.link_rebalanceamento} onSave={(v) => updateField("link_rebalanceamento", v)} placeholder="https://…" />
-            {client.link_rebalanceamento && String(client.link_rebalanceamento).startsWith("http") && (
-              <a href={client.link_rebalanceamento} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, textDecoration: "none" }} onClick={(e) => e.stopPropagation()}>↗ Abrir</a>
-            )}
-          </div>
-        </div>
-
-        {/* Reserva + PGBL — badges compactos */}
+        {/* Reserva + PGBL */}
         {(Number(client.liquidez_desejada || 0) > 0 || hasPgbl) && (
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
             {Number(client.liquidez_desejada || 0) > 0 && (() => {
@@ -491,9 +491,13 @@ export default function ClientDetail() {
               const pct = Math.min(100, Math.round((liqA / desejada) * 100));
               const ok = liqA >= desejada;
               return (
-                <span style={{ padding: "3px 12px", borderRadius: 999, fontSize: 11, fontWeight: 700, background: ok ? "#f0fdf4" : "#fff7ed", color: ok ? "#16a34a" : "#c2410c", border: `1px solid ${ok ? "#bbf7d0" : "#fed7aa"}` }}>
-                  💧 Reserva {pct}%
-                </span>
+                <div style={{ background: ok ? "#f0fdf4" : "#fff7ed", border: `1px solid ${ok ? "#bbf7d0" : "#fed7aa"}`, borderRadius: 8, padding: "8px 14px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 120 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: ok ? "#16a34a" : "#c2410c" }}>💧 Reserva {pct}%</span>
+                  <div style={{ width: 100, height: 5, background: ok ? "#bbf7d0" : "#fed7aa", borderRadius: 99 }}>
+                    <div style={{ width: `${pct}%`, height: "100%", background: ok ? "#16a34a" : "#f97316", borderRadius: 99, transition: "width .3s" }} />
+                  </div>
+                  <span style={{ fontSize: 9, color: "#8899bb", fontWeight: 600 }}>{money(liqA)} / {money(desejada)}</span>
+                </div>
               );
             })()}
             {hasPgbl && pgblPct !== null && (() => {
@@ -512,6 +516,10 @@ export default function ClientDetail() {
                   </div>
                   {/* Valores */}
                   <div style={{ display: "flex", gap: 16 }}>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 2 }}>Renda Bruta/Ano</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#1e293b" }}>{money(rendaBrutaAnual)}</div>
+                    </div>
                     <div style={{ textAlign: "center" }}>
                       <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 2 }}>Limite (12%)</div>
                       <div style={{ fontSize: 12, fontWeight: 700, color: concluido ? "#16a34a" : "#7c3aed" }}>{money(pgblLimite)}</div>
@@ -554,25 +562,30 @@ export default function ClientDetail() {
               {filteredClientAportes.length === 0
                 ? <div style={{ padding: 12, textAlign: "center", color: B.gray, fontSize: 12 }}>Nenhuma movimentação.</div>
                 : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    {filteredClientAportes.map((a) => (
-                      <div key={a.id} style={{ padding: "8px 10px", borderRadius: 6, background: a.tipo === "aporte" ? "#f0fdf4" : "#fff5f5", border: `1px solid ${a.tipo === "aporte" ? "#dcfce7" : "#fee2e2"}` }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1, flexWrap: "wrap" }}>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "+" : "−"}</span>
-                            <span style={{ fontSize: 11, color: B.gray }}>{fmtDate(a.data)}</span>
-                            {a.is_reserva && <span style={{ fontSize: 9, background: "#e0f2fe", color: "#0369a1", borderRadius: 4, padding: "1px 6px", fontWeight: 700 }}>RESERVA</span>}
-                            {a.is_pgbl && <span style={{ fontSize: 9, background: "#f5f3ff", color: "#7c3aed", borderRadius: 4, padding: "1px 6px", fontWeight: 700 }}>PGBL</span>}
-                            {a.observacao && <span style={{ fontSize: 11, color: "#6b7280" }}>· {a.observacao}</span>}
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ fontSize: 13, fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "+" : "−"}{money(a.valor)}</span>
-                            <button onClick={() => openAptEdit(a)} style={{ background: "white", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 5, padding: "2px 8px", fontSize: 10, cursor: "pointer" }}>Editar</button>
-                            <button onClick={() => handleDeleteAporte(a)} style={{ background: "white", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 5, padding: "2px 8px", fontSize: 10, cursor: "pointer" }}>Remover</button>
-                          </div>
-                        </div>
-                      </div>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                    <tbody>
+                    {filteredClientAportes.map((a, i) => (
+                      <tr key={a.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
+                        <td style={{ padding: "5px 8px", width: 14 }}>
+                          <span style={{ fontWeight: 800, fontSize: 13, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "+" : "−"}</span>
+                        </td>
+                        <td style={{ padding: "5px 8px", whiteSpace: "nowrap", color: "#6b7280" }}>{fmtDate(a.data)}</td>
+                        <td style={{ padding: "5px 8px", whiteSpace: "nowrap", fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{money(a.valor)}</td>
+                        <td style={{ padding: "5px 8px" }}>
+                          <span style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
+                            {a.is_reserva && <span style={{ fontSize: 9, background: "#e0f2fe", color: "#0369a1", borderRadius: 4, padding: "1px 5px", fontWeight: 700 }}>RESERVA</span>}
+                            {a.is_pgbl && <span style={{ fontSize: 9, background: "#f5f3ff", color: "#7c3aed", borderRadius: 4, padding: "1px 5px", fontWeight: 700 }}>PGBL</span>}
+                            {a.observacao && <span style={{ color: "#6b7280", fontSize: 11 }}>{a.observacao}</span>}
+                          </span>
+                        </td>
+                        <td style={{ padding: "5px 8px", whiteSpace: "nowrap", textAlign: "right" }}>
+                          <button onClick={() => openAptEdit(a)} style={{ background: "white", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 5, padding: "2px 7px", fontSize: 10, cursor: "pointer", marginRight: 4 }}>✎</button>
+                          <button onClick={() => handleDeleteAporte(a)} style={{ background: "white", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 5, padding: "2px 7px", fontSize: 10, cursor: "pointer" }}>✕</button>
+                        </td>
+                      </tr>
                     ))}
+                    </tbody>
+                  </table>
                   </div>
                 )
               }
