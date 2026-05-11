@@ -76,7 +76,7 @@ function StatusBadge({ st }) {
 /* ═══════════════════════════════════════════ */
 export default function Meetings() {
   const navigate  = useNavigate();
-  const { clients, history, reunioes, saveClient, saveTodo, setToast } = useData();
+  const { clients, history, reunioes, todos, saveClient, saveTodo, setToast } = useData();
   const [sortCol, setSortCol]     = useState("status");
   const [sortDir, setSortDir]     = useState("asc");
   const [statusFilter, setStatusFilter] = useState(null); // filtro por status ao clicar no badge
@@ -401,6 +401,8 @@ export default function Meetings() {
                           const pDays = getPeriodDays(c.periodicidade_reuniao || c.periodicidadeReuniao || "Trimestral");
                           const proxima = addDays(c.reuniao_agendada_em, pDays);
                           await saveClient({ ...c, ultima_reuniao: c.reuniao_agendada_em, proxima_reuniao: proxima, reuniao_agendada_em: "", avisado_em: "" }, false);
+                          const _mt = todos.find((t) => t.client_id === c.id && !t.done && t.texto?.startsWith("Reunião com"));
+                          if (_mt) await saveTodo({ ..._mt, done: true, done_at: today() }, false);
                           setToast({ type: "success", text: `Reunião com ${c.nome.split(" ")[0]} realizada!` });
                         }}
                         style={{ fontSize: 9.5, fontWeight: 700, background: "#16a34a", color: "white", border: "none", borderRadius: 5, padding: "5px 9px", cursor: "pointer", whiteSpace: "nowrap" }}>✓ Realizada</button>
@@ -736,7 +738,9 @@ export default function Meetings() {
                 onClick={async () => {
                   const c = retAgModal.client;
                   await saveClient({ ...c, reuniao_agendada_em: retAgForm.data, avisado_em: "" }, false);
-                  await saveTodo({ id: huid(), texto: `Reunião com ${c.nome}`, vencimento: retAgForm.data, recorrencia: "", descricao: `Horário: ${retAgForm.horaInicio}–${retAgForm.horaFim}`, prioridade: "normal", client_id: c.id, done: false, ordem: 0 }, true);
+                  const _ex1 = todos.find((t) => t.client_id === c.id && !t.done && t.texto?.startsWith("Reunião com"));
+                  if (_ex1) { await saveTodo({ ..._ex1, vencimento: retAgForm.data, descricao: `Horário: ${retAgForm.horaInicio}–${retAgForm.horaFim}` }, false); }
+                  else { await saveTodo({ id: huid(), texto: `Reunião com ${c.nome}`, vencimento: retAgForm.data, recorrencia: "", descricao: `Horário: ${retAgForm.horaInicio}–${retAgForm.horaFim}`, prioridade: "normal", client_id: c.id, done: false, ordem: 0 }, true); }
                   setRetAgModal(null);
                   setToast({ type: "success", text: `${c.nome.split(" ")[0]} movido para Próximas Reuniões.` });
                 }}
@@ -749,7 +753,9 @@ export default function Meetings() {
                   const end   = `${retAgForm.data}T${retAgForm.horaFim}:00`;
                   const title = `Reunião com ${c.nome}`;
                   await saveClient({ ...c, reuniao_agendada_em: retAgForm.data, avisado_em: "" }, false);
-                  await saveTodo({ id: huid(), texto: `Reunião com ${c.nome}`, vencimento: retAgForm.data, recorrencia: "", descricao: `Horário: ${retAgForm.horaInicio}–${retAgForm.horaFim}`, prioridade: "normal", client_id: c.id, done: false, ordem: 0 }, true);
+                  const _ex2 = todos.find((t) => t.client_id === c.id && !t.done && t.texto?.startsWith("Reunião com"));
+                  if (_ex2) { await saveTodo({ ..._ex2, vencimento: retAgForm.data, descricao: `Horário: ${retAgForm.horaInicio}–${retAgForm.horaFim}` }, false); }
+                  else { await saveTodo({ id: huid(), texto: `Reunião com ${c.nome}`, vencimento: retAgForm.data, recorrencia: "", descricao: `Horário: ${retAgForm.horaInicio}–${retAgForm.horaFim}`, prioridade: "normal", client_id: c.id, done: false, ordem: 0 }, true); }
                   const url = buildOutlookUrl({ title, start, end });
                   window.open(url, "_blank");
                   setRetAgModal(null);
