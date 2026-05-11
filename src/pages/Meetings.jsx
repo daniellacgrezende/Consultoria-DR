@@ -396,16 +396,21 @@ export default function Meetings() {
                         </div>
                         <div style={{ fontSize: 10, color: "#16a34a", fontWeight: 700 }}>📅 {fmtDate(c.reuniao_agendada_em)} · {c.periodicidade_reuniao || "Trimestral"}</div>
                       </div>
-                      <button
-                        onClick={async () => {
-                          const pDays = getPeriodDays(c.periodicidade_reuniao || c.periodicidadeReuniao || "Trimestral");
-                          const proxima = addDays(c.reuniao_agendada_em, pDays);
-                          await saveClient({ ...c, ultima_reuniao: c.reuniao_agendada_em, proxima_reuniao: proxima, reuniao_agendada_em: "", avisado_em: "" }, false);
-                          const _mt = todos.find((t) => t.client_id === c.id && !t.done && t.texto?.startsWith("Reunião com"));
-                          if (_mt) await saveTodo({ ..._mt, done: true, done_at: today() }, false);
-                          setToast({ type: "success", text: `Reunião com ${c.nome.split(" ")[0]} realizada!` });
-                        }}
-                        style={{ fontSize: 9.5, fontWeight: 700, background: "#16a34a", color: "white", border: "none", borderRadius: 5, padding: "5px 9px", cursor: "pointer", whiteSpace: "nowrap" }}>✓ Realizada</button>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <button
+                          onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: c.reuniao_agendada_em || today(), horaInicio: "10:00", horaFim: "11:00" }); }}
+                          style={{ fontSize: 9, fontWeight: 700, background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>✏️ Reagendar</button>
+                        <button
+                          onClick={async () => {
+                            const pDays = getPeriodDays(c.periodicidade_reuniao || c.periodicidadeReuniao || "Trimestral");
+                            const proxima = addDays(c.reuniao_agendada_em, pDays);
+                            await saveClient({ ...c, ultima_reuniao: c.reuniao_agendada_em, proxima_reuniao: proxima, reuniao_agendada_em: "", avisado_em: "" }, false);
+                            const _mt = todos.find((t) => t.client_id === c.id && !t.done && t.texto?.startsWith("Reunião com"));
+                            if (_mt) await saveTodo({ ..._mt, done: true, done_at: today() }, false);
+                            setToast({ type: "success", text: `Reunião com ${c.nome.split(" ")[0]} realizada!` });
+                          }}
+                          style={{ fontSize: 9, fontWeight: 700, background: "#16a34a", color: "white", border: "none", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>✓ Realizada</button>
+                      </div>
                     </div>
                   ))}
                 </div>
