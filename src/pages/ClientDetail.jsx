@@ -275,25 +275,33 @@ export default function ClientDetail() {
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Profissão</div><InlineText value={client.profissao} onSave={(v) => updateField("profissao", v)} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Filhos</div><InlineText value={client.filhos} onSave={(v) => updateField("filhos", v)} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Cônjuge</div><InlineText value={client.conjuge} onSave={(v) => updateField("conjuge", v)} /></div>
-                <div style={{ gridColumn: "1/-1" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>E-mail</div><InlineText value={client.email} onSave={(v) => updateField("email", v)} placeholder="email@exemplo.com" /></div>
-                <div style={{ gridColumn: "1/-1" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Hobbies</div><InlineText value={client.hobbies} onSave={(v) => updateField("hobbies", v)} placeholder="Clique para editar…" /></div>
-                {idade !== null && <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Idade</div><span style={{ fontSize: 12, fontWeight: 600 }}>{idade} anos</span></div>}
-                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Data Nascimento</div><InlineDate value={client.data_nascimento} onSave={(v) => updateField("data_nascimento", v)} /></div>
-                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Origem do Cliente</div><InlineSelect value={client.origem_cliente || ""} onSave={(v) => updateField("origem_cliente", v)} opts={[{ v: "", l: "—" }, ...LEAD_ORIGENS.map((o) => ({ v: o, l: o }))]} /></div>
-                {client.origem_cliente === "Indicação" && (
-                  <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8b5cf6", textTransform: "uppercase", marginBottom: 3 }}>↳ Indicado por</div><InlineSelect value={client.indicado_por || ""} onSave={(v) => updateField("indicado_por", v)} opts={[{ v: "", l: "—" }, ...clients.filter((c) => c.id !== id).sort((a, b) => a.nome.localeCompare(b.nome)).map((c) => ({ v: c.nome, l: c.nome }))]} /></div>
-                )}
+                <div style={{ gridColumn: "span 3" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>E-mail</div><InlineText value={client.email} onSave={(v) => updateField("email", v)} placeholder="email@exemplo.com" /></div>
+                <div style={{ gridColumn: "span 3" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Hobbies</div><InlineText value={client.hobbies} onSave={(v) => updateField("hobbies", v)} placeholder="Clique para editar…" /></div>
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Data Nascimento</div>
+                  <InlineDate value={client.data_nascimento} onSave={(v) => updateField("data_nascimento", v)} />
+                  {idade !== null && <span style={{ fontSize: 9, color: B.muted, marginLeft: 5 }}>({idade}a)</span>}
+                </div>
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Origem</div>
+                  <InlineSelect value={client.origem_cliente || ""} onSave={(v) => updateField("origem_cliente", v)} opts={[{ v: "", l: "—" }, ...LEAD_ORIGENS.map((o) => ({ v: o, l: o }))]} />
+                  {client.origem_cliente === "Indicação" && (
+                    <div style={{ marginTop: 3 }}>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "#8b5cf6", textTransform: "uppercase", marginBottom: 2 }}>↳ Indicado por</div>
+                      <InlineSelect value={client.indicado_por || ""} onSave={(v) => updateField("indicado_por", v)} opts={[{ v: "", l: "—" }, ...clients.filter((c) => c.id !== id).sort((a, b) => a.nome.localeCompare(b.nome)).map((c) => ({ v: c.nome, l: c.nome }))]} />
+                    </div>
+                  )}
+                </div>
                 <div>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#f59e0b", textTransform: "uppercase", marginBottom: 3 }}>Pediu indicação em</div>
                   <InlineDate value={client.data_pedido_indicacao} onSave={(v) => updateField("data_pedido_indicacao", v)} />
                   {client.data_pedido_indicacao && (() => {
                     const d = daysSince(client.data_pedido_indicacao);
-                    return d !== null ? <span style={{ fontSize: 9, color: "#6b7280", marginLeft: 6 }}>({d === 0 ? "hoje" : `${d}d atrás`})</span> : null;
+                    return d !== null ? <span style={{ fontSize: 9, color: "#6b7280", marginLeft: 5 }}>({d === 0 ? "hoje" : `${d}d atrás`})</span> : null;
                   })()}
                 </div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Início Carteira</div><InlineDate value={client.inicio_carteira} onSave={(v) => updateField("inicio_carteira", v)} /></div>
-                {/* Seguro / Previdência / Sucessão + Obs — ao lado de Início Carteira */}
-                <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+                <div style={{ gridColumn: "span 2" }}>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Seguro / Prev. / Sucessão</div>
                   <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center", marginBottom: 4 }}>
                     {/* Seguro de Vida: null→true→false→"nao_aplica"→null; oculto quando N/A */}
@@ -388,18 +396,7 @@ export default function ClientDetail() {
                 </div>
                 )}
               </div>
-              {/* Patrimônio imobilizado + Financiamentos */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, margin: "8px 0" }}>
-                <div>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Patrimônio Imobilizado</div>
-                  <InlineText value={client.patrimonio_imobilizado} onSave={(v) => updateField("patrimonio_imobilizado", v)} placeholder="Ex: Imóvel SP, Carro 2023…" />
-                </div>
-                <div>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Financiamentos</div>
-                  <InlineText value={client.financiamentos} onSave={(v) => updateField("financiamentos", v)} placeholder="Ex: Financiamento imóvel, Leasing…" />
-                </div>
-              </div>
-              {/* Linha 2: IR / Corretoras / Pagamento / Produtos Reserva / Taxa / Mínimo */}
+              {/* Linha 2: IR / Corretoras / Pagamento / Produtos Reserva / Taxa / Mínimo + PatrimImob / Financiamentos */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 }}>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>IR</div><InlineSelect value={client.declaracao_ir || ""} onSave={(v) => updateField("declaracao_ir", v)} opts={[{ v: "", l: "—" }, { v: "Simplificada", l: "Simplificada" }, { v: "Completa", l: "Completa" }]} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Corretoras</div><InlineText value={client.corretoras} onSave={(v) => updateField("corretoras", v)} /></div>
@@ -407,6 +404,8 @@ export default function ClientDetail() {
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Produtos de Reserva</div><InlineText value={client.liquidez_produtos} onSave={(v) => updateField("liquidez_produtos", v)} placeholder="Tesouro Selic, CDB..." /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Taxa (%)</div><InlineSelect value={client.taxa_contratada || ""} onSave={(v) => updateField("taxa_contratada", v)} opts={[{ v: "", l: "—" }, { v: "1", l: "1%" }, { v: "0.95", l: "0,95%" }, { v: "0.9", l: "0,9%" }, { v: "0.8", l: "0,8%" }, { v: "0.7", l: "0,7%" }]} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Mínimo Contrato</div><InlineMoney value={client.valor_minimo_contrato} onSave={(v) => updateField("valor_minimo_contrato", v)} /></div>
+                <div style={{ gridColumn: "span 3" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Patrimônio Imobilizado</div><InlineText value={client.patrimonio_imobilizado} onSave={(v) => updateField("patrimonio_imobilizado", v)} placeholder="Ex: Imóvel SP, Carro 2023…" /></div>
+                <div style={{ gridColumn: "span 3" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Financiamentos</div><InlineText value={client.financiamentos} onSave={(v) => updateField("financiamentos", v)} placeholder="Ex: Financiamento imóvel, Leasing…" /></div>
               </div>
               <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${B.border}` }}>
                 <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Planejamento / Metas</div>
@@ -651,88 +650,27 @@ export default function ClientDetail() {
         )}
       </Card>
 
-      {/* Histórico — último, conteúdo colapsável por entrada */}
+      {/* Histórico */}
       <Card style={{ marginBottom: 12 }}>
         <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span>Histórico ({clientReunioes.length})</span>
-          <div style={{ display: "flex", gap: 6 }}>
-            {clientReunioes.length > 0 && (
-              <button onClick={() => {
-                const allIds = clientReunioes.map((r) => r.id);
-                const allExpanded = allIds.every((rid) => rhExpandedIds.has(rid));
-                if (allExpanded) {
-                  setRhExpandedIds(new Set());
-                } else {
-                  setRhExpandedIds(new Set(allIds));
-                  // pre-load rhInline for all
-                  setRhInline((prev) => {
-                    const next = { ...prev };
-                    allIds.forEach((rid) => { if (!next[rid]) { const r = clientReunioes.find((x) => x.id === rid); if (r) next[rid] = { data: r.data || "", titulo: r.titulo || "", texto: r.texto || "", dirty: false }; } });
-                    return next;
-                  });
-                }
-              }} style={{ padding: "3px 10px", background: "white", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer" }}>
-                {clientReunioes.every((r) => rhExpandedIds.has(r.id)) ? "Recolher tudo" : "Expandir tudo"}
-              </button>
-            )}
-            <button onClick={() => { setRhEditId(null); setRhForm({ client_id: id, data: today(), titulo: "", texto: "" }); setRhModal(true); }} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Registrar</button>
-          </div>
+          <button onClick={() => { setRhEditId(null); setRhForm({ client_id: id, data: today(), titulo: "", texto: "" }); setRhModal(true); }} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Registrar</button>
         </div>
         {clientReunioes.length === 0 ? <div style={{ padding: 16, textAlign: "center", color: B.gray, fontSize: 12 }}>Nenhum registro.</div> : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {clientReunioes.map((r) => {
-              const isExpanded = rhExpandedIds.has(r.id);
-              return (
-                <div key={r.id} style={{ background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 9, overflow: "hidden" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 14px", cursor: "pointer" }} onClick={() => toggleRhExpand(r.id)}>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1, minWidth: 0 }}>
-                      <span style={{ fontSize: 10, color: B.muted }}>{isExpanded ? "▼" : "▶"}</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap" }}>{fmtDate(r.data)}</span>
-                      {r.titulo && (
-                        <span style={{ fontSize: 11, fontWeight: 600, color: B.navy, background: "#e8eeff", borderRadius: 5, padding: "1px 7px" }}>{r.titulo}</span>
-                      )}
-                      {!isExpanded && !r.titulo && r.texto && (
-                        <span style={{ fontSize: 11, color: B.gray, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.texto.slice(0, 80)}{r.texto.length > 80 ? "…" : ""}</span>
-                      )}
-                    </div>
-                    <div style={{ display: "flex", gap: 5, flexShrink: 0, marginLeft: 8 }} onClick={(e) => e.stopPropagation()}>
-                      <button onClick={async () => { if (confirm("Remover este registro?")) { await deleteReuniao(r.id); setToast({ type: "success", text: "Removido." }); } }} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 5, padding: "3px 9px", fontSize: 10, cursor: "pointer" }}>Remover</button>
-                    </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {clientReunioes.map((r) => (
+              <div key={r.id} style={{ background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 9, padding: "10px 14px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <InlineDate value={r.data} onSave={(v) => saveReuniao({ ...r, data: v }, false).then(() => setToast({ type: "success", text: "Data atualizada." }))} />
+                    <InlineText value={r.titulo} onSave={(v) => saveReuniao({ ...r, titulo: v }, false)} placeholder="Sem título" style={{ fontWeight: 600, color: B.navy, fontSize: 12 }} />
                   </div>
-                  {isExpanded && (() => {
-                    const ed = rhInline[r.id] || { data: r.data || "", titulo: r.titulo || "", texto: r.texto || "", dirty: false };
-                    return (
-                    <div style={{ padding: "10px 14px 14px", borderTop: `1px solid ${B.border}` }}>
-                      <div style={{ display: "flex", gap: 10, marginBottom: 8 }}>
-                        <div style={{ flex: "0 0 auto" }}>
-                          <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Data</div>
-                          <input type="date" value={ed.data} onChange={(e) => rhInlineChange(r.id, "data", e.target.value)}
-                            style={{ border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 8px", fontSize: 12, color: B.navy, outline: "none", background: "white" }} />
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Título</div>
-                          <input value={ed.titulo} onChange={(e) => rhInlineChange(r.id, "titulo", e.target.value)}
-                            placeholder="Ex: Kick Off, Acompanhamento..."
-                            style={{ width: "100%", border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 8px", fontSize: 12, color: B.navy, outline: "none", background: "white", boxSizing: "border-box" }} />
-                        </div>
-                      </div>
-                      <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Notas</div>
-                      <textarea value={ed.texto} onChange={(e) => rhInlineChange(r.id, "texto", e.target.value)} rows={6}
-                        style={{ width: "100%", border: `1px solid ${B.border}`, borderRadius: 6, padding: "8px", fontSize: 12, color: "#445566", lineHeight: 1.7, resize: "vertical", outline: "none", background: "white", boxSizing: "border-box", fontFamily: "inherit" }} />
-                      {ed.dirty && (
-                        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
-                          <button onClick={() => rhInlineSave(r.id)}
-                            style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "6px 18px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                            Salvar
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    );
-                  })()}
+                  <button onClick={async () => { if (confirm("Remover este registro?")) { await deleteReuniao(r.id); setToast({ type: "success", text: "Removido." }); } }} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 5, padding: "3px 9px", fontSize: 10, cursor: "pointer", flexShrink: 0 }}>Remover</button>
                 </div>
-              );
-            })}
+                <InlineText value={r.texto} onSave={(v) => saveReuniao({ ...r, texto: v }, false).then(() => setToast({ type: "success", text: "Histórico atualizado." }))} multiline saveOnEnter placeholder="Clique para adicionar notas… (Ctrl+Enter para salvar)" style={{ width: "100%", minHeight: 36, color: "#445566", lineHeight: 1.7, fontSize: 12 }} />
+                {r.texto && <div style={{ fontSize: 9, color: B.muted, marginTop: 3, textAlign: "right" }}>Ctrl+Enter = salvar · Esc = cancelar</div>}
+              </div>
+            ))}
           </div>
         )}
       </Card>
