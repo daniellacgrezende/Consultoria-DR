@@ -127,7 +127,7 @@ export default function Meetings() {
   }, [active, sortCol, sortDir]);
 
   const counts = useMemo(() => ({
-    atrasado:    rows.filter((r) => r.st.key === "atrasado").length,
+    atrasado:    rows.filter((r) => !r.reuniao_agendada_em && r.st.key === "atrasado").length,
     retentativa: rows.filter((r) => r.st.key === "retentativa").length,
     agendar:     rows.filter((r) => r.st.key === "agendar").length,
     aguardando:  rows.filter((r) => r.st.key === "aguardando").length,
