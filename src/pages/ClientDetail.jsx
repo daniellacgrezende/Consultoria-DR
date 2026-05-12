@@ -586,7 +586,6 @@ export default function ClientDetail() {
                     ))}
                     </tbody>
                   </table>
-                  </div>
                 )
               }
             </div>
