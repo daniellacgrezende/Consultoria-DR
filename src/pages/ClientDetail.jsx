@@ -270,9 +270,13 @@ export default function ClientDetail() {
             <>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10 }}>
                 {/* Linha 1: cidade+uf · nascimento · profissão · estado civil · filhos · cônjuge */}
-                <div style={{ display: "flex", gap: 4, alignItems: "flex-start" }}>
-                  <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Cidade</div><InlineText value={client.cidade} onSave={(v) => updateField("cidade", v)} /></div>
-                  <div style={{ flexShrink: 0, width: 34 }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>UF</div><InlineText value={client.uf} onSave={(v) => updateField("uf", v)} /></div>
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Cidade / UF</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                    <InlineText value={client.cidade} onSave={(v) => updateField("cidade", v)} />
+                    <span style={{ color: B.muted, fontSize: 11, flexShrink: 0 }}>·</span>
+                    <InlineText value={client.uf} onSave={(v) => updateField("uf", v)} style={{ maxWidth: 28 }} />
+                  </div>
                 </div>
                 <div>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Data Nascimento</div>
