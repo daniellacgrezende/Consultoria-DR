@@ -1,11 +1,10 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { useData } from "../hooks/useData";
 import { B, PERFIL_MAP, CURVA_MAP } from "../utils/constants";
 import { money } from "../utils/formatters";
 import { getCurva, getCurrentPL, daysSince, getPeriodDays, slugify } from "../utils/helpers";
-import { supabase } from "../lib/supabase";
 import Card from "../components/ui/Card";
 import MiniStat from "../components/ui/MiniStat";
 import Avatar from "../components/ui/Avatar";
@@ -60,48 +59,6 @@ export default function Dashboard() {
 
   const leadsAtivos = leads.filter((l) => !["Cliente", "Perdido", "Nutrição"].includes(l.etapa)).length;
   const leadsConvertidos = leads.filter((l) => l.etapa === "Cliente").length;
-
-  // Calendar events
-  const [calEvents, setCalEvents] = useState([]);
-  const [calRefreshKey, setCalRefreshKey] = useState(0);
-  const [confirmedIds, setConfirmedIds] = useState(() => {
-    try { return new Set(JSON.parse(localStorage.getItem("cal_confirmed") || "[]")); } catch { return new Set(); }
-  });
-  const toggleConfirm = (id) => {
-    setConfirmedIds((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      localStorage.setItem("cal_confirmed", JSON.stringify([...next]));
-      return next;
-    });
-  };
-  useEffect(() => {
-    const from = new Date().toISOString();
-    const to = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-    supabase.from("calendar_events").select("*").gte("start_at", from).lte("start_at", to).order("start_at").then(({ data }) => {
-      setCalEvents(data || []);
-    });
-  }, [calRefreshKey]);
-
-  const proximosEventos = useMemo(() => {
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
-    const d7 = new Date(now); d7.setDate(d7.getDate() + 7);
-    const endStr = `${d7.getFullYear()}-${String(d7.getMonth()+1).padStart(2,"0")}-${String(d7.getDate()).padStart(2,"0")}`;
-
-    const calFiltered = calEvents.filter((e) => {
-      const ds = (e.start_at || "").slice(0, 10);
-      if (ds < todayStr || ds > endStr) return false;
-      const st = (e.status || "CONFIRMED").toUpperCase();
-      if (st === "TENTATIVE" || st === "CANCELLED") return false;
-      const t = (e.title || "").toLowerCase();
-      if (t.startsWith("cancelado:") || t.startsWith("canceled:") || t.startsWith("cancelled:")) return false;
-      return true;
-    });
-
-    return [...calFiltered]
-      .sort((a, b) => (a.start_at || "").localeCompare(b.start_at || ""));
-  }, [calEvents, active]);
 
   // UF data
   const ufMap = {};
@@ -254,79 +211,6 @@ export default function Dashboard() {
         </Card>
       )}
 
-      {/* Próximos Eventos */}
-      <Card style={{ marginBottom: 0 }}>
-        <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span>Próximos Eventos <span style={{ fontWeight: 400, fontSize: 11, color: B.gray }}>(hoje + 7 dias)</span></span>
-          <button onClick={() => setCalRefreshKey((k) => k + 1)} title="Atualizar eventos" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: B.gray, padding: "2px 6px", borderRadius: 6 }}>🔄</button>
-        </div>
-        {proximosEventos.length === 0 ? (
-          <div style={{ padding: "16px 0", textAlign: "center", color: B.gray, fontSize: 12 }}>Nenhum evento nos próximos 7 dias</div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {proximosEventos.map((ev) => {
-              const dateStr = (ev.start_at || "").slice(0, 10);
-              const _now = new Date();
-              const todayStr = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,"0")}-${String(_now.getDate()).padStart(2,"0")}`;
-              const isToday = dateStr === todayStr;
-              const timeLabel = ev._isReuniao
-                ? ""
-                : (() => { try { return new Date(ev.start_at.replace(" ", "T")).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); } catch { return (ev.start_at || "").slice(11, 16); } })();
-              const [dy, dm, dd] = dateStr.split("-").map(Number);
-              const localDate = new Date(dy, dm - 1, dd);
-              const dateLabel = isToday ? "Hoje" : localDate.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" });
-              const dotColor = ev.color || (ev.type === "reuniao" ? "#2563eb" : "#7c3aed");
-              const isPast = (() => {
-                try { return new Date(ev.start_at.replace(" ", "T")) < new Date(); } catch { return false; }
-              })();
-              const isConfirmed = confirmedIds.has(ev.id);
-              const deleteEvent = async () => {
-                if (ev._isReuniao) return;
-                await supabase.from("calendar_events").delete().eq("id", ev.id);
-                setCalRefreshKey((k) => k + 1);
-              };
-
-              // Estilo visual baseado no estado
-              const rowBg = isPast ? "#f1f5f9" : isConfirmed ? "#f0fdf4" : isToday ? "#eff6ff" : "#f8faff";
-              const rowBorder = isPast ? "#e2e8f0" : isConfirmed ? "#bbf7d0" : isToday ? "#bfdbfe" : B.border;
-              const titleColor = isPast ? "#94a3b8" : B.navy;
-              const titleDecoration = isPast ? "line-through" : "none";
-
-              return (
-                <div key={ev.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, background: rowBg, border: `1px solid ${rowBorder}`, opacity: isPast ? 0.7 : 1 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: isPast ? "#94a3b8" : dotColor, flexShrink: 0 }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 12, color: titleColor, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textDecoration: titleDecoration }}>{ev.title}</div>
-                    {ev.location && <div style={{ fontSize: 10, color: B.gray, marginTop: 1 }}>{ev.location}</div>}
-                  </div>
-                  <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <div style={{ fontSize: 11, fontWeight: isToday && !isPast ? 700 : 500, color: isPast ? "#94a3b8" : isToday ? "#2563eb" : B.navy }}>{dateLabel}</div>
-                    <div style={{ fontSize: 10, color: B.gray }}>{timeLabel}</div>
-                  </div>
-                  {/* Botão confirmar — só para eventos futuros */}
-                  {!isPast && (
-                    <button
-                      onClick={() => toggleConfirm(ev.id)}
-                      title={isConfirmed ? "Confirmado — clique para desfazer" : "Confirmar participação"}
-                      style={{ background: isConfirmed ? "#dcfce7" : "white", border: `1px solid ${isConfirmed ? "#16a34a" : "#cbd5e1"}`, cursor: "pointer", color: isConfirmed ? "#16a34a" : "#94a3b8", fontSize: 12, padding: "3px 7px", borderRadius: 5, flexShrink: 0, fontWeight: 700, lineHeight: 1 }}
-                    >{isConfirmed ? "✓" : "✓"}</button>
-                  )}
-                  {/* Botão excluir */}
-                  {!ev._isReuniao && (
-                    <button
-                      onClick={deleteEvent}
-                      title="Remover evento"
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "#cbd5e1", fontSize: 13, padding: "2px 4px", borderRadius: 4, flexShrink: 0, lineHeight: 1 }}
-                      onMouseEnter={(e) => e.target.style.color = "#dc2626"}
-                      onMouseLeave={(e) => e.target.style.color = "#cbd5e1"}
-                    >✕</button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </Card>
     </>
   );
 }
