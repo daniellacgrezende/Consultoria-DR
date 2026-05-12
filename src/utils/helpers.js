@@ -128,6 +128,9 @@ export const mapClientFromDB = (c) => ({
   proximoRelatorio: c.proximo_relatorio,
   indicadoPor: c.indicado_por,
   dataPedidoIndicacao: c.data_pedido_indicacao,
+  email: c.email,
+  patrimonioImobilizado: c.patrimonio_imobilizado,
+  financiamentos: c.financiamentos,
 });
 
 // Colunas válidas da tabela clients no Supabase
@@ -142,6 +145,7 @@ const CLIENT_DB_COLS = new Set([
   "periodicidade_relatorio", "pgbl", "vgbl", "renda_bruta_tributavel", "reserva_emergencia_valor",
   "reserva_emergencia_meta", "reserva_emergencia_produto", "grupo_id", "grupo_nome",
   "corretoras", "origem_cliente", "proximo_relatorio", "indicado_por", "aporte_mensal_max", "data_pedido_indicacao",
+  "email", "patrimonio_imobilizado", "financiamentos",
   "seguro_nao_aplica", "ips_nao_aplica", "prev_nao_aplica", "reuniao_agendada_em",
 ]);
 
@@ -213,6 +217,9 @@ export const mapClientToDB = (c) => {
     proximo_relatorio: toDate(c.proximo_relatorio ?? c.proximoRelatorio),
     indicado_por: c.indicado_por ?? c.indicadoPor ?? "",
     data_pedido_indicacao: c.data_pedido_indicacao ?? c.dataPedidoIndicacao ?? "",
+    email: c.email ?? "",
+    patrimonio_imobilizado: c.patrimonio_imobilizado ?? c.patrimonioImobilizado ?? "",
+    financiamentos: c.financiamentos ?? "",
   };
 
   return db;
