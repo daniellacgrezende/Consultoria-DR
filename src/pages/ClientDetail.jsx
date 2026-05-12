@@ -343,7 +343,10 @@ export default function ClientDetail() {
                   <InlineDate value={client.data_pedido_indicacao} onSave={(v) => updateField("data_pedido_indicacao", v)} />
                   {client.data_pedido_indicacao && (() => {
                     const d = daysSince(client.data_pedido_indicacao);
-                    return d !== null ? <div style={{ fontSize: 9, color: "#6b7280", marginTop: 2 }}>{d === 0 ? "hoje" : `${d}d atrás`}</div> : null;
+                    if (d === null) return null;
+                    const m = Math.floor(d / 30);
+                    const label = d === 0 ? "hoje" : m === 0 ? "este mês" : m === 1 ? "1 mês atrás" : `${m} meses atrás`;
+                    return <div style={{ fontSize: 9, color: "#6b7280", marginTop: 2 }}>{label}</div>;
                   })()}
                 </div>
                 {grupoNome && <div style={{ gridColumn: "1/-1" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Grupo (PJ+PF)</div><InlineText value={client.grupo_nome} onSave={(v) => updateField("grupo_nome", v)} /></div>}
