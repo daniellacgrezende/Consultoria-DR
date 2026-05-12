@@ -24,22 +24,23 @@ const PRIOR_COLORS = {
 };
 
 /* ─── Meeting Item (virtual, baseado em reuniao_agendada_em) ─── */
-function MeetingItem({ client, navigate, onRealizada }) {
+function MeetingItem({ client, navigate, onRealizada, time }) {
   const atrasada = client.reuniao_agendada_em < today();
+  const color = atrasada ? "#dc2626" : "#1d4ed8";
   return (
     <div style={{ borderRadius: 8, background: "#eff6ff", border: `2px solid ${atrasada ? "#dc2626" : "#2563eb"}`, borderLeft: `4px solid ${atrasada ? "#dc2626" : "#2563eb"}`, overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px" }}>
         <span style={{ fontSize: 15, flexShrink: 0 }}>📅</span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: atrasada ? "#dc2626" : "#1d4ed8" }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color }}>
             Reunião com {client.nome}
           </span>
           <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 800, background: atrasada ? "#dc2626" : "#2563eb", color: "white", borderRadius: 999, padding: "1px 7px", textTransform: "uppercase" }}>
             {atrasada ? "ATRASADA" : "CONFIRMADA"}
           </span>
         </div>
-        <span style={{ fontSize: 10, color: atrasada ? "#dc2626" : "#1d4ed8", flexShrink: 0, fontWeight: 700 }}>
-          {fmtDate(client.reuniao_agendada_em)}
+        <span style={{ fontSize: 10, color, flexShrink: 0, fontWeight: 700 }}>
+          {fmtDate(client.reuniao_agendada_em)}{time ? ` · ${time}` : ""}
         </span>
         <button onClick={() => navigate(`/clients/${slugify(client.nome)}`)}
           style={{ background: "white", color: "#1d4ed8", border: "1px solid #bfdbfe", borderRadius: 6, padding: "3px 7px", fontSize: 10, cursor: "pointer", flexShrink: 0 }}>
@@ -173,42 +174,6 @@ export default function Tasks() {
   const [clientSearch, setClientSearch] = useState("");
   const [collapsedSections, setCollapsedSections] = useState(() => new Set(["futAmanha", "futSemana", "futAlem", "concluidas"]));
   const toggleSection = (key) => setCollapsedSections(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
-
-  // ─── Próximos Eventos (Outlook) ───
-  const [calEvents, setCalEvents] = useState([]);
-  const [calRefreshKey, setCalRefreshKey] = useState(0);
-  const [confirmedIds, setConfirmedIds] = useState(() => {
-    try { return new Set(JSON.parse(localStorage.getItem("cal_confirmed") || "[]")); } catch { return new Set(); }
-  });
-  const toggleConfirm = (id) => {
-    setConfirmedIds((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      localStorage.setItem("cal_confirmed", JSON.stringify([...next]));
-      return next;
-    });
-  };
-  useEffect(() => {
-    const from = new Date().toISOString();
-    const to = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-    supabase.from("calendar_events").select("*").gte("start_at", from).lte("start_at", to).order("start_at").then(({ data }) => {
-      setCalEvents(data || []);
-    });
-  }, [calRefreshKey]);
-  const proximosEventos = useMemo(() => {
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
-    const d7 = new Date(now); d7.setDate(d7.getDate() + 7);
-    const endStr = `${d7.getFullYear()}-${String(d7.getMonth()+1).padStart(2,"0")}-${String(d7.getDate()).padStart(2,"0")}`;
-    return calEvents.filter((e) => {
-      const ds = (e.start_at || "").slice(0, 10);
-      if (ds < todayStr || ds > endStr) return false;
-      const st = (e.status || "CONFIRMED").toUpperCase();
-      if (st === "TENTATIVE" || st === "CANCELLED") return false;
-      const t = (e.title || "").toLowerCase();
-      return !t.startsWith("cancelado:") && !t.startsWith("canceled:") && !t.startsWith("cancelled:");
-    }).sort((a, b) => (a.start_at || "").localeCompare(b.start_at || ""));
-  }, [calEvents]);
 
   const saveNota = (v) => { setNotaDia(v); localStorage.setItem(NOTA_KEY(), v); };
 
@@ -370,6 +335,25 @@ export default function Tasks() {
   const meetSemana    = meetingClients.filter((c) => c.reuniao_agendada_em > tomorrowStr && c.reuniao_agendada_em <= weekOutStr);
   const meetAlem      = meetingClients.filter((c) => c.reuniao_agendada_em > weekOutStr);
   const meetFilterDate = filterDate ? meetingClients.filter((c) => c.reuniao_agendada_em === filterDate) : [];
+
+  /* ── Horários das reuniões (via calendar_events) ── */
+  const [meetingTimes, setMeetingTimes] = useState({}); // client_id → "HH:MM"
+  useEffect(() => {
+    const ids = meetingClients.map((c) => c.id).filter(Boolean);
+    if (ids.length === 0) { setMeetingTimes({}); return; }
+    supabase.from("calendar_events").select("client_id, start_at").in("client_id", ids)
+      .then(({ data }) => {
+        const map = {};
+        (data || []).forEach((ev) => {
+          const d = (ev.start_at || "").slice(0, 10);
+          const c = meetingClients.find((mc) => mc.id === ev.client_id && mc.reuniao_agendada_em === d);
+          if (c && ev.start_at && !map[c.id]) {
+            try { map[c.id] = new Date(ev.start_at.replace(" ", "T")).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); } catch {}
+          }
+        });
+        setMeetingTimes(map);
+      });
+  }, [meetingClients]);
 
   /* ── Dedup: oculta todos "Reunião com X" quando há MeetingItem para o mesmo cliente ── */
   const meetingClientIds = useMemo(() => new Set(meetingClients.map((c) => c.id)), [meetingClients]);
@@ -560,7 +544,7 @@ export default function Tasks() {
               </div>
             )}
             {meetFilterDate.map((c) => (
-              <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} />
+              <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} time={meetingTimes[c.id]} />
             ))}
             {visAllDate.map((t, i) => (
               <Item key={t.id} t={t} idx={i} groupList={visAllDate} {...itemProps} />
@@ -570,35 +554,35 @@ export default function Tasks() {
           <>
             <CollapsibleGroup sectionKey="atrasadas" label="Atrasadas" color="#dc2626" count={visAtrasadas.length + meetAtrasadas.length}>
               {meetAtrasadas.map((c) => (
-                <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} />
+                <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} time={meetingTimes[c.id]} />
               ))}
               {visAtrasadas.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visAtrasadas} {...itemProps} />)}
             </CollapsibleGroup>
 
             <CollapsibleGroup sectionKey="hoje" label="Hoje" color={B.navy} count={visHoje.length + meetHoje.length}>
               {meetHoje.map((c) => (
-                <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} />
+                <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} time={meetingTimes[c.id]} />
               ))}
               {visHoje.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visHoje} {...itemProps} />)}
             </CollapsibleGroup>
 
             <CollapsibleGroup sectionKey="futAmanha" label="Amanhã" color="#6b7280" count={visAmanha.length + meetAmanha.length}>
               {meetAmanha.map((c) => (
-                <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} />
+                <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} time={meetingTimes[c.id]} />
               ))}
               {visAmanha.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visFuturas} {...itemProps} />)}
             </CollapsibleGroup>
 
             <CollapsibleGroup sectionKey="futSemana" label="Esta semana" color="#6b7280" count={visSemana.length + meetSemana.length}>
               {meetSemana.map((c) => (
-                <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} />
+                <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} time={meetingTimes[c.id]} />
               ))}
               {visSemana.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visFuturas} {...itemProps} />)}
             </CollapsibleGroup>
 
             <CollapsibleGroup sectionKey="futAlem" label="Mais adiante" color="#6b7280" count={visAlem.length + meetAlem.length}>
               {meetAlem.map((c) => (
-                <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} />
+                <MeetingItem key={`meet-${c.id}`} client={c} navigate={navigate} onRealizada={() => handleMeetingRealizada(c)} time={meetingTimes[c.id]} />
               ))}
               {visAlem.map((t, i) => <Item key={t.id} t={t} idx={i} groupList={visFuturas} {...itemProps} />)}
             </CollapsibleGroup>
@@ -616,57 +600,6 @@ export default function Tasks() {
           Limpar concluídas ({concluidas.length})
         </button>
       )}
-
-      {/* ─── Próximos Eventos ─── */}
-      <div style={{ marginTop: 24, background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "14px 16px" }}>
-        <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span>📅 Próximos Eventos <span style={{ fontWeight: 400, fontSize: 10, color: B.gray }}>(hoje + 7 dias)</span></span>
-          <button onClick={() => setCalRefreshKey((k) => k + 1)} title="Atualizar" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: B.gray, padding: "2px 4px" }}>🔄</button>
-        </div>
-        {proximosEventos.length === 0 ? (
-          <div style={{ padding: "10px 0", textAlign: "center", color: B.gray, fontSize: 12 }}>Nenhum evento nos próximos 7 dias</div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {proximosEventos.map((ev) => {
-              const dateStr = (ev.start_at || "").slice(0, 10);
-              const _now = new Date();
-              const todayStr = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,"0")}-${String(_now.getDate()).padStart(2,"0")}`;
-              const isToday = dateStr === todayStr;
-              const timeLabel = (() => { try { return new Date(ev.start_at.replace(" ", "T")).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); } catch { return (ev.start_at || "").slice(11, 16); } })();
-              const [dy, dm, dd] = dateStr.split("-").map(Number);
-              const dateLabel = isToday ? "Hoje" : new Date(dy, dm - 1, dd).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" });
-              const dotColor = ev.color || "#7c3aed";
-              const isPast = (() => { try { return new Date(ev.start_at.replace(" ", "T")) < new Date(); } catch { return false; } })();
-              const isConfirmed = confirmedIds.has(ev.id);
-              const rowBg = isPast ? "#f1f5f9" : isConfirmed ? "#f0fdf4" : isToday ? "#eff6ff" : "#f8faff";
-              const rowBorder = isPast ? "#e2e8f0" : isConfirmed ? "#bbf7d0" : isToday ? "#bfdbfe" : B.border;
-              return (
-                <div key={ev.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: 7, background: rowBg, border: `1px solid ${rowBorder}`, opacity: isPast ? 0.7 : 1 }}>
-                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: isPast ? "#94a3b8" : dotColor, flexShrink: 0 }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 12, color: isPast ? "#94a3b8" : B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textDecoration: isPast ? "line-through" : "none" }}>{ev.title}</div>
-                    {ev.location && <div style={{ fontSize: 10, color: B.gray, marginTop: 1 }}>{ev.location}</div>}
-                  </div>
-                  <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <div style={{ fontSize: 11, fontWeight: isToday && !isPast ? 700 : 500, color: isPast ? "#94a3b8" : isToday ? "#2563eb" : B.navy }}>{dateLabel}</div>
-                    <div style={{ fontSize: 10, color: B.gray }}>{timeLabel}</div>
-                  </div>
-                  {!isPast && (
-                    <button onClick={() => toggleConfirm(ev.id)} title={isConfirmed ? "Confirmado" : "Confirmar"}
-                      style={{ background: isConfirmed ? "#dcfce7" : "white", border: `1px solid ${isConfirmed ? "#16a34a" : "#cbd5e1"}`, cursor: "pointer", color: isConfirmed ? "#16a34a" : "#94a3b8", fontSize: 11, padding: "2px 6px", borderRadius: 5, flexShrink: 0, fontWeight: 700 }}>✓</button>
-                  )}
-                  {!ev._isReuniao && (
-                    <button onClick={async () => { await supabase.from("calendar_events").delete().eq("id", ev.id); setCalRefreshKey((k) => k + 1); }}
-                      title="Remover" style={{ background: "none", border: "none", cursor: "pointer", color: "#cbd5e1", fontSize: 13, padding: "2px 3px", flexShrink: 0 }}
-                      onMouseEnter={(e) => e.target.style.color = "#dc2626"}
-                      onMouseLeave={(e) => e.target.style.color = "#cbd5e1"}>✕</button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
 
       {/* ═══ MODAL ═══ */}
       <Modal open={modal} onClose={() => setModal(false)}>

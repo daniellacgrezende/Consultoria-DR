@@ -449,10 +449,12 @@ export default function ClientDetail() {
         {(client.link_rebalanceamento || true) && (
           <div style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", whiteSpace: "nowrap" }}>Link Rebalanceamento</span>
-            <InlineText value={client.link_rebalanceamento} onSave={(v) => updateField("link_rebalanceamento", v)} placeholder="https://…" style={{ flex: 1 }} />
-            {client.link_rebalanceamento && String(client.link_rebalanceamento).startsWith("http") && (
-              <a href={client.link_rebalanceamento} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }} onClick={(e) => e.stopPropagation()}>↗ Abrir</a>
-            )}
+            <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 4 }}>
+              <InlineText value={client.link_rebalanceamento} onSave={(v) => updateField("link_rebalanceamento", v)} placeholder="https://…" style={{ flex: 1 }} />
+              {client.link_rebalanceamento && String(client.link_rebalanceamento).startsWith("http") && (
+                <a href={client.link_rebalanceamento} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }} onClick={(e) => e.stopPropagation()}>↗ Abrir</a>
+              )}
+            </div>
           </div>
         )}
 
@@ -487,43 +489,47 @@ export default function ClientDetail() {
         </div>
 
         {/* Stats principais — respondem ao filtro acima */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 12 }}>
-          <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "10px 12px" }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Aportado</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#16a34a" }}>{money(totalAp)}</div>
-          </div>
-          <div style={{ background: "#fff5f5", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 12px" }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Resgatado</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#dc2626" }}>{money(totalRe)}</div>
-          </div>
-          <div style={{ background: liquido >= 0 ? "#f0fdf4" : "#fff5f5", border: `1px solid ${liquido >= 0 ? "#bbf7d0" : "#fecaca"}`, borderRadius: 8, padding: "10px 12px" }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Líquido</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: liquido >= 0 ? "#16a34a" : "#dc2626" }}>{liquido >= 0 ? "+" : ""}{money(liquido)}</div>
-          </div>
-          <div style={{ background: mediaMes >= 0 ? "#f5f3ff" : "#fff5f5", border: `1px solid ${mediaMes >= 0 ? "#ddd6fe" : "#fecaca"}`, borderRadius: 8, padding: "10px 12px" }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Média/Mês (líq.)</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: mediaMes >= 0 ? "#7c3aed" : "#dc2626" }}>{mediaMes >= 0 ? "" : "-"}{money(Math.abs(mediaMes))}</div>
-          </div>
-        </div>
-
-        {/* Reserva + PGBL */}
-        {(Number(client.liquidez_desejada || 0) > 0 || hasPgbl) && (
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
-            {Number(client.liquidez_desejada || 0) > 0 && (() => {
-              const liqA = Number(client.liquidez_atual || 0);
-              const desejada = Number(client.liquidez_desejada);
-              const pct = Math.min(100, Math.round((liqA / desejada) * 100));
-              const ok = liqA >= desejada;
-              return (
-                <div style={{ background: ok ? "#f0fdf4" : "#fff7ed", border: `1px solid ${ok ? "#bbf7d0" : "#fed7aa"}`, borderRadius: 8, padding: "8px 14px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 120 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: ok ? "#16a34a" : "#c2410c" }}>💧 Reserva {pct}%</span>
-                  <div style={{ width: 100, height: 5, background: ok ? "#bbf7d0" : "#fed7aa", borderRadius: 99 }}>
+        {(() => {
+          const hasReserva = Number(client.liquidez_desejada || 0) > 0;
+          const liqA = Number(client.liquidez_atual || 0);
+          const desejada = Number(client.liquidez_desejada || 0);
+          const pct = desejada > 0 ? Math.min(100, Math.round((liqA / desejada) * 100)) : 0;
+          const ok = liqA >= desejada;
+          return (
+            <div style={{ display: "grid", gridTemplateColumns: `repeat(${hasReserva ? 5 : 4}, 1fr)`, gap: 10, marginBottom: 12 }}>
+              {hasReserva && (
+                <div style={{ background: ok ? "#f0fdf4" : "#fff7ed", border: `1px solid ${ok ? "#bbf7d0" : "#fed7aa"}`, borderRadius: 8, padding: "10px 12px" }}>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>💧 Reserva</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: ok ? "#16a34a" : "#c2410c", marginBottom: 4 }}>{pct}%</div>
+                  <div style={{ width: "100%", height: 4, background: ok ? "#bbf7d0" : "#fed7aa", borderRadius: 99, marginBottom: 3 }}>
                     <div style={{ width: `${pct}%`, height: "100%", background: ok ? "#16a34a" : "#f97316", borderRadius: 99, transition: "width .3s" }} />
                   </div>
-                  <span style={{ fontSize: 9, color: "#8899bb", fontWeight: 600 }}>{money(liqA)} / {money(desejada)}</span>
+                  <div style={{ fontSize: 9, color: "#8899bb", fontWeight: 600 }}>{money(liqA)} / {money(desejada)}</div>
                 </div>
-              );
-            })()}
+              )}
+              <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "10px 12px" }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Aportado</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#16a34a" }}>{money(totalAp)}</div>
+              </div>
+              <div style={{ background: "#fff5f5", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 12px" }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Resgatado</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#dc2626" }}>{money(totalRe)}</div>
+              </div>
+              <div style={{ background: liquido >= 0 ? "#f0fdf4" : "#fff5f5", border: `1px solid ${liquido >= 0 ? "#bbf7d0" : "#fecaca"}`, borderRadius: 8, padding: "10px 12px" }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Líquido</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: liquido >= 0 ? "#16a34a" : "#dc2626" }}>{liquido >= 0 ? "+" : ""}{money(liquido)}</div>
+              </div>
+              <div style={{ background: mediaMes >= 0 ? "#f5f3ff" : "#fff5f5", border: `1px solid ${mediaMes >= 0 ? "#ddd6fe" : "#fecaca"}`, borderRadius: 8, padding: "10px 12px" }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Média/Mês (líq.)</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: mediaMes >= 0 ? "#7c3aed" : "#dc2626" }}>{mediaMes >= 0 ? "" : "-"}{money(Math.abs(mediaMes))}</div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* PGBL */}
+        {hasPgbl && (
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
             {hasPgbl && pgblPct !== null && (() => {
               const restante = Math.max(0, pgblLimite - pgblAnoAtual);
               const concluido = pgblPct >= 100;
