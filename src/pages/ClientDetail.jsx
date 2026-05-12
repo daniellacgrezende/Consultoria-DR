@@ -269,19 +269,27 @@ export default function ClientDetail() {
           {dgOpen && (
             <>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10 }}>
-                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Cidade</div><InlineText value={client.cidade} onSave={(v) => updateField("cidade", v)} /></div>
-                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>UF</div><InlineText value={client.uf} onSave={(v) => updateField("uf", v)} /></div>
-                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Estado Civil</div><InlineSelect value={client.estado_civil || ""} onSave={(v) => updateField("estado_civil", v)} opts={[{ v: "", l: "—" }, { v: "Solteiro", l: "Solteiro" }, { v: "Casado", l: "Casado" }, { v: "Divorciado", l: "Divorciado" }, { v: "Viúvo", l: "Viúvo" }, { v: "União estável", l: "União estável" }]} /></div>
-                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Profissão</div><InlineText value={client.profissao} onSave={(v) => updateField("profissao", v)} /></div>
-                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Filhos</div><InlineText value={client.filhos} onSave={(v) => updateField("filhos", v)} /></div>
-                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Cônjuge</div><InlineText value={client.conjuge} onSave={(v) => updateField("conjuge", v)} /></div>
+                {/* Linha 1: localização + nascimento + profissão */}
+                <div style={{ gridColumn: "span 2", display: "flex", gap: 6, alignItems: "flex-start" }}>
+                  <div style={{ flex: 3 }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Cidade</div><InlineText value={client.cidade} onSave={(v) => updateField("cidade", v)} /></div>
+                  <div style={{ flex: 1 }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>UF</div><InlineText value={client.uf} onSave={(v) => updateField("uf", v)} /></div>
+                </div>
+                <div style={{ gridColumn: "span 2" }}>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Data Nascimento</div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                    <InlineDate value={client.data_nascimento} onSave={(v) => updateField("data_nascimento", v)} />
+                    {idade !== null && <span style={{ fontSize: 13, fontWeight: 700, color: B.navy }}>{idade} anos</span>}
+                  </div>
+                </div>
+                <div style={{ gridColumn: "span 2" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Profissão</div><InlineText value={client.profissao} onSave={(v) => updateField("profissao", v)} /></div>
+                {/* Linha 2: família */}
+                <div style={{ gridColumn: "span 2" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Estado Civil</div><InlineSelect value={client.estado_civil || ""} onSave={(v) => updateField("estado_civil", v)} opts={[{ v: "", l: "—" }, { v: "Solteiro", l: "Solteiro" }, { v: "Casado", l: "Casado" }, { v: "Divorciado", l: "Divorciado" }, { v: "Viúvo", l: "Viúvo" }, { v: "União estável", l: "União estável" }]} /></div>
+                <div style={{ gridColumn: "span 2" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Filhos</div><InlineText value={client.filhos} onSave={(v) => updateField("filhos", v)} /></div>
+                <div style={{ gridColumn: "span 2" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Cônjuge</div><InlineText value={client.conjuge} onSave={(v) => updateField("conjuge", v)} /></div>
+                {/* Linha 3: contato */}
                 <div style={{ gridColumn: "span 3" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>E-mail</div><InlineText value={client.email} onSave={(v) => updateField("email", v)} placeholder="email@exemplo.com" /></div>
                 <div style={{ gridColumn: "span 3" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Hobbies</div><InlineText value={client.hobbies} onSave={(v) => updateField("hobbies", v)} placeholder="Clique para editar…" /></div>
-                <div>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Data Nascimento</div>
-                  <InlineDate value={client.data_nascimento} onSave={(v) => updateField("data_nascimento", v)} />
-                  {idade !== null && <span style={{ fontSize: 9, color: B.muted, marginLeft: 5 }}>({idade}a)</span>}
-                </div>
+                {/* Linha 4: origem / carteira / proteção / indicação */}
                 <div>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Origem</div>
                   <InlineSelect value={client.origem_cliente || ""} onSave={(v) => updateField("origem_cliente", v)} opts={[{ v: "", l: "—" }, ...LEAD_ORIGENS.map((o) => ({ v: o, l: o }))]} />
@@ -292,19 +300,10 @@ export default function ClientDetail() {
                     </div>
                   )}
                 </div>
-                <div>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: "#f59e0b", textTransform: "uppercase", marginBottom: 3 }}>Pediu indicação em</div>
-                  <InlineDate value={client.data_pedido_indicacao} onSave={(v) => updateField("data_pedido_indicacao", v)} />
-                  {client.data_pedido_indicacao && (() => {
-                    const d = daysSince(client.data_pedido_indicacao);
-                    return d !== null ? <span style={{ fontSize: 9, color: "#6b7280", marginLeft: 5 }}>({d === 0 ? "hoje" : `${d}d atrás`})</span> : null;
-                  })()}
-                </div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Início Carteira</div><InlineDate value={client.inicio_carteira} onSave={(v) => updateField("inicio_carteira", v)} /></div>
-                <div style={{ gridColumn: "span 2" }}>
+                <div style={{ gridColumn: "span 3" }}>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Seguro / Prev. / Sucessão</div>
                   <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center", marginBottom: 4 }}>
-                    {/* Seguro de Vida: null→true→false→"nao_aplica"→null; oculto quando N/A */}
                     {client.seguro_vida !== "nao_aplica" && (() => {
                       const val = client.seguro_vida;
                       const isTrue = val === true || val === "true";
@@ -316,7 +315,6 @@ export default function ClientDetail() {
                         </span>
                       );
                     })()}
-                    {/* PGBL/VGBL: ocultos quando "nao_aplica" */}
                     {client.pgbl !== "nao_aplica" && (client.pgbl === true || client.pgbl === "true") && (
                       <span onClick={() => updateField("pgbl", false)} title="Clique para remover" style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 999, background: "#dcfce7", color: "#16a34a", fontSize: 10, fontWeight: 700, cursor: "pointer", border: "1px solid #bbf7d0", userSelect: "none" }}>✓ PGBL</span>
                     )}
@@ -330,19 +328,23 @@ export default function ClientDetail() {
                       return (
                         <span style={{ display: "inline-flex", flexDirection: "column", gap: 2 }}>
                           <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 999, background: "#f0f9ff", color: "#0369a1", fontSize: 10, fontWeight: 700, border: "1px solid #bae6fd", userSelect: "none" }}>✓ Sucessão</span>
-                          {hasComment && (
-                            <span style={{ fontSize: 10, color: "#0369a1", fontStyle: "italic", paddingLeft: 4 }}>{suc}</span>
-                          )}
+                          {hasComment && <span style={{ fontSize: 10, color: "#0369a1", fontStyle: "italic", paddingLeft: 4 }}>{suc}</span>}
                         </span>
                       );
                     })()}
-                    {/* IPS: oculto quando "nao_aplica"; clique no badge pendente marca N/A */}
                     {client.envio_ips !== "nao_aplica" && !client.envio_ips && (
                       <span onClick={() => updateField("envio_ips", "nao_aplica")} title="Clique para marcar como Não se aplica" style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 999, background: "#fff7ed", color: "#c2410c", fontSize: 10, fontWeight: 700, border: "1px solid #fed7aa", cursor: "pointer", userSelect: "none" }}>! IPS</span>
                     )}
                   </div>
-                  {/* Obs. Seguro — agrupada visualmente com os badges */}
                   <InlineText value={client.seguro_observacao} onSave={(v) => updateField("seguro_observacao", v)} placeholder="obs. seguro..." style={{ fontSize: 11 }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#f59e0b", textTransform: "uppercase", marginBottom: 3 }}>Pediu indicação em</div>
+                  <InlineDate value={client.data_pedido_indicacao} onSave={(v) => updateField("data_pedido_indicacao", v)} />
+                  {client.data_pedido_indicacao && (() => {
+                    const d = daysSince(client.data_pedido_indicacao);
+                    return d !== null ? <span style={{ fontSize: 9, color: "#6b7280", marginLeft: 5 }}>({d === 0 ? "hoje" : `${d}d atrás`})</span> : null;
+                  })()}
                 </div>
                 {grupoNome && <div style={{ gridColumn: "1/-1" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Grupo (PJ+PF)</div><InlineText value={client.grupo_nome} onSave={(v) => updateField("grupo_nome", v)} /></div>}
               </div>
@@ -396,16 +398,16 @@ export default function ClientDetail() {
                 </div>
                 )}
               </div>
-              {/* Linha 2: IR / Corretoras / Pagamento / Produtos Reserva / Taxa / Mínimo + PatrimImob / Financiamentos */}
+              {/* Linha 2: IR / Corretoras / Pagamento / Financiamentos / Taxa / Mínimo */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 }}>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>IR</div><InlineSelect value={client.declaracao_ir || ""} onSave={(v) => updateField("declaracao_ir", v)} opts={[{ v: "", l: "—" }, { v: "Simplificada", l: "Simplificada" }, { v: "Completa", l: "Completa" }]} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Corretoras</div><InlineText value={client.corretoras} onSave={(v) => updateField("corretoras", v)} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Pagamento</div><InlineSelect value={client.forma_pagamento || ""} onSave={(v) => updateField("forma_pagamento", v)} opts={[{ v: "", l: "—" }, { v: "BTG", l: "BTG" }, { v: "XP", l: "XP" }, { v: "Boleto", l: "Boleto" }]} /></div>
-                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Produtos de Reserva</div><InlineText value={client.liquidez_produtos} onSave={(v) => updateField("liquidez_produtos", v)} placeholder="Tesouro Selic, CDB..." /></div>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Financiamentos</div><InlineText value={client.financiamentos} onSave={(v) => updateField("financiamentos", v)} placeholder="Ex: Financiamento imóvel, Leasing…" /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Taxa (%)</div><InlineSelect value={client.taxa_contratada || ""} onSave={(v) => updateField("taxa_contratada", v)} opts={[{ v: "", l: "—" }, { v: "1", l: "1%" }, { v: "0.95", l: "0,95%" }, { v: "0.9", l: "0,9%" }, { v: "0.8", l: "0,8%" }, { v: "0.7", l: "0,7%" }]} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Mínimo Contrato</div><InlineMoney value={client.valor_minimo_contrato} onSave={(v) => updateField("valor_minimo_contrato", v)} /></div>
                 <div style={{ gridColumn: "span 3" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Patrimônio Imobilizado</div><InlineText value={client.patrimonio_imobilizado} onSave={(v) => updateField("patrimonio_imobilizado", v)} placeholder="Ex: Imóvel SP, Carro 2023…" /></div>
-                <div style={{ gridColumn: "span 3" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Financiamentos</div><InlineText value={client.financiamentos} onSave={(v) => updateField("financiamentos", v)} placeholder="Ex: Financiamento imóvel, Leasing…" /></div>
+                <div style={{ gridColumn: "span 3" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Produtos de Reserva</div><InlineText value={client.liquidez_produtos} onSave={(v) => updateField("liquidez_produtos", v)} placeholder="Tesouro Selic, CDB..." /></div>
               </div>
               <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${B.border}` }}>
                 <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Planejamento / Metas</div>
