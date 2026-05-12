@@ -667,21 +667,26 @@ export default function ClientDetail() {
               const isOpen = rhExpandedIds.has(r.id);
               return (
                 <div key={r.id} style={{ background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 9, overflow: "hidden" }}>
-                  <div onClick={() => toggleRhExpand(r.id)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 14px", cursor: "pointer", userSelect: "none" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 14px" }}>
                     <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1, minWidth: 0 }}>
-                      <span style={{ fontSize: 10, color: B.muted, flexShrink: 0 }}>{isOpen ? "▼" : "▶"}</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap" }}>{r.data ? r.data.split("-").reverse().join("/") : "—"}</span>
-                      {r.titulo && <span style={{ fontSize: 11, fontWeight: 600, color: B.navy, background: "#e8eeff", borderRadius: 5, padding: "1px 7px", whiteSpace: "nowrap" }}>{r.titulo}</span>}
-                      {!isOpen && r.texto && <span style={{ fontSize: 11, color: B.gray, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.texto.slice(0, 80)}{r.texto.length > 80 ? "…" : ""}</span>}
+                      <span onClick={() => toggleRhExpand(r.id)} style={{ fontSize: 10, color: B.muted, flexShrink: 0, cursor: "pointer", userSelect: "none" }}>{isOpen ? "▼" : "▶"}</span>
+                      {isOpen ? (
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }} onClick={(e) => e.stopPropagation()}>
+                          <InlineDate value={r.data} onSave={(v) => saveReuniao({ ...r, data: v }, false).then(() => setToast({ type: "success", text: "Data atualizada." }))} />
+                          <InlineText value={r.titulo} onSave={(v) => saveReuniao({ ...r, titulo: v }, false)} placeholder="Sem título" style={{ fontWeight: 600, color: B.navy, fontSize: 12 }} />
+                        </div>
+                      ) : (
+                        <div onClick={() => toggleRhExpand(r.id)} style={{ display: "flex", gap: 8, alignItems: "center", flex: 1, minWidth: 0, cursor: "pointer" }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap" }}>{r.data ? r.data.split("-").reverse().join("/") : "—"}</span>
+                          {r.titulo && <span style={{ fontSize: 11, fontWeight: 600, color: B.navy, background: "#e8eeff", borderRadius: 5, padding: "1px 7px", whiteSpace: "nowrap" }}>{r.titulo}</span>}
+                          {r.texto && <span style={{ fontSize: 11, color: B.gray, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.texto.slice(0, 80)}{r.texto.length > 80 ? "…" : ""}</span>}
+                        </div>
+                      )}
                     </div>
                     <button onClick={(e) => { e.stopPropagation(); if (confirm("Remover este registro?")) { deleteReuniao(r.id).then(() => setToast({ type: "success", text: "Removido." })); } }} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 5, padding: "3px 9px", fontSize: 10, cursor: "pointer", flexShrink: 0, marginLeft: 8 }}>Remover</button>
                   </div>
                   {isOpen && (
-                    <div style={{ padding: "6px 14px 12px", borderTop: `1px solid ${B.border}` }} onClick={(e) => e.stopPropagation()}>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
-                        <InlineDate value={r.data} onSave={(v) => saveReuniao({ ...r, data: v }, false).then(() => setToast({ type: "success", text: "Data atualizada." }))} />
-                        <InlineText value={r.titulo} onSave={(v) => saveReuniao({ ...r, titulo: v }, false)} placeholder="Sem título" style={{ fontWeight: 600, color: B.navy, fontSize: 12 }} />
-                      </div>
+                    <div style={{ padding: "4px 14px 12px", borderTop: `1px solid ${B.border}` }}>
                       <InlineText value={r.texto} onSave={(v) => saveReuniao({ ...r, texto: v }, false).then(() => setToast({ type: "success", text: "Histórico atualizado." }))} multiline saveOnEnter placeholder="Clique para adicionar notas… (Ctrl+Enter para salvar)" style={{ width: "100%", minHeight: 36, color: "#445566", lineHeight: 1.7, fontSize: 12 }} />
                       {r.texto && <div style={{ fontSize: 9, color: B.muted, marginTop: 3, textAlign: "right" }}>Ctrl+Enter = salvar · Esc = cancelar</div>}
                     </div>
