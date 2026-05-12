@@ -197,6 +197,7 @@ export function parseICS(text) {
       type:     detectEventType(raw),
       color:    detectColor(raw),
       is_teams: !!(raw.location || "").toLowerCase().includes("teams") || !!(raw.description || "").toLowerCase().includes("teams"),
+      status:   (raw.status || "CONFIRMED").toUpperCase(),
     };
 
     if (raw.rrule && !raw.recurrence_id) {

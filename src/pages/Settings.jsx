@@ -56,7 +56,7 @@ export default function Settings() {
         }
       };
 
-      const toUpsert = validParsed.map((e) => ({ id: huid(), title: e.title, description: e.description || "", start_at: e.start_at, end_at: e.end_at || e.start_at, type: e.type || "reuniao", color: e.color || "#2563eb", location: e.location || "", outlook_event_id: e.outlook_event_id, client_id: null, lead_id: null }));
+      const toUpsert = validParsed.map((e) => ({ id: huid(), title: e.title, description: e.description || "", start_at: e.start_at, end_at: e.end_at || e.start_at, type: e.type || "reuniao", color: e.color || "#2563eb", location: e.location || "", outlook_event_id: e.outlook_event_id, status: e.status || "CONFIRMED", client_id: null, lead_id: null }));
 
       if (forceAll) {
         // Re-sync completo: apaga tudo e reimporta via upsert

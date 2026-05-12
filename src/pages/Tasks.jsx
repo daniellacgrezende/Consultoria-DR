@@ -363,11 +363,19 @@ export default function Tasks() {
 
   /* ── Eventos do Outlook (calendar_events) ── */
   const [calEvents, setCalEvents] = useState([]);
+  const isCalConfirmed = (e) => {
+    const st = (e.status || "CONFIRMED").toUpperCase();
+    if (st === "TENTATIVE" || st === "CANCELLED") return false;
+    const t = (e.title || "").toLowerCase();
+    if (t.startsWith("cancelado:") || t.startsWith("canceled:") || t.startsWith("cancelled:")) return false;
+    return true;
+  };
+
   useEffect(() => {
     const todayStart = today() + "T00:00:00";
     const to = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
     supabase.from("calendar_events").select("*").gte("start_at", todayStart).lte("start_at", to).order("start_at")
-      .then(({ data }) => setCalEvents(data || []));
+      .then(({ data }) => setCalEvents((data || []).filter(isCalConfirmed)));
   }, []);
   const calAtrasadas   = [];
   const calHoje        = calEvents.filter((e) => (e.start_at || "").slice(0, 10) === today());

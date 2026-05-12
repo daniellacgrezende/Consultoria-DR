@@ -91,7 +91,12 @@ export default function Dashboard() {
 
     const calFiltered = calEvents.filter((e) => {
       const ds = (e.start_at || "").slice(0, 10);
-      return ds >= todayStr && ds <= endStr;
+      if (ds < todayStr || ds > endStr) return false;
+      const st = (e.status || "CONFIRMED").toUpperCase();
+      if (st === "TENTATIVE" || st === "CANCELLED") return false;
+      const t = (e.title || "").toLowerCase();
+      if (t.startsWith("cancelado:") || t.startsWith("canceled:") || t.startsWith("cancelled:")) return false;
+      return true;
     });
 
     return [...calFiltered]
