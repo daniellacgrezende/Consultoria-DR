@@ -13,12 +13,13 @@ import { CBadge } from "../components/ui/Badge";
 
 const GRACE_DAYS  = 25; // dias após vencimento antes de virar "Atrasado"
 
-function buildOutlookUrl({ title, start, end }) {
+function buildOutlookUrl({ title, start, end, to }) {
   const p = new URLSearchParams();
   p.set("subject", title);
   p.set("startdt", new Date(start).toISOString());
   p.set("enddt",   new Date(end).toISOString());
   p.set("path", "/calendar/action/compose");
+  if (to) p.set("to", to);
   return `https://outlook.office.com/calendar/0/deeplink/compose?path=%2Fcalendar%2Faction%2Fcompose&${p.toString()}`;
 }
 const RETRY_DAYS  = 45; // dias após "chamei" antes de virar "Retentativa"
@@ -92,7 +93,7 @@ export default function Meetings() {
   // Barra de desfazer
   const [undoBar, setUndoBar] = useState(null); // { label, snapshot }
   const [retAgModal, setRetAgModal] = useState(null); // { client } — modal agendar retentativa
-  const [retAgForm, setRetAgForm]   = useState({ data: today(), horaInicio: "10:00", horaFim: "11:00" });
+  const [retAgForm, setRetAgForm]   = useState({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: "" });
   const [taskModal, setTaskModal] = useState(null); // { texto, data }
   useEffect(() => {
     if (!undoBar) return;
@@ -296,12 +297,14 @@ export default function Meetings() {
                       <div style={{ fontSize: 10, color: "#B91C1C" }}>Últ. reunião: {fmtDate(c.ultima_reuniao || c.ultimaReuniao) || "—"}</div>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
-                      <button onClick={() => openAction("chamei", c)}
-                        style={{ fontSize: 9.5, fontWeight: 700, background: "#ECFEFF", color: "#0891B2", border: "1px solid #A5F3FC", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>Chamei</button>
+                      <div style={{ display: "flex", gap: 4 }}>
+                        <button onClick={() => openAction("chamei", c)}
+                          style={{ fontSize: 9.5, fontWeight: 700, background: "#ECFEFF", color: "#0891B2", border: "1px solid #A5F3FC", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>Chamei</button>
+                        <button onClick={() => setTaskModal({ texto: `Enviar mensagem para ${c.nome} — reunião de acompanhamento`, data: today() })}
+                          style={{ fontSize: 9.5, fontWeight: 700, background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>+ Tarefa</button>
+                      </div>
                       <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00" }); }}
                         style={{ fontSize: 9.5, fontWeight: 700, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>✓ Agendou</button>
-                      <button onClick={() => setTaskModal({ texto: `Enviar mensagem para ${c.nome} — reunião de acompanhamento`, data: today() })}
-                        style={{ fontSize: 9.5, fontWeight: 700, background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>+ Tarefa</button>
                     </div>
                   </div>
                 ))}
