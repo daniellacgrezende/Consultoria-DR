@@ -37,28 +37,38 @@ export default function Settings() {
       const parsed = parseICS(text);
       if (!parsed.length) { setSyncResult({ type: "error", text: "Nenhum evento encontrado no arquivo." }); setSyncing(false); return; }
 
-      const validParsed = parsed.filter((e) => e.start_at && e.outlook_event_id);
+      // Deduplica pelo outlook_event_id antes de qualquer operação
+      const seenIds = new Set();
+      const validParsed = parsed.filter((e) => {
+        if (!e.start_at || !e.outlook_event_id) return false;
+        if (seenIds.has(e.outlook_event_id)) return false;
+        seenIds.add(e.outlook_event_id);
+        return true;
+      });
+
+      // Função auxiliar: upsert em lotes de 200 (evita timeout)
+      const upsertBatch = async (events) => {
+        for (let i = 0; i < events.length; i += 200) {
+          const batch = events.slice(i, i + 200);
+          const { error } = await supabase.from("calendar_events")
+            .upsert(batch, { onConflict: "outlook_event_id", ignoreDuplicates: false });
+          if (error) throw new Error(error.message);
+        }
+      };
+
+      const toUpsert = validParsed.map((e) => ({ id: huid(), title: e.title, description: e.description || "", start_at: e.start_at, end_at: e.end_at || e.start_at, type: e.type || "reuniao", color: e.color || "#2563eb", location: e.location || "", outlook_event_id: e.outlook_event_id, client_id: null, lead_id: null }));
 
       if (forceAll) {
-        // Re-sync completo: apaga todos os eventos do Outlook e reimporta
+        // Re-sync completo: apaga tudo e reimporta via upsert
         await supabase.from("calendar_events").delete().not("outlook_event_id", "is", null).neq("outlook_event_id", "");
-        const toInsert = validParsed.map((e) => ({ id: huid(), title: e.title, description: e.description || "", start_at: e.start_at, end_at: e.end_at || e.start_at, type: e.type || "reuniao", color: e.color || "#2563eb", location: e.location || "", outlook_event_id: e.outlook_event_id, client_id: null, lead_id: null }));
-        const { error } = await supabase.from("calendar_events").insert(toInsert);
-        if (error) throw new Error(error.message);
-        setSyncResult({ type: "success", text: `Re-sincronização completa: ${toInsert.length} evento(s) importado(s).` });
-        if (setToast) setToast({ type: "success", text: `${toInsert.length} eventos re-importados do Outlook!` });
+        await upsertBatch(toUpsert);
+        setSyncResult({ type: "success", text: `Re-sincronização completa: ${toUpsert.length} evento(s) importado(s).` });
+        if (setToast) setToast({ type: "success", text: `${toUpsert.length} eventos re-importados do Outlook!` });
       } else {
-        // Sync incremental: verifica apenas os UIDs que estamos tentando inserir
-        const uids = validParsed.map((e) => e.outlook_event_id);
-        const { data: existing } = await supabase.from("calendar_events").select("outlook_event_id").in("outlook_event_id", uids);
-        const existingIds = new Set((existing || []).map((e) => e.outlook_event_id));
-        const newEvents = validParsed.filter((e) => !existingIds.has(e.outlook_event_id));
-        if (!newEvents.length) { setSyncResult({ type: "info", text: `${parsed.length} eventos encontrados, todos já sincronizados. Use "Re-sincronizar tudo" para corrigir horários.` }); setSyncing(false); return; }
-        const toInsert = newEvents.map((e) => ({ id: huid(), title: e.title, description: e.description || "", start_at: e.start_at, end_at: e.end_at || e.start_at, type: e.type || "reuniao", color: e.color || "#2563eb", location: e.location || "", outlook_event_id: e.outlook_event_id, client_id: null, lead_id: null }));
-        const { error } = await supabase.from("calendar_events").insert(toInsert);
-        if (error) throw new Error(error.message);
-        setSyncResult({ type: "success", text: `${toInsert.length} evento(s) novo(s) importado(s)! (${parsed.length - newEvents.length} já existiam)` });
-        if (setToast) setToast({ type: "success", text: `${toInsert.length} eventos importados do Outlook!` });
+        // Sync incremental: upsert direto — o banco rejeita duplicatas pelo índice único
+        await upsertBatch(toUpsert);
+        setSyncResult({ type: "success", text: `Sync concluído: ${toUpsert.length} evento(s) processado(s).` });
+        if (setToast) setToast({ type: "success", text: `Calendário sincronizado!` });
       }
     } catch (err) {
       setSyncResult({ type: "error", text: `Erro na sincronização: ${err.message}` });
