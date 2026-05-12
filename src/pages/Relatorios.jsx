@@ -285,7 +285,7 @@ export default function Relatorios() {
                       <CBadge curva={curva} />
                       <button onClick={(e) => { e.stopPropagation(); navigate(`/clients/${slugify(c.nome)}`); }}
                         style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 600, cursor: "pointer" }}>Ficha</button>
-                      <button onClick={(e) => { e.stopPropagation(); setTaskModal({ texto: `Enviar relatório mensal para ${c.nome}`, data: today() }); }}
+                      <button onClick={(e) => { e.stopPropagation(); setTaskModal({ texto: `Enviar relatório mensal para ${c.nome}`, data: today(), client_id: c.id }); }}
                         style={{ background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>+ Tarefa</button>
                     </div>
                   );})}
@@ -371,7 +371,7 @@ export default function Relatorios() {
                       style={{ fontSize: 9.5, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
                       ✓ Enviado
                     </button>
-                    <button onClick={() => setTaskModal({ texto: `Enviar relatório para ${c.nome}`, data: today() })}
+                    <button onClick={() => setTaskModal({ texto: `Enviar relatório para ${c.nome}`, data: today(), client_id: c.id })}
                       style={{ fontSize: 9.5, fontWeight: 700, background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
                       + Tarefa
                     </button>
@@ -420,7 +420,7 @@ export default function Relatorios() {
                       style={{ fontSize: 9.5, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
                       ✓ Enviado
                     </button>
-                    <button onClick={() => setTaskModal({ texto: `Enviar relatório para ${c.nome}`, data: today() })}
+                    <button onClick={() => setTaskModal({ texto: `Enviar relatório para ${c.nome}`, data: today(), client_id: c.id })}
                       style={{ fontSize: 9.5, fontWeight: 700, background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
                       + Tarefa
                     </button>
@@ -547,7 +547,7 @@ export default function Relatorios() {
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => setTaskModal(null)} style={{ flex: 1, padding: "9px", background: "white", border: "1px solid #d1d5db", borderRadius: 7, cursor: "pointer", color: "#6b7280", fontWeight: 600 }}>Cancelar</button>
             <button onClick={async () => {
-              await saveTodo({ id: huid(), texto: taskModal.texto, vencimento: taskModal.data, recorrencia: "", descricao: "", prioridade: "normal", done: false, ordem: 0 }, true);
+              await saveTodo({ id: huid(), texto: taskModal.texto, vencimento: taskModal.data, recorrencia: "", descricao: "", prioridade: "normal", client_id: taskModal.client_id || null, done: false, done_at: null, ordem: 0 }, true);
               setTaskModal(null);
               setToast({ type: "success", text: "Tarefa criada!" });
             }} style={{ flex: 2, padding: "9px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>Criar Tarefa</button>

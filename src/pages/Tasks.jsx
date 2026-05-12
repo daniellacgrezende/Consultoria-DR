@@ -248,10 +248,10 @@ export default function Tasks() {
     }
 
     // ─── Auto-sync relatório: atualiza ficha e checklist ───
-    if (markingDone && t.client_id && t.texto && t.texto.toLowerCase().startsWith("enviar relatório")) {
+    if (markingDone && t.client_id && t.texto && t.texto.toLowerCase().includes("relatório")) {
       const cl = clients.find((c) => c.id === t.client_id);
       if (cl) {
-        const dataRel = t.vencimento || today();
+        const dataRel = today();
         await saveClient({ ...cl, ultimo_relatorio: dataRel }, false);
         const month = dataRel.slice(0, 7);
         const { data: existing } = await supabase.from("report_checklist").select("*").eq("client_id", t.client_id).eq("month", month).maybeSingle();
