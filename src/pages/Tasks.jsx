@@ -364,12 +364,12 @@ export default function Tasks() {
   /* ── Eventos do Outlook (calendar_events) ── */
   const [calEvents, setCalEvents] = useState([]);
   useEffect(() => {
-    const from = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const to   = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
-    supabase.from("calendar_events").select("*").gte("start_at", from).lte("start_at", to).order("start_at")
+    const todayStart = today() + "T00:00:00";
+    const to = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
+    supabase.from("calendar_events").select("*").gte("start_at", todayStart).lte("start_at", to).order("start_at")
       .then(({ data }) => setCalEvents(data || []));
   }, []);
-  const calAtrasadas   = calEvents.filter((e) => (e.start_at || "").slice(0, 10) < today());
+  const calAtrasadas   = [];
   const calHoje        = calEvents.filter((e) => (e.start_at || "").slice(0, 10) === today());
   const calAmanha      = calEvents.filter((e) => (e.start_at || "").slice(0, 10) === tomorrowStr);
   const calSemana      = calEvents.filter((e) => { const d = (e.start_at || "").slice(0, 10); return d > tomorrowStr && d <= weekOutStr; });
