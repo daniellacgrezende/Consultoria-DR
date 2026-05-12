@@ -127,6 +127,7 @@ export const mapClientFromDB = (c) => ({
   origemCliente: c.origem_cliente,
   proximoRelatorio: c.proximo_relatorio,
   indicadoPor: c.indicado_por,
+  dataPedidoIndicacao: c.data_pedido_indicacao,
 });
 
 // Colunas válidas da tabela clients no Supabase
@@ -140,7 +141,7 @@ const CLIENT_DB_COLS = new Set([
   "observacao_rapida", "notas_gerais", "link_rebalanceamento", "periodicidade_reuniao",
   "periodicidade_relatorio", "pgbl", "vgbl", "renda_bruta_tributavel", "reserva_emergencia_valor",
   "reserva_emergencia_meta", "reserva_emergencia_produto", "grupo_id", "grupo_nome",
-  "corretoras", "origem_cliente", "proximo_relatorio", "indicado_por", "aporte_mensal_max",
+  "corretoras", "origem_cliente", "proximo_relatorio", "indicado_por", "aporte_mensal_max", "data_pedido_indicacao",
   "seguro_nao_aplica", "ips_nao_aplica", "prev_nao_aplica", "reuniao_agendada_em",
 ]);
 
@@ -211,6 +212,7 @@ export const mapClientToDB = (c) => {
     origem_cliente: c.origem_cliente ?? c.origemCliente ?? "",
     proximo_relatorio: toDate(c.proximo_relatorio ?? c.proximoRelatorio),
     indicado_por: c.indicado_por ?? c.indicadoPor ?? "",
+    data_pedido_indicacao: c.data_pedido_indicacao ?? c.dataPedidoIndicacao ?? "",
   };
 
   return db;

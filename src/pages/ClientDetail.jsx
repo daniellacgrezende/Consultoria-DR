@@ -282,6 +282,14 @@ export default function ClientDetail() {
                 {client.origem_cliente === "Indicação" && (
                   <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8b5cf6", textTransform: "uppercase", marginBottom: 3 }}>↳ Indicado por</div><InlineSelect value={client.indicado_por || ""} onSave={(v) => updateField("indicado_por", v)} opts={[{ v: "", l: "—" }, ...clients.filter((c) => c.id !== id).sort((a, b) => a.nome.localeCompare(b.nome)).map((c) => ({ v: c.nome, l: c.nome }))]} /></div>
                 )}
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#f59e0b", textTransform: "uppercase", marginBottom: 3 }}>Pediu indicação em</div>
+                  <InlineDate value={client.data_pedido_indicacao} onSave={(v) => updateField("data_pedido_indicacao", v)} />
+                  {client.data_pedido_indicacao && (() => {
+                    const d = daysSince(client.data_pedido_indicacao);
+                    return d !== null ? <span style={{ fontSize: 9, color: "#6b7280", marginLeft: 6 }}>({d === 0 ? "hoje" : `${d}d atrás`})</span> : null;
+                  })()}
+                </div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Início Carteira</div><InlineDate value={client.inicio_carteira} onSave={(v) => updateField("inicio_carteira", v)} /></div>
                 {/* Seguro / Previdência / Sucessão + Obs — ao lado de Início Carteira */}
                 <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
