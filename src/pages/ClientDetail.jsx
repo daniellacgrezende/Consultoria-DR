@@ -269,27 +269,22 @@ export default function ClientDetail() {
           {dgOpen && (
             <>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10 }}>
-                {/* Linha 1: localização + nascimento + profissão */}
-                <div style={{ gridColumn: "span 2", display: "flex", gap: 6, alignItems: "flex-start" }}>
-                  <div style={{ flex: 3 }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Cidade</div><InlineText value={client.cidade} onSave={(v) => updateField("cidade", v)} /></div>
-                  <div style={{ flex: 1 }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>UF</div><InlineText value={client.uf} onSave={(v) => updateField("uf", v)} /></div>
+                {/* Linha 1: cidade+uf · nascimento · profissão · estado civil · filhos · cônjuge */}
+                <div style={{ display: "flex", gap: 4, alignItems: "flex-start" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Cidade</div><InlineText value={client.cidade} onSave={(v) => updateField("cidade", v)} /></div>
+                  <div style={{ flexShrink: 0, width: 34 }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>UF</div><InlineText value={client.uf} onSave={(v) => updateField("uf", v)} /></div>
                 </div>
-                <div style={{ gridColumn: "span 2" }}>
+                <div>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Data Nascimento</div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                    <InlineDate value={client.data_nascimento} onSave={(v) => updateField("data_nascimento", v)} />
-                    {idade !== null && <span style={{ fontSize: 13, fontWeight: 700, color: B.navy }}>{idade} anos</span>}
-                  </div>
+                  <InlineDate value={client.data_nascimento} onSave={(v) => updateField("data_nascimento", v)} />
+                  {idade !== null && <div style={{ fontSize: 13, fontWeight: 700, color: B.navy, marginTop: 2 }}>{idade} anos</div>}
                 </div>
-                <div style={{ gridColumn: "span 2" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Profissão</div><InlineText value={client.profissao} onSave={(v) => updateField("profissao", v)} /></div>
-                {/* Linha 2: família */}
-                <div style={{ gridColumn: "span 2" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Estado Civil</div><InlineSelect value={client.estado_civil || ""} onSave={(v) => updateField("estado_civil", v)} opts={[{ v: "", l: "—" }, { v: "Solteiro", l: "Solteiro" }, { v: "Casado", l: "Casado" }, { v: "Divorciado", l: "Divorciado" }, { v: "Viúvo", l: "Viúvo" }, { v: "União estável", l: "União estável" }]} /></div>
-                <div style={{ gridColumn: "span 2" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Filhos</div><InlineText value={client.filhos} onSave={(v) => updateField("filhos", v)} /></div>
-                <div style={{ gridColumn: "span 2" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Cônjuge</div><InlineText value={client.conjuge} onSave={(v) => updateField("conjuge", v)} /></div>
-                {/* Linha 3: contato */}
-                <div style={{ gridColumn: "span 3" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>E-mail</div><InlineText value={client.email} onSave={(v) => updateField("email", v)} placeholder="email@exemplo.com" /></div>
-                <div style={{ gridColumn: "span 3" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Hobbies</div><InlineText value={client.hobbies} onSave={(v) => updateField("hobbies", v)} placeholder="Clique para editar…" /></div>
-                {/* Linha 4: origem / carteira / proteção / indicação */}
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Profissão</div><InlineText value={client.profissao} onSave={(v) => updateField("profissao", v)} /></div>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Estado Civil</div><InlineSelect value={client.estado_civil || ""} onSave={(v) => updateField("estado_civil", v)} opts={[{ v: "", l: "—" }, { v: "Solteiro", l: "Solteiro" }, { v: "Casado", l: "Casado" }, { v: "Divorciado", l: "Divorciado" }, { v: "Viúvo", l: "Viúvo" }, { v: "União estável", l: "União estável" }]} /></div>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Filhos</div><InlineText value={client.filhos} onSave={(v) => updateField("filhos", v)} /></div>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Cônjuge</div><InlineText value={client.conjuge} onSave={(v) => updateField("conjuge", v)} /></div>
+                {/* Linha 2: e-mail · origem · início carteira · seguro/prev · hobbies · pediu indicação */}
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>E-mail</div><InlineText value={client.email} onSave={(v) => updateField("email", v)} placeholder="email@exemplo.com" /></div>
                 <div>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Origem</div>
                   <InlineSelect value={client.origem_cliente || ""} onSave={(v) => updateField("origem_cliente", v)} opts={[{ v: "", l: "—" }, ...LEAD_ORIGENS.map((o) => ({ v: o, l: o }))]} />
@@ -301,25 +296,25 @@ export default function ClientDetail() {
                   )}
                 </div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Início Carteira</div><InlineDate value={client.inicio_carteira} onSave={(v) => updateField("inicio_carteira", v)} /></div>
-                <div style={{ gridColumn: "span 3" }}>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Seguro / Prev. / Sucessão</div>
-                  <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center", marginBottom: 4 }}>
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Seguro / Prev. / Suc.</div>
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center", marginBottom: 3 }}>
                     {client.seguro_vida !== "nao_aplica" && (() => {
                       const val = client.seguro_vida;
                       const isTrue = val === true || val === "true";
                       const isFalse = val === false || val === "false";
                       const next = isTrue ? false : isFalse ? "nao_aplica" : true;
                       return (
-                        <span onClick={() => updateField("seguro_vida", next)} title="Clique para alterar (✓ / ✗ / N/A)" style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 999, background: isTrue ? "#dcfce7" : isFalse ? "#fee2e2" : "#f3f4f6", color: isTrue ? "#16a34a" : isFalse ? "#dc2626" : "#9E9C9E", fontSize: 10, fontWeight: 700, cursor: "pointer", border: `1px solid ${isTrue ? "#bbf7d0" : isFalse ? "#fecaca" : "#e5e7eb"}`, userSelect: "none" }}>
-                          {isTrue ? "✓" : isFalse ? "✗" : "—"} Seguro
+                        <span onClick={() => updateField("seguro_vida", next)} title="Clique para alterar (✓ / ✗ / N/A)" style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 6px", borderRadius: 999, background: isTrue ? "#dcfce7" : isFalse ? "#fee2e2" : "#f3f4f6", color: isTrue ? "#16a34a" : isFalse ? "#dc2626" : "#9E9C9E", fontSize: 10, fontWeight: 700, cursor: "pointer", border: `1px solid ${isTrue ? "#bbf7d0" : isFalse ? "#fecaca" : "#e5e7eb"}`, userSelect: "none" }}>
+                          {isTrue ? "✓" : isFalse ? "✗" : "—"} Seg.
                         </span>
                       );
                     })()}
                     {client.pgbl !== "nao_aplica" && (client.pgbl === true || client.pgbl === "true") && (
-                      <span onClick={() => updateField("pgbl", false)} title="Clique para remover" style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 999, background: "#dcfce7", color: "#16a34a", fontSize: 10, fontWeight: 700, cursor: "pointer", border: "1px solid #bbf7d0", userSelect: "none" }}>✓ PGBL</span>
+                      <span onClick={() => updateField("pgbl", false)} title="Clique para remover" style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 6px", borderRadius: 999, background: "#dcfce7", color: "#16a34a", fontSize: 10, fontWeight: 700, cursor: "pointer", border: "1px solid #bbf7d0", userSelect: "none" }}>✓ PGBL</span>
                     )}
                     {client.vgbl !== "nao_aplica" && (client.vgbl === true || client.vgbl === "true") && (
-                      <span onClick={() => updateField("vgbl", false)} title="Clique para remover" style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 999, background: "#dcfce7", color: "#16a34a", fontSize: 10, fontWeight: 700, cursor: "pointer", border: "1px solid #bbf7d0", userSelect: "none" }}>✓ VGBL</span>
+                      <span onClick={() => updateField("vgbl", false)} title="Clique para remover" style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 6px", borderRadius: 999, background: "#dcfce7", color: "#16a34a", fontSize: 10, fontWeight: 700, cursor: "pointer", border: "1px solid #bbf7d0", userSelect: "none" }}>✓ VGBL</span>
                     )}
                     {(() => {
                       const suc = typeof client.sucessao === "boolean" ? (client.sucessao ? "Sim" : "") : (client.sucessao || "");
@@ -327,23 +322,24 @@ export default function ClientDetail() {
                       const hasComment = suc !== "Sim" && suc !== "true" && suc !== "false";
                       return (
                         <span style={{ display: "inline-flex", flexDirection: "column", gap: 2 }}>
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 999, background: "#f0f9ff", color: "#0369a1", fontSize: 10, fontWeight: 700, border: "1px solid #bae6fd", userSelect: "none" }}>✓ Sucessão</span>
-                          {hasComment && <span style={{ fontSize: 10, color: "#0369a1", fontStyle: "italic", paddingLeft: 4 }}>{suc}</span>}
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 6px", borderRadius: 999, background: "#f0f9ff", color: "#0369a1", fontSize: 10, fontWeight: 700, border: "1px solid #bae6fd", userSelect: "none" }}>✓ Suc.</span>
+                          {hasComment && <span style={{ fontSize: 10, color: "#0369a1", fontStyle: "italic" }}>{suc}</span>}
                         </span>
                       );
                     })()}
                     {client.envio_ips !== "nao_aplica" && !client.envio_ips && (
-                      <span onClick={() => updateField("envio_ips", "nao_aplica")} title="Clique para marcar como Não se aplica" style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 999, background: "#fff7ed", color: "#c2410c", fontSize: 10, fontWeight: 700, border: "1px solid #fed7aa", cursor: "pointer", userSelect: "none" }}>! IPS</span>
+                      <span onClick={() => updateField("envio_ips", "nao_aplica")} title="Clique para marcar como Não se aplica" style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 6px", borderRadius: 999, background: "#fff7ed", color: "#c2410c", fontSize: 10, fontWeight: 700, border: "1px solid #fed7aa", cursor: "pointer", userSelect: "none" }}>! IPS</span>
                     )}
                   </div>
-                  <InlineText value={client.seguro_observacao} onSave={(v) => updateField("seguro_observacao", v)} placeholder="obs. seguro..." style={{ fontSize: 11 }} />
+                  <InlineText value={client.seguro_observacao} onSave={(v) => updateField("seguro_observacao", v)} placeholder="obs…" style={{ fontSize: 11 }} />
                 </div>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Hobbies</div><InlineText value={client.hobbies} onSave={(v) => updateField("hobbies", v)} placeholder="Clique para editar…" /></div>
                 <div>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#f59e0b", textTransform: "uppercase", marginBottom: 3 }}>Pediu indicação em</div>
                   <InlineDate value={client.data_pedido_indicacao} onSave={(v) => updateField("data_pedido_indicacao", v)} />
                   {client.data_pedido_indicacao && (() => {
                     const d = daysSince(client.data_pedido_indicacao);
-                    return d !== null ? <span style={{ fontSize: 9, color: "#6b7280", marginLeft: 5 }}>({d === 0 ? "hoje" : `${d}d atrás`})</span> : null;
+                    return d !== null ? <div style={{ fontSize: 9, color: "#6b7280", marginTop: 2 }}>{d === 0 ? "hoje" : `${d}d atrás`}</div> : null;
                   })()}
                 </div>
                 {grupoNome && <div style={{ gridColumn: "1/-1" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Grupo (PJ+PF)</div><InlineText value={client.grupo_nome} onSave={(v) => updateField("grupo_nome", v)} /></div>}
