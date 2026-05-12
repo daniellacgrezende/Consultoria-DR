@@ -447,11 +447,11 @@ export default function ClientDetail() {
 
         {/* Link Rebalanceamento — logo abaixo do header */}
         {(client.link_rebalanceamento || true) && (
-          <div style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", whiteSpace: "nowrap" }}>Link Rebalanceamento</span>
             <InlineText value={client.link_rebalanceamento} onSave={(v) => updateField("link_rebalanceamento", v)} placeholder="https://…" style={{ width: 220 }} />
             {client.link_rebalanceamento && String(client.link_rebalanceamento).startsWith("http") && (
-              <a href={client.link_rebalanceamento} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }} onClick={(e) => e.stopPropagation()}>↗ Abrir</a>
+              <a href={client.link_rebalanceamento} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 8, fontSize: 11, color: "#2563eb", fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap", padding: "2px 8px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 5 }} onClick={(e) => e.stopPropagation()}>↗ Abrir</a>
             )}
           </div>
         )}
