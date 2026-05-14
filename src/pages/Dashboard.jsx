@@ -13,7 +13,7 @@ import { SecH } from "../components/ui/FormFields";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { clients, history, leads } = useData();
+  const { clients, history, leads, aportes } = useData();
   const [ufFilter, setUfFilter] = useState("");
   const [showAUM, setShowAUM] = useState(false);
   const [showClientes, setShowClientes] = useState(false);
@@ -59,6 +59,28 @@ export default function Dashboard() {
 
   const leadsAtivos = leads.filter((l) => !["Cliente", "Perdido", "Nutrição"].includes(l.etapa)).length;
   const leadsConvertidos = leads.filter((l) => l.etapa === "Cliente").length;
+
+  // Aportes/Resgates mensais
+  const aportesMonthly = useMemo(() => {
+    const map = {};
+    aportes.forEach((a) => {
+      if (!a.data) return;
+      const mes = a.data.slice(0, 7);
+      if (!map[mes]) map[mes] = { aporte: 0, resgate: 0 };
+      if (a.tipo === "aporte") map[mes].aporte += Number(a.valor || 0);
+      else if (a.tipo === "resgate") map[mes].resgate += Number(a.valor || 0);
+    });
+    return Object.entries(map)
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .slice(0, 24)
+      .map(([mes, { aporte, resgate }]) => ({
+        mes,
+        label: new Date(mes + "-15").toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }).replace(". de ", "/").replace(".", ""),
+        aporte,
+        resgate,
+        liquido: aporte - resgate,
+      }));
+  }, [aportes]);
 
   // UF data
   const ufMap = {};
@@ -181,7 +203,55 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Top Indicadores */}
+      {/* Aportes e Resgates Mensais */}
+      {aportesMonthly.length > 0 && (
+        <Card style={{ marginBottom: 16 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>
+            Aportes e Resgates por Mês
+          </div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead>
+                <tr style={{ background: "#f8faff" }}>
+                  <th style={{ padding: "7px 12px", textAlign: "left", fontWeight: 700, color: "#8899bb", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", borderBottom: `1px solid ${B.border}` }}>Mês</th>
+                  <th style={{ padding: "7px 12px", textAlign: "right", fontWeight: 700, color: "#16a34a", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", borderBottom: `1px solid ${B.border}` }}>Aportado</th>
+                  <th style={{ padding: "7px 12px", textAlign: "right", fontWeight: 700, color: "#dc2626", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", borderBottom: `1px solid ${B.border}` }}>Resgatado</th>
+                  <th style={{ padding: "7px 12px", textAlign: "right", fontWeight: 700, color: B.navy, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", borderBottom: `1px solid ${B.border}` }}>Líquido</th>
+                  <th style={{ padding: "7px 12px", borderBottom: `1px solid ${B.border}` }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  const maxVal = Math.max(...aportesMonthly.map((m) => Math.max(m.aporte, m.resgate)), 1);
+                  return aportesMonthly.map(({ mes, label, aporte, resgate, liquido }) => {
+                  const barAp = Math.round((aporte / maxVal) * 100);
+                  const barRe = Math.round((resgate / maxVal) * 100);
+                  return (
+                    <tr key={mes} style={{ borderBottom: `1px solid ${B.border}` }}>
+                      <td style={{ padding: "8px 12px", fontWeight: 700, color: B.navy, whiteSpace: "nowrap" }}>{label}</td>
+                      <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600, color: "#16a34a", whiteSpace: "nowrap" }}>{aporte > 0 ? money(aporte) : "—"}</td>
+                      <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600, color: "#dc2626", whiteSpace: "nowrap" }}>{resgate > 0 ? money(resgate) : "—"}</td>
+                      <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, color: liquido >= 0 ? "#16a34a" : "#dc2626", whiteSpace: "nowrap" }}>{liquido >= 0 ? "+" : ""}{money(liquido)}</td>
+                      <td style={{ padding: "8px 12px", minWidth: 120 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                          <div style={{ height: 4, background: "#e8eeff", borderRadius: 999 }}>
+                            <div style={{ height: "100%", width: `${barAp}%`, background: "#16a34a", borderRadius: 999 }} />
+                          </div>
+                          <div style={{ height: 4, background: "#e8eeff", borderRadius: 999 }}>
+                            <div style={{ height: "100%", width: `${barRe}%`, background: "#dc2626", borderRadius: 999 }} />
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                });
+                })()}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
       {topIndicadores.length > 0 && (
         <Card style={{ marginBottom: 16 }}>
           <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>
