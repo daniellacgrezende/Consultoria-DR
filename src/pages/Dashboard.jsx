@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 import { useNavigate } from "react-router-dom";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { useData } from "../hooks/useData";
@@ -17,6 +17,7 @@ export default function Dashboard() {
   const [ufFilter, setUfFilter] = useState("");
   const [showAUM, setShowAUM] = useState(false);
   const [showClientes, setShowClientes] = useState(false);
+  const [selectedMes, setSelectedMes] = useState(null);
 
   const active = useMemo(() => clients.filter((c) => c.status === "ativo"), [clients]);
   const getPL = (c) => getCurrentPL(c, history);
@@ -60,11 +61,11 @@ export default function Dashboard() {
   const leadsAtivos = leads.filter((l) => !["Cliente", "Perdido", "Nutrição"].includes(l.etapa)).length;
   const leadsConvertidos = leads.filter((l) => l.etapa === "Cliente").length;
 
-  // Aportes/Resgates mensais
+  // Aportes/Resgates mensais (a partir de 2026)
   const aportesMonthly = useMemo(() => {
     const map = {};
     aportes.forEach((a) => {
-      if (!a.data) return;
+      if (!a.data || a.data < "2026") return;
       const mes = a.data.slice(0, 7);
       if (!map[mes]) map[mes] = { aporte: 0, resgate: 0 };
       if (a.tipo === "aporte") map[mes].aporte += Number(a.valor || 0);
@@ -72,7 +73,6 @@ export default function Dashboard() {
     });
     return Object.entries(map)
       .sort((a, b) => b[0].localeCompare(a[0]))
-      .slice(0, 24)
       .map(([mes, { aporte, resgate }]) => ({
         mes,
         label: new Date(mes + "-15").toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }).replace(". de ", "/").replace(".", ""),
@@ -81,6 +81,22 @@ export default function Dashboard() {
         liquido: aporte - resgate,
       }));
   }, [aportes]);
+
+  const n = aportesMonthly.length || 1;
+  const avgAporte = aportesMonthly.reduce((s, m) => s + m.aporte, 0) / n;
+  const avgResgate = aportesMonthly.reduce((s, m) => s + m.resgate, 0) / n;
+  const avgLiquido = aportesMonthly.reduce((s, m) => s + m.liquido, 0) / n;
+
+  const mesDetail = useMemo(() => {
+    if (!selectedMes) return [];
+    return aportes
+      .filter((a) => a.data?.startsWith(selectedMes))
+      .map((a) => ({ ...a, clientNome: clients.find((c) => c.id === a.client_id)?.nome || "—" }))
+      .sort((a, b) => {
+        if (a.tipo !== b.tipo) return a.tipo === "aporte" ? -1 : 1;
+        return Number(b.valor) - Number(a.valor);
+      });
+  }, [selectedMes, aportes, clients]);
 
   // UF data
   const ufMap = {};
@@ -206,8 +222,9 @@ export default function Dashboard() {
       {/* Aportes e Resgates Mensais */}
       {aportesMonthly.length > 0 && (
         <Card style={{ marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>
+          <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", alignItems: "center", gap: 8 }}>
             Aportes e Resgates por Mês
+            <span style={{ fontSize: 10, fontWeight: 400, color: B.gray }}>a partir de 2026 · clique no mês para detalhar</span>
           </div>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
@@ -217,36 +234,76 @@ export default function Dashboard() {
                   <th style={{ padding: "7px 12px", textAlign: "right", fontWeight: 700, color: "#16a34a", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", borderBottom: `1px solid ${B.border}` }}>Aportado</th>
                   <th style={{ padding: "7px 12px", textAlign: "right", fontWeight: 700, color: "#dc2626", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", borderBottom: `1px solid ${B.border}` }}>Resgatado</th>
                   <th style={{ padding: "7px 12px", textAlign: "right", fontWeight: 700, color: B.navy, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", borderBottom: `1px solid ${B.border}` }}>Líquido</th>
-                  <th style={{ padding: "7px 12px", borderBottom: `1px solid ${B.border}` }}></th>
+                  <th style={{ padding: "7px 12px", borderBottom: `1px solid ${B.border}`, minWidth: 100 }}></th>
                 </tr>
               </thead>
               <tbody>
                 {(() => {
                   const maxVal = Math.max(...aportesMonthly.map((m) => Math.max(m.aporte, m.resgate)), 1);
                   return aportesMonthly.map(({ mes, label, aporte, resgate, liquido }) => {
-                  const barAp = Math.round((aporte / maxVal) * 100);
-                  const barRe = Math.round((resgate / maxVal) * 100);
-                  return (
-                    <tr key={mes} style={{ borderBottom: `1px solid ${B.border}` }}>
-                      <td style={{ padding: "8px 12px", fontWeight: 700, color: B.navy, whiteSpace: "nowrap" }}>{label}</td>
-                      <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600, color: "#16a34a", whiteSpace: "nowrap" }}>{aporte > 0 ? money(aporte) : "—"}</td>
-                      <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600, color: "#dc2626", whiteSpace: "nowrap" }}>{resgate > 0 ? money(resgate) : "—"}</td>
-                      <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, color: liquido >= 0 ? "#16a34a" : "#dc2626", whiteSpace: "nowrap" }}>{liquido >= 0 ? "+" : ""}{money(liquido)}</td>
-                      <td style={{ padding: "8px 12px", minWidth: 120 }}>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                          <div style={{ height: 4, background: "#e8eeff", borderRadius: 999 }}>
-                            <div style={{ height: "100%", width: `${barAp}%`, background: "#16a34a", borderRadius: 999 }} />
-                          </div>
-                          <div style={{ height: 4, background: "#e8eeff", borderRadius: 999 }}>
-                            <div style={{ height: "100%", width: `${barRe}%`, background: "#dc2626", borderRadius: 999 }} />
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                });
+                    const isOpen = selectedMes === mes;
+                    const barAp = Math.round((aporte / maxVal) * 100);
+                    const barRe = Math.round((resgate / maxVal) * 100);
+                    return (
+                      <Fragment key={mes}>
+                        <tr onClick={() => setSelectedMes(isOpen ? null : mes)} style={{ borderBottom: isOpen ? "none" : `1px solid ${B.border}`, cursor: "pointer", background: isOpen ? "#f0f4ff" : "white", transition: "background 0.1s" }}>
+                          <td style={{ padding: "8px 12px", fontWeight: 700, color: B.navy, whiteSpace: "nowrap" }}>
+                            <span style={{ fontSize: 9, color: B.muted, marginRight: 6 }}>{isOpen ? "▼" : "▶"}</span>
+                            {label}
+                          </td>
+                          <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600, color: "#16a34a", whiteSpace: "nowrap" }}>{aporte > 0 ? money(aporte) : "—"}</td>
+                          <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600, color: "#dc2626", whiteSpace: "nowrap" }}>{resgate > 0 ? money(resgate) : "—"}</td>
+                          <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, color: liquido >= 0 ? "#16a34a" : "#dc2626", whiteSpace: "nowrap" }}>{liquido >= 0 ? "+" : ""}{money(liquido)}</td>
+                          <td style={{ padding: "8px 12px" }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                              <div style={{ height: 4, background: "#e8eeff", borderRadius: 999 }}>
+                                <div style={{ height: "100%", width: `${barAp}%`, background: "#16a34a", borderRadius: 999 }} />
+                              </div>
+                              <div style={{ height: 4, background: "#e8eeff", borderRadius: 999 }}>
+                                <div style={{ height: "100%", width: `${barRe}%`, background: "#dc2626", borderRadius: 999 }} />
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                        {isOpen && (
+                          <tr style={{ borderBottom: `1px solid ${B.border}` }}>
+                            <td colSpan={5} style={{ padding: 0 }}>
+                              <div style={{ background: "#f8faff", borderTop: `1px solid ${B.border}`, padding: "8px 16px 10px" }}>
+                                {mesDetail.length === 0 ? (
+                                  <div style={{ fontSize: 11, color: B.gray, padding: "6px 0" }}>Nenhum registro encontrado.</div>
+                                ) : (
+                                  mesDetail.map((a) => (
+                                    <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0", borderBottom: `1px solid ${B.border}` }}>
+                                      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                                        <span style={{ fontWeight: 800, fontSize: 13, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626", flexShrink: 0 }}>{a.tipo === "aporte" ? "+" : "−"}</span>
+                                        <span style={{ fontWeight: 600, fontSize: 12, color: B.navy, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.clientNome}</span>
+                                        {a.observacao && <span style={{ fontSize: 10, color: B.gray, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>· {a.observacao}</span>}
+                                      </div>
+                                      <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0, marginLeft: 12 }}>
+                                        <span style={{ fontSize: 10, color: B.muted }}>{a.data?.split("-").reverse().join("/")}</span>
+                                        <span style={{ fontWeight: 700, fontSize: 12, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{money(a.valor)}</span>
+                                      </div>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  });
                 })()}
               </tbody>
+              <tfoot>
+                <tr style={{ background: "#f0f4ff", borderTop: `2px solid ${B.border}` }}>
+                  <td style={{ padding: "8px 12px", fontWeight: 700, color: B.navy, fontSize: 11 }}>Média mensal</td>
+                  <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, color: "#16a34a", fontSize: 11 }}>{money(avgAporte)}</td>
+                  <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, color: "#dc2626", fontSize: 11 }}>{money(avgResgate)}</td>
+                  <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, color: avgLiquido >= 0 ? "#16a34a" : "#dc2626", fontSize: 11 }}>{avgLiquido >= 0 ? "+" : ""}{money(avgLiquido)}</td>
+                  <td></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </Card>
