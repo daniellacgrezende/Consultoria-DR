@@ -46,7 +46,7 @@ export default function ClientDetail() {
   // ─── Aporte modal ───
   const [aptModal, setAptModal] = useState(false);
   const [aptEditId, setAptEditId] = useState(null);
-  const [aptForm, setAptForm] = useState({ client_id: "", data: "", tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false });
+  const [aptForm, setAptForm] = useState({ client_id: "", data: "", tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false, valor_reserva: "", valor_pgbl: "" });
   const [aptHistOpen, setAptHistOpen] = useState(false);
   const [aptFilter, setAptFilter] = useState({ mode: "todos", ano: "", de: "", ate: "" });
   const [rhExpandedIds, setRhExpandedIds] = useState(new Set());
@@ -190,10 +190,21 @@ export default function ClientDetail() {
   const saveAptEntry = async () => {
     if (!aptForm.data || !aptForm.valor) { setToast({ type: "error", text: "Preencha data e valor." }); return; }
     const isNew = !aptEditId;
-    const entry = { ...aptForm, client_id: id, id: aptEditId || huid(), valor: Number(aptForm.valor) };
+    const valorReserva = Number(aptForm.valor_reserva) || 0;
+    const valorPgbl    = Number(aptForm.valor_pgbl)    || 0;
+    const entry = {
+      ...aptForm,
+      client_id: id,
+      id: aptEditId || huid(),
+      valor: Number(aptForm.valor),
+      valor_reserva: valorReserva,
+      valor_pgbl: valorPgbl,
+      is_reserva: valorReserva > 0,
+      is_pgbl: valorPgbl > 0,
+    };
     await saveAporte(entry, isNew);
-    if (isNew && entry.is_reserva) {
-      const delta = entry.tipo === "aporte" ? entry.valor : -entry.valor;
+    if (isNew && valorReserva > 0) {
+      const delta = entry.tipo === "aporte" ? valorReserva : -valorReserva;
       await updateField("liquidez_atual", Math.max(0, (Number(client.liquidez_atual) || 0) + delta));
     }
     setAptModal(false);
@@ -203,15 +214,21 @@ export default function ClientDetail() {
 
   const openAptEdit = (a) => {
     setAptEditId(a.id);
-    setAptForm({ ...a, valor: String(a.valor) });
+    setAptForm({
+      ...a,
+      valor: String(a.valor),
+      valor_reserva: a.valor_reserva ? String(a.valor_reserva) : (a.is_reserva ? String(a.valor) : ""),
+      valor_pgbl:    a.valor_pgbl    ? String(a.valor_pgbl)    : (a.is_pgbl    ? String(a.valor) : ""),
+    });
     setAptModal(true);
   };
 
   const handleDeleteAporte = async (a) => {
     if (!confirm("Remover este lançamento?")) return;
     await deleteAporte(a.id);
-    if (a.is_reserva) {
-      const delta = a.tipo === "aporte" ? -Number(a.valor) : Number(a.valor);
+    const valorReserva = Number(a.valor_reserva) || (a.is_reserva ? Number(a.valor) : 0);
+    if (valorReserva > 0) {
+      const delta = a.tipo === "aporte" ? -valorReserva : valorReserva;
       await updateField("liquidez_atual", Math.max(0, (Number(client.liquidez_atual) || 0) + delta));
     }
     setToast({ type: "success", text: "Removido." });
@@ -442,7 +459,7 @@ export default function ClientDetail() {
       <Card style={{ marginBottom: 12 }}>
         <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 8, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span>Aportes e Resgates</span>
-          <button onClick={() => { setAptForm({ client_id: id, data: today(), tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false }); setAptModal(true); }} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Registrar</button>
+          <button onClick={() => { setAptForm({ client_id: id, data: today(), tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false, valor_reserva: "", valor_pgbl: "" }); setAptModal(true); }} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Registrar</button>
         </div>
 
         {/* Link Rebalanceamento — logo abaixo do header */}
@@ -597,13 +614,25 @@ export default function ClientDetail() {
                         <td style={{ padding: "5px 8px", width: 14 }}>
                           <span style={{ fontWeight: 800, fontSize: 13, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "+" : "−"}</span>
                         </td>
-                        <td style={{ padding: "5px 8px", whiteSpace: "nowrap", color: "#6b7280" }}>{fmtDate(a.data)}</td>
-                        <td style={{ padding: "5px 8px", whiteSpace: "nowrap", fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{money(a.valor)}</td>
                         <td style={{ padding: "5px 8px" }}>
-                          <span style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
-                            {a.is_reserva && <span style={{ fontSize: 9, background: "#e0f2fe", color: "#0369a1", borderRadius: 4, padding: "1px 5px", fontWeight: 700 }}>RESERVA</span>}
-                            {a.is_pgbl && <span style={{ fontSize: 9, background: "#f5f3ff", color: "#7c3aed", borderRadius: 4, padding: "1px 5px", fontWeight: 700 }}>PGBL</span>}
+                          <span style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+                            <span style={{ color: "#6b7280", whiteSpace: "nowrap" }}>{fmtDate(a.data)}</span>
+                            <span style={{ fontWeight: 700, whiteSpace: "nowrap", color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{money(a.valor)}</span>
                             {a.observacao && <span style={{ color: "#6b7280", fontSize: 11 }}>{a.observacao}</span>}
+                          </span>
+                        </td>
+                        <td style={{ padding: "5px 8px", whiteSpace: "nowrap" }}>
+                          <span style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                            {(Number(a.valor_reserva) > 0 || a.is_reserva) && (
+                              <span style={{ fontSize: 9, background: "#e0f2fe", color: "#0369a1", borderRadius: 4, padding: "1px 5px", fontWeight: 700 }}>
+                                RESERVA{Number(a.valor_reserva) > 0 && Number(a.valor_reserva) < Number(a.valor) ? ` ${money(a.valor_reserva)}` : ""}
+                              </span>
+                            )}
+                            {(Number(a.valor_pgbl) > 0 || a.is_pgbl) && (
+                              <span style={{ fontSize: 9, background: "#f5f3ff", color: "#7c3aed", borderRadius: 4, padding: "1px 5px", fontWeight: 700 }}>
+                                PGBL{Number(a.valor_pgbl) > 0 && Number(a.valor_pgbl) < Number(a.valor) ? ` ${money(a.valor_pgbl)}` : ""}
+                              </span>
+                            )}
                           </span>
                         </td>
                         <td style={{ padding: "5px 8px", whiteSpace: "nowrap", textAlign: "right" }}>
@@ -826,17 +855,53 @@ export default function ClientDetail() {
               <button key={t} onClick={() => setAptForm((f) => ({ ...f, tipo: t }))} style={{ flex: 1, padding: "9px", border: `2px solid ${aptForm.tipo === t ? (t === "aporte" ? "#16a34a" : "#dc2626") : B.border}`, borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13, background: aptForm.tipo === t ? (t === "aporte" ? "#f0fdf4" : "#fff5f5") : "white", color: aptForm.tipo === t ? (t === "aporte" ? "#16a34a" : "#dc2626") : B.gray }}>{t === "aporte" ? "Aporte" : "Resgate"}</button>
             ))}
           </div>
-          <Inp label="Valor (R$) *" type="number" value={aptForm.valor} onChange={(e) => setAptForm((f) => ({ ...f, valor: e.target.value }))} placeholder="0" />
-          <div style={{ display: "flex", gap: 12, marginBottom: 13 }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: B.navy, cursor: "pointer" }}>
-              <input type="checkbox" checked={aptForm.is_reserva || false} onChange={(e) => setAptForm((f) => ({ ...f, is_reserva: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer" }} />
-              Reserva de emergência
+          <Inp label="Valor Total (R$) *" type="number" value={aptForm.valor} onChange={(e) => setAptForm((f) => ({ ...f, valor: e.target.value }))} placeholder="0" />
+
+          {/* Split: Reserva de Emergência */}
+          <div style={{ marginBottom: 13 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: B.navy, cursor: "pointer", marginBottom: 5 }}>
+              <input type="checkbox"
+                checked={Number(aptForm.valor_reserva) > 0}
+                onChange={(e) => setAptForm((f) => ({ ...f, valor_reserva: e.target.checked ? (f.valor || "") : "" }))}
+                style={{ width: 16, height: 16, cursor: "pointer" }} />
+              Parte para Reserva de Emergência
             </label>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: B.navy, cursor: "pointer" }}>
-              <input type="checkbox" checked={aptForm.is_pgbl || false} onChange={(e) => setAptForm((f) => ({ ...f, is_pgbl: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer" }} />
-              PGBL
-            </label>
+            {Number(aptForm.valor_reserva) > 0 && (
+              <div style={{ paddingLeft: 22 }}>
+                <Inp label="Valor destinado à Reserva (R$)" type="number" value={aptForm.valor_reserva}
+                  onChange={(e) => setAptForm((f) => ({ ...f, valor_reserva: e.target.value }))} placeholder="0" />
+              </div>
+            )}
           </div>
+
+          {/* Split: PGBL */}
+          <div style={{ marginBottom: 13 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: B.navy, cursor: "pointer", marginBottom: 5 }}>
+              <input type="checkbox"
+                checked={Number(aptForm.valor_pgbl) > 0}
+                onChange={(e) => setAptForm((f) => ({ ...f, valor_pgbl: e.target.checked ? (f.valor || "") : "" }))}
+                style={{ width: 16, height: 16, cursor: "pointer" }} />
+              Parte para PGBL
+            </label>
+            {Number(aptForm.valor_pgbl) > 0 && (
+              <div style={{ paddingLeft: 22 }}>
+                <Inp label="Valor destinado ao PGBL (R$)" type="number" value={aptForm.valor_pgbl}
+                  onChange={(e) => setAptForm((f) => ({ ...f, valor_pgbl: e.target.value }))} placeholder="0" />
+              </div>
+            )}
+          </div>
+
+          {/* Alerta se soma dos splits ultrapassar o total */}
+          {(() => {
+            const total = Number(aptForm.valor) || 0;
+            const alocado = (Number(aptForm.valor_reserva) || 0) + (Number(aptForm.valor_pgbl) || 0);
+            if (alocado > total && total > 0) return (
+              <div style={{ fontSize: 11, color: "#dc2626", background: "#fff5f5", border: "1px solid #fecaca", borderRadius: 6, padding: "6px 10px", marginBottom: 12 }}>
+                ⚠ Soma dos splits (R${alocado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}) ultrapassa o valor total.
+              </div>
+            );
+            return null;
+          })()}
           <Inp label="Onde foi aportado / Observação" value={aptForm.observacao} onChange={(e) => setAptForm((f) => ({ ...f, observacao: e.target.value }))} placeholder="Ex: XP - Tesouro Selic, BTG - CDB..." />
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => setAptModal(false)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>
