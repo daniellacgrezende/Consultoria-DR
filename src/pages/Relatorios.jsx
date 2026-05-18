@@ -52,23 +52,24 @@ export default function Relatorios() {
   const [atrasadoOpen, setAtrasadoOpen] = useState(true);
   const [taskModal, setTaskModal] = useState(null); // { texto, data }
 
-  // ─── Checklist: usa o PRÓXIMO mês ───
+  // ─── Checklist: começa no próximo mês, avança automaticamente quando tudo enviado ───
   const now = new Date();
-  const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  const nextMonth = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, "0")}`;
-  const bd5 = get5thBusinessDay(nextMonthDate.getFullYear(), nextMonthDate.getMonth());
-  const bd5Date = new Date(nextMonthDate.getFullYear(), nextMonthDate.getMonth(), bd5);
-  const isPastBd5 = now >= bd5Date;
+  // Mês base (próximo mês calendário) — nunca muda
+  const baseMonthDate  = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const baseMonth      = `${baseMonthDate.getFullYear()}-${String(baseMonthDate.getMonth() + 1).padStart(2, "0")}`;
+  // Mês futuro (dois meses à frente)
+  const futureMonthDate = new Date(now.getFullYear(), now.getMonth() + 2, 1);
+  const futureMonth     = `${futureMonthDate.getFullYear()}-${String(futureMonthDate.getMonth() + 1).padStart(2, "0")}`;
 
   // ─── Checklist state ───
   const [checklist, setChecklist] = useState([]);
   const [checklistLoaded, setChecklistLoaded] = useState(false);
 
   const loadChecklist = useCallback(async () => {
-    const { data } = await supabase.from("report_checklist").select("*").eq("month", nextMonth);
+    const { data } = await supabase.from("report_checklist").select("*").in("month", [baseMonth, futureMonth]);
     setChecklist(data || []);
     setChecklistLoaded(true);
-  }, [nextMonth]);
+  }, [baseMonth, futureMonth]);
 
   useEffect(() => { loadChecklist(); }, [loadChecklist]);
 
@@ -91,11 +92,28 @@ export default function Relatorios() {
     return list.sort((a, b) => a.nome.localeCompare(b.nome));
   }, [active, history, checklistSort]);
 
+  // Mapa apenas do mês base — para saber se todos já foram enviados
+  const baseCheckedMap = useMemo(() => {
+    const m = {};
+    checklist.filter((r) => r.month === baseMonth).forEach((r) => { m[r.client_id] = r; });
+    return m;
+  }, [checklist, baseMonth]);
+
+  // Se todos os clientes mensais estão marcados no mês base, avança para o futuro
+  const allBaseChecked = checklistLoaded && monthlyClients.length > 0
+    && monthlyClients.every((c) => baseCheckedMap[c.id]?.checked);
+
+  const nextMonthDate = allBaseChecked ? futureMonthDate : baseMonthDate;
+  const nextMonth     = allBaseChecked ? futureMonth     : baseMonth;
+  const bd5           = get5thBusinessDay(nextMonthDate.getFullYear(), nextMonthDate.getMonth());
+  const bd5Date       = new Date(nextMonthDate.getFullYear(), nextMonthDate.getMonth(), bd5);
+  const isPastBd5     = now >= bd5Date;
+
   const checkedMap = useMemo(() => {
     const m = {};
-    checklist.forEach((r) => { m[r.client_id] = r; });
+    checklist.filter((r) => r.month === nextMonth).forEach((r) => { m[r.client_id] = r; });
     return m;
-  }, [checklist]);
+  }, [checklist, nextMonth]);
 
   // Clientes não marcados ainda (para mostrar na lista)
   const pendingMonthly   = monthlyClients.filter((c) => !checkedMap[c.id]?.checked);
