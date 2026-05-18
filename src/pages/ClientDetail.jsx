@@ -614,13 +614,9 @@ export default function ClientDetail() {
                         <td style={{ padding: "5px 8px", width: 14 }}>
                           <span style={{ fontWeight: 800, fontSize: 13, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "+" : "−"}</span>
                         </td>
-                        <td style={{ padding: "5px 8px" }}>
-                          <span style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
-                            <span style={{ color: "#6b7280", whiteSpace: "nowrap" }}>{fmtDate(a.data)}</span>
-                            <span style={{ fontWeight: 700, whiteSpace: "nowrap", color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{money(a.valor)}</span>
-                            {a.observacao && <span style={{ color: "#6b7280", fontSize: 11 }}>{a.observacao}</span>}
-                          </span>
-                        </td>
+                        <td style={{ padding: "5px 8px", whiteSpace: "nowrap", color: "#6b7280" }}>{fmtDate(a.data)}</td>
+                        <td style={{ padding: "5px 14px 5px 8px", whiteSpace: "nowrap", fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{money(a.valor)}</td>
+                        <td style={{ padding: "5px 8px", color: "#6b7280", fontSize: 11, width: "100%" }}>{a.observacao || ""}</td>
                         <td style={{ padding: "5px 8px", whiteSpace: "nowrap" }}>
                           <span style={{ display: "flex", gap: 4, alignItems: "center" }}>
                             {(Number(a.valor_reserva) > 0 || a.is_reserva) && (
