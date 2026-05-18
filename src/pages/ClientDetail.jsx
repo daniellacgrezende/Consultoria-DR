@@ -616,7 +616,7 @@ export default function ClientDetail() {
                         </td>
                         <td style={{ padding: "5px 8px", whiteSpace: "nowrap", color: "#6b7280" }}>{fmtDate(a.data)}</td>
                         <td style={{ padding: "5px 14px 5px 8px", whiteSpace: "nowrap", fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{money(a.valor)}</td>
-                        <td style={{ padding: "5px 8px", color: "#6b7280", fontSize: 11, width: "100%" }}>{a.observacao || ""}</td>
+                        <td style={{ padding: "5px 8px 5px 16px", color: "#6b7280", fontSize: 11, width: "100%" }}>{a.observacao || ""}</td>
                         <td style={{ padding: "5px 8px", whiteSpace: "nowrap" }}>
                           <span style={{ display: "flex", gap: 4, alignItems: "center" }}>
                             {(Number(a.valor_reserva) > 0 || a.is_reserva) && (
