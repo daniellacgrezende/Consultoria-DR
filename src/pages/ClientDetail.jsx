@@ -857,12 +857,12 @@ export default function ClientDetail() {
           <div style={{ marginBottom: 13 }}>
             <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: B.navy, cursor: "pointer", marginBottom: 5 }}>
               <input type="checkbox"
-                checked={Number(aptForm.valor_reserva) > 0}
-                onChange={(e) => setAptForm((f) => ({ ...f, valor_reserva: e.target.checked ? (f.valor || "") : "" }))}
+                checked={!!aptForm.is_reserva}
+                onChange={(e) => setAptForm((f) => ({ ...f, is_reserva: e.target.checked, valor_reserva: e.target.checked ? (f.valor || "") : "" }))}
                 style={{ width: 16, height: 16, cursor: "pointer" }} />
               Parte para Reserva de Emergência
             </label>
-            {Number(aptForm.valor_reserva) > 0 && (
+            {aptForm.is_reserva && (
               <div style={{ paddingLeft: 22 }}>
                 <Inp label="Valor destinado à Reserva (R$)" type="number" value={aptForm.valor_reserva}
                   onChange={(e) => setAptForm((f) => ({ ...f, valor_reserva: e.target.value }))} placeholder="0" />
@@ -874,12 +874,12 @@ export default function ClientDetail() {
           <div style={{ marginBottom: 13 }}>
             <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: B.navy, cursor: "pointer", marginBottom: 5 }}>
               <input type="checkbox"
-                checked={Number(aptForm.valor_pgbl) > 0}
-                onChange={(e) => setAptForm((f) => ({ ...f, valor_pgbl: e.target.checked ? (f.valor || "") : "" }))}
+                checked={!!aptForm.is_pgbl}
+                onChange={(e) => setAptForm((f) => ({ ...f, is_pgbl: e.target.checked, valor_pgbl: e.target.checked ? (f.valor || "") : "" }))}
                 style={{ width: 16, height: 16, cursor: "pointer" }} />
               Parte para PGBL
             </label>
-            {Number(aptForm.valor_pgbl) > 0 && (
+            {aptForm.is_pgbl && (
               <div style={{ paddingLeft: 22 }}>
                 <Inp label="Valor destinado ao PGBL (R$)" type="number" value={aptForm.valor_pgbl}
                   onChange={(e) => setAptForm((f) => ({ ...f, valor_pgbl: e.target.value }))} placeholder="0" />
