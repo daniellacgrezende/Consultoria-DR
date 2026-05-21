@@ -45,6 +45,7 @@ export default function ClientDetail() {
 
   // ─── Aporte modal ───
   const [aptModal, setAptModal] = useState(false);
+  const [resumoModal, setResumoModal] = useState(false);
   const [aptEditId, setAptEditId] = useState(null);
   const [aptForm, setAptForm] = useState({ client_id: "", data: "", tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false, valor_reserva: "", valor_pgbl: "" });
   const [aptHistOpen, setAptHistOpen] = useState(false);
@@ -459,7 +460,10 @@ export default function ClientDetail() {
       <Card style={{ marginBottom: 12 }}>
         <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 8, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span>Aportes e Resgates</span>
-          <button onClick={() => { setAptForm({ client_id: id, data: today(), tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false, valor_reserva: "", valor_pgbl: "" }); setAptModal(true); }} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Registrar</button>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={() => setResumoModal(true)} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>📊 Resumo</button>
+            <button onClick={() => { setAptForm({ client_id: id, data: today(), tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false, valor_reserva: "", valor_pgbl: "" }); setAptModal(true); }} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Registrar</button>
+          </div>
         </div>
 
         {/* Link Rebalanceamento — logo abaixo do header */}
@@ -905,6 +909,29 @@ export default function ClientDetail() {
           </div>
         </div>
       </Modal>
+
+      {/* Modal Resumo Aportes */}
+      {resumoModal && (
+        <div onClick={() => setResumoModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 400, backdropFilter: "blur(6px)" }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "#1a2744", borderRadius: 20, padding: "32px 28px", width: 260, boxShadow: "0 32px 80px rgba(0,0,0,0.4)" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 20, textAlign: "center" }}>
+              {client.nome.split(" ")[0]} · {aptFilter.mode === "ano" ? aptFilter.ano : aptFilter.mode === "periodo" ? `${aptFilter.de?.slice(0,7) || ""}–${aptFilter.ate?.slice(0,7) || ""}` : "Desde o início"}
+            </div>
+            {[
+              { label: "Aportado",      value: totalAp,   color: "#16a34a", bg: "rgba(22,163,74,0.12)",  border: "rgba(22,163,74,0.25)",  prefix: "" },
+              { label: "Resgatado",     value: totalRe,   color: "#ef4444", bg: "rgba(239,68,68,0.12)",  border: "rgba(239,68,68,0.25)",  prefix: "" },
+              { label: "Líquido",       value: liquido,   color: liquido >= 0 ? "#34d399" : "#f87171", bg: "rgba(255,255,255,0.07)", border: "rgba(255,255,255,0.12)", prefix: liquido >= 0 ? "+" : "" },
+              { label: "Média/mês (líq.)", value: mediaMes, color: "#818cf8", bg: "rgba(129,140,248,0.12)", border: "rgba(129,140,248,0.25)", prefix: mediaMes >= 0 ? "" : "" },
+            ].map(({ label, value, color, bg, border, prefix }) => (
+              <div key={label} style={{ background: bg, border: `1px solid ${border}`, borderRadius: 12, padding: "14px 18px", marginBottom: 10 }}>
+                <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>{label}</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color, letterSpacing: "-0.02em" }}>{prefix}{money(Math.abs(value))}</div>
+              </div>
+            ))}
+            <button onClick={() => setResumoModal(false)} style={{ width: "100%", marginTop: 8, padding: "10px", background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Fechar</button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
