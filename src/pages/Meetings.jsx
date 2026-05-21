@@ -41,13 +41,16 @@ function getStatus(c) {
   const period  = getPeriodDays(c.periodicidade_reuniao || c.periodicidadeReuniao);
   const dAv     = daysSince(c.avisado_em || c.avisadoEm);
 
+  const tentativas    = Number(c.tentativas_contato) || 0;
   const pastDue       = diasSem === null || diasSem > period;
-  const chameiAtivo   = dAv !== null && dAv <= RETRY_DAYS;   // chamou há menos de 45 dias
-  const retentativa   = dAv !== null && dAv > RETRY_DAYS && pastDue; // chamou há +45 dias, sem retorno
+  const chameiAtivo   = dAv !== null && dAv <= RETRY_DAYS;
+  const semResposta   = dAv !== null && dAv > RETRY_DAYS && pastDue && tentativas >= 2;
+  const retentativa   = dAv !== null && dAv > RETRY_DAYS && pastDue && tentativas < 2;
 
   if (pastDue) {
-    if (retentativa)  return { key: "retentativa", label: "Retentativa", color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE" };
-    if (chameiAtivo)  return { key: "aguardando",  label: "Aguardando",  color: "#0891B2", bg: "#ECFEFF", border: "#A5F3FC" };
+    if (semResposta)  return { key: "sem_resposta", label: "Sem Resposta", color: "#92400E", bg: "#FFF7ED", border: "#FED7AA" };
+    if (retentativa)  return { key: "retentativa",  label: "Retentativa",  color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE" };
+    if (chameiAtivo)  return { key: "aguardando",   label: "Aguardando",   color: "#0891B2", bg: "#ECFEFF", border: "#A5F3FC" };
     // Só vira "Atrasado" depois de 30 dias do prazo
     if (diasSem === null || diasSem > period + GRACE_DAYS)
                       return { key: "atrasado",    label: "Atrasado",    color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" };
@@ -107,7 +110,7 @@ export default function Meetings() {
   const CURVA_ORDER = { A: 0, B: 1, C: 2, D: 3 };
 
   const rows = useMemo(() => {
-    const STATUS_ORDER = { atrasado: 0, retentativa: 1, agendar: 2, aguardando: 3, emdia: 4, pendente: 5, nao_aplica: 6 };
+    const STATUS_ORDER = { atrasado: 0, sem_resposta: 1, retentativa: 2, agendar: 3, aguardando: 4, emdia: 5, pendente: 6, nao_aplica: 7 };
     const enriched = active.map((c) => ({
       ...c,
       diasSem:    daysSince(c.ultima_reuniao || c.ultimaReuniao),
@@ -128,6 +131,7 @@ export default function Meetings() {
 
   const counts = useMemo(() => ({
     atrasado:    rows.filter((r) => !r.reuniao_agendada_em && r.st.key === "atrasado").length,
+    sem_resposta:rows.filter((r) => r.st.key === "sem_resposta").length,
     retentativa: rows.filter((r) => r.st.key === "retentativa").length,
     agendar:     rows.filter((r) => r.st.key === "agendar").length,
     aguardando:  rows.filter((r) => r.st.key === "aguardando").length,
@@ -155,16 +159,21 @@ export default function Meetings() {
       ultima_reuniao: c.ultima_reuniao,
       proxima_reuniao: c.proxima_reuniao,
       avisado_em: c.avisado_em,
+      tentativas_contato: c.tentativas_contato,
     };
 
     if (type === "realizada") {
       const period = getPeriodDays(c.periodicidade_reuniao || c.periodicidadeReuniao);
       const proxima = addDays(date, period);
-      await saveClient({ ...c, ultima_reuniao: date, proxima_reuniao: proxima, avisado_em: "" }, false);
+      await saveClient({ ...c, ultima_reuniao: date, proxima_reuniao: proxima, avisado_em: "", tentativas_contato: 0 }, false);
       setToast({ type: "success", text: `Reunião realizada em ${fmtDate(date)}. Próxima: ${fmtDate(proxima)}` });
       setUndoBar({ label: `Desfazer "Realizada" — ${c.nome.split(" ")[0]}`, snapshot: { ...c, ...snapshot } });
     } else if (type === "chamei") {
-      await saveClient({ ...c, avisado_em: date }, false);
+      const stAtual = getStatus(c).key;
+      const novasTentativas = (stAtual === "retentativa" || stAtual === "sem_resposta")
+        ? (Number(c.tentativas_contato) || 0) + 1
+        : 1;
+      await saveClient({ ...c, avisado_em: date, tentativas_contato: novasTentativas }, false);
       setToast({ type: "success", text: `Registrado: chamou ${c.nome.split(" ")[0]} em ${fmtDate(date)}.` });
       setUndoBar({ label: `Desfazer "Chamei" — ${c.nome.split(" ")[0]}`, snapshot: { ...c, ...snapshot } });
     } else if (type === "recusou") {
@@ -193,6 +202,7 @@ export default function Meetings() {
   const atrasados    = rows.filter((r) => !r.reuniao_agendada_em && r.st.key === "atrasado").sort(alertSortFn);
   const aAgendar     = rows.filter((r) => !r.reuniao_agendada_em && r.st.key === "agendar").sort(alertSortFn);
   const retentativas = rows.filter((r) => !r.reuniao_agendada_em && r.st.key === "retentativa").sort(alertSortFn);
+  const semResposta  = rows.filter((r) => !r.reuniao_agendada_em && r.st.key === "sem_resposta").sort(alertSortFn);
   const aguardando   = rows.filter((r) => !r.reuniao_agendada_em && r.st.key === "aguardando").sort(alertSortFn);
 
   /* ─── Histórico ─── */
@@ -228,6 +238,7 @@ export default function Meetings() {
       }}>
         {[
           { key: "atrasado",    label: "Atrasado",    value: counts.atrasado,    color: "#DC2626" },
+          { key: "sem_resposta",label: "Sem Resposta",value: counts.sem_resposta,color: "#92400E" },
           { key: "retentativa", label: "Retentativa", value: counts.retentativa, color: "#7C3AED" },
           { key: "agendar",     label: "Agendar",     value: counts.agendar,     color: "#D97706" },
           { key: "aguardando",  label: "Aguardando",  value: counts.aguardando,  color: "#0891B2" },
@@ -265,10 +276,11 @@ export default function Meetings() {
       )}
 
       {/* ─── Alert panels ─── */}
-      {(atrasados.length > 0 || aAgendar.length > 0 || retentativas.length > 0 || aguardando.length > 0 || agendadas.length > 0) && (
+      {(atrasados.length > 0 || aAgendar.length > 0 || retentativas.length > 0 || semResposta.length > 0 || aguardando.length > 0 || agendadas.length > 0) && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 18, alignItems: "start" }}>
 
-          {/* COL ESQUERDA: Reuniões Atrasadas */}
+          {/* COL ESQUERDA: Reuniões Atrasadas + Hora de Agendar */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, padding: "14px 16px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
               <div style={{ fontSize: 10, fontWeight: 800, color: "#DC2626", textTransform: "uppercase", letterSpacing: "0.06em" }}>
@@ -312,6 +324,39 @@ export default function Meetings() {
             )}
           </div>
 
+            {/* HORA DE AGENDAR */}
+            {aAgendar.length > 0 && (
+              <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "12px 14px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                  <div style={{ fontSize: 9, fontWeight: 800, color: "#D97706", textTransform: "uppercase" }}>🟡 Hora de Agendar ({aAgendar.length})</div>
+                  <button onClick={() => setAlertSort((s) => s === "curva" ? "diasSem" : "curva")}
+                    style={{ fontSize: 9, fontWeight: 700, background: alertSort === "curva" ? "#D97706" : "white", color: alertSort === "curva" ? "white" : "#D97706", border: "1px solid #FDE68A", borderRadius: 5, padding: "2px 7px", cursor: "pointer" }}>
+                    {alertSort === "curva" ? "Curva A→D ✓" : "Por Curva"}
+                  </button>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  {aAgendar.map((c) => (
+                    <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #FDE68A", borderRadius: 7, padding: "6px 10px" }}>
+                      <Avatar nome={c.nome} size={22} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                          <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 11, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
+                          <CBadge curva={c.curva} />
+                        </div>
+                        <div style={{ fontSize: 10, color: "#D97706", fontWeight: 600 }}>
+                          {c.periodicidade_reuniao || "Trimestral"} · {c.diasSem !== null && c.diasSem > c.periodDays ? `${c.diasSem - c.periodDays}d de atraso` : c.diasAte !== null ? `vence em ${c.diasAte}d` : "—"}
+                        </div>
+                        <div style={{ fontSize: 10, color: "#92400E" }}>Últ. reunião: {fmtDate(c.ultima_reuniao || c.ultimaReuniao) || "—"}</div>
+                      </div>
+                      <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "" }); }}
+                        style={{ fontSize: 9.5, fontWeight: 700, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>✓ Agendar</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>{/* fim col esquerda */}
+
           {/* COL DIREITA: empilhados */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
 
@@ -347,7 +392,7 @@ export default function Meetings() {
             {retentativas.length > 0 && (
               <div style={{ background: "#F5F3FF", border: "1px solid #DDD6FE", borderRadius: 10, padding: "12px 14px" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                  <div style={{ fontSize: 9, fontWeight: 800, color: "#7C3AED", textTransform: "uppercase" }}>🔁 Retentativa ({retentativas.length})</div>
+                  <div style={{ fontSize: 9, fontWeight: 800, color: "#7C3AED", textTransform: "uppercase" }}>🔁 Retentativa ({retentativas.length}) <span style={{ fontWeight: 400, fontSize: 9, color: "#9CA3AF" }}>· sem retorno há +45 dias</span></div>
                   <button onClick={() => setAlertSort((s) => s === "curva" ? "diasSem" : "curva")}
                     style={{ fontSize: 9, fontWeight: 700, background: alertSort === "curva" ? "#7C3AED" : "white", color: alertSort === "curva" ? "white" : "#7C3AED", border: "1px solid #DDD6FE", borderRadius: 5, padding: "2px 7px", cursor: "pointer" }}>
                     {alertSort === "curva" ? "Curva A→D ✓" : "Por Curva"}
@@ -372,6 +417,44 @@ export default function Meetings() {
                         <div style={{ display: "flex", gap: 5, paddingTop: 5, borderTop: "1px solid #EDE9FE" }}>
                           <button onClick={() => openAction("chamei", c)}
                             style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#F5F3FF", color: "#7C3AED", border: "1px solid #DDD6FE", borderRadius: 5, padding: "4px 6px", cursor: "pointer" }}>Chamei de novo</button>
+                          <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "" }); }}
+                            style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 6px", cursor: "pointer" }}>✓ Agendou</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* SEM RESPOSTA */}
+            {semResposta.length > 0 && (
+              <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 10, padding: "12px 14px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                  <div style={{ fontSize: 9, fontWeight: 800, color: "#92400E", textTransform: "uppercase" }}>
+                    ⚠️ Sem Resposta ({semResposta.length}) <span style={{ fontWeight: 400, fontSize: 9, color: "#9CA3AF" }}>· 2ª+ tentativa</span>
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  {semResposta.map((c) => {
+                    const dAv = daysSince(c.avisado_em || c.avisadoEm);
+                    const tent = Number(c.tentativas_contato) || 0;
+                    return (
+                      <div key={c.id} style={{ background: "white", border: "1px solid #FED7AA", borderRadius: 7, padding: "7px 10px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+                          <Avatar nome={c.nome} size={22} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                              <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 11, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
+                              <CBadge curva={c.curva} />
+                            </div>
+                            <div style={{ fontSize: 10, color: "#92400E", fontWeight: 600 }}>{tent} tentativa{tent !== 1 ? "s" : ""} · última há {dAv}d · {c.periodicidade_reuniao || "Trimestral"}</div>
+                            <div style={{ fontSize: 10, color: "#B45309" }}>Últ. reunião: {fmtDate(c.ultima_reuniao || c.ultimaReuniao) || "—"}</div>
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: 5, paddingTop: 5, borderTop: "1px solid #FEE0AA" }}>
+                          <button onClick={() => openAction("chamei", c)}
+                            style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#FFF7ED", color: "#92400E", border: "1px solid #FED7AA", borderRadius: 5, padding: "4px 6px", cursor: "pointer" }}>Tentei novamente</button>
                           <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "" }); }}
                             style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 6px", cursor: "pointer" }}>✓ Agendou</button>
                         </div>
@@ -417,7 +500,7 @@ export default function Meetings() {
                           onClick={async () => {
                             const pDays = getPeriodDays(c.periodicidade_reuniao || c.periodicidadeReuniao || "Trimestral");
                             const proxima = addDays(c.reuniao_agendada_em, pDays);
-                            await saveClient({ ...c, ultima_reuniao: c.reuniao_agendada_em, proxima_reuniao: proxima, reuniao_agendada_em: "", avisado_em: "" }, false);
+                            await saveClient({ ...c, ultima_reuniao: c.reuniao_agendada_em, proxima_reuniao: proxima, reuniao_agendada_em: "", avisado_em: "", tentativas_contato: 0 }, false);
                             const _mt = todos.find((t) => t.client_id === c.id && !t.done && t.texto?.startsWith("Reunião com"));
                             if (_mt) await saveTodo({ ..._mt, done: true, done_at: today() }, false);
                             setToast({ type: "success", text: `Reunião com ${c.nome.split(" ")[0]} realizada!` });
@@ -430,37 +513,6 @@ export default function Meetings() {
               </div>
             )}
 
-            {/* HORA DE AGENDAR */}
-            {aAgendar.length > 0 && (
-              <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "12px 14px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                  <div style={{ fontSize: 9, fontWeight: 800, color: "#D97706", textTransform: "uppercase" }}>🟡 Hora de Agendar ({aAgendar.length})</div>
-                  <button onClick={() => setAlertSort((s) => s === "curva" ? "diasSem" : "curva")}
-                    style={{ fontSize: 9, fontWeight: 700, background: alertSort === "curva" ? "#D97706" : "white", color: alertSort === "curva" ? "white" : "#D97706", border: "1px solid #FDE68A", borderRadius: 5, padding: "2px 7px", cursor: "pointer" }}>
-                    {alertSort === "curva" ? "Curva A→D ✓" : "Por Curva"}
-                  </button>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                  {aAgendar.map((c) => (
-                    <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #FDE68A", borderRadius: 7, padding: "6px 10px" }}>
-                      <Avatar nome={c.nome} size={22} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                          <div onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 11, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline dotted" }}>{c.nome}</div>
-                          <CBadge curva={c.curva} />
-                        </div>
-                        <div style={{ fontSize: 10, color: "#D97706", fontWeight: 600 }}>
-                          {c.periodicidade_reuniao || "Trimestral"} · {c.diasSem !== null && c.diasSem > c.periodDays ? `${c.diasSem - c.periodDays}d de atraso` : c.diasAte !== null ? `vence em ${c.diasAte}d` : "—"}
-                        </div>
-                        <div style={{ fontSize: 10, color: "#92400E" }}>Últ. reunião: {fmtDate(c.ultima_reuniao || c.ultimaReuniao) || "—"}</div>
-                      </div>
-                      <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "" }); }}
-                        style={{ fontSize: 9.5, fontWeight: 700, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>✓ Agendar</button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
