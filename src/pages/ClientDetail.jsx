@@ -203,19 +203,9 @@ export default function ClientDetail() {
       is_pgbl: valorPgbl > 0,
     };
     await saveAporte(entry, isNew);
-    if (isNew) {
-      if (valorReserva > 0) {
-        const delta = entry.tipo === "aporte" ? valorReserva : -valorReserva;
-        await updateField("liquidez_atual", Math.max(0, (Number(client.liquidez_atual) || 0) + delta));
-      }
-    } else {
-      const old = clientAportes.find((a) => a.id === aptEditId);
-      const oldReserva = Number(old?.valor_reserva) || 0;
-      const diff = valorReserva - oldReserva;
-      if (diff !== 0) {
-        const delta = entry.tipo === "aporte" ? diff : -diff;
-        await updateField("liquidez_atual", Math.max(0, (Number(client.liquidez_atual) || 0) + delta));
-      }
+    if (isNew && valorReserva > 0) {
+      const delta = entry.tipo === "aporte" ? valorReserva : -valorReserva;
+      await updateField("liquidez_atual", Math.max(0, (Number(client.liquidez_atual) || 0) + delta));
     }
     setAptModal(false);
     setAptEditId(null);
