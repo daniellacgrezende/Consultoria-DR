@@ -161,6 +161,13 @@ export function DataProvider({ children }) {
     setAportesRaw((p) => p.filter((a) => a.id !== id));
   }, []);
 
+  const incrementLiquidez = useCallback(async (clientId, delta) => {
+    const { data: cur } = await supabase.from("clients").select("liquidez_atual").eq("id", clientId).single();
+    const newVal = Math.max(0, Number(cur?.liquidez_atual || 0) + delta);
+    const { data } = await supabase.from("clients").update({ liquidez_atual: newVal }).eq("id", clientId).select();
+    if (data) setClientsRaw((p) => p.map((c) => (c.id === clientId ? mapClientFromDB(data[0]) : c)));
+  }, []);
+
   // ─── REUNIÕES ───
   const setReunioes = useCallback((fn) => {
     setReunioesRaw((prev) => (typeof fn === "function" ? fn(prev) : fn));
@@ -311,7 +318,7 @@ export function DataProvider({ children }) {
     saveClient, deleteClient,
     addHistory, updateHistory, deleteHistory,
     saveRepasse, deleteRepasse,
-    saveAporte, deleteAporte,
+    saveAporte, deleteAporte, incrementLiquidez,
     saveReuniao, deleteReuniao,
     saveTodo, deleteTodo, clearDoneTodos,
     saveLead, deleteLead,

@@ -14,7 +14,7 @@ import { SecH, Inp, Sel, Tarea } from "../components/ui/FormFields";
 export default function ClientDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { clients, history, aportes, reunioes, saveClient, deleteClient, saveReuniao, deleteReuniao, saveAporte, deleteAporte, saveTodo, setToast } = useData();
+  const { clients, history, aportes, reunioes, saveClient, deleteClient, saveReuniao, deleteReuniao, saveAporte, deleteAporte, incrementLiquidez, saveTodo, setToast } = useData();
 
   const client = clients.find((c) => slugify(c.nome) === slug || c.id === slug);
   const id = client?.id;
@@ -206,7 +206,7 @@ export default function ClientDetail() {
     await saveAporte(entry, isNew);
     if (isNew && valorReserva > 0) {
       const delta = entry.tipo === "aporte" ? valorReserva : -valorReserva;
-      await updateField("liquidez_atual", Math.max(0, (Number(client.liquidez_atual) || 0) + delta));
+      await incrementLiquidez(id, delta);
     }
     setAptModal(false);
     setAptEditId(null);
@@ -230,7 +230,7 @@ export default function ClientDetail() {
     const valorReserva = Number(a.valor_reserva) || (a.is_reserva ? Number(a.valor) : 0);
     if (valorReserva > 0) {
       const delta = a.tipo === "aporte" ? -valorReserva : valorReserva;
-      await updateField("liquidez_atual", Math.max(0, (Number(client.liquidez_atual) || 0) + delta));
+      await incrementLiquidez(id, delta);
     }
     setToast({ type: "success", text: "Removido." });
   };
