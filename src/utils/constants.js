@@ -33,7 +33,7 @@ export const LEAD_ETAPAS_MAIN = [
   "Tentativa de Contato", "Qualificação", "R1 Agendada",
   "FUP 1", "R2 Agendada", "Contrato Enviado", "FUP 2", "Cliente",
 ];
-export const LEAD_ETAPAS_EXIT = ["Perdido", "Funil de FUP (Nutrição)"];
+export const LEAD_ETAPAS_EXIT = ["Perdido", "Funil de FUP (Nutrição)", "Desqualificado"];
 export const LEAD_ETAPAS = [...LEAD_ETAPAS_MAIN, ...LEAD_ETAPAS_EXIT];
 
 export const LEAD_ETAPA_COLORS = {
@@ -47,6 +47,7 @@ export const LEAD_ETAPA_COLORS = {
   "Cliente":                { bg: "#f0fdf4", color: "#16a34a", border: "#bbf7d0" },
   "Perdido":                { bg: "#fef2f2", color: "#dc2626", border: "#fecaca" },
   "Funil de FUP (Nutrição)":{ bg: "#fefce8", color: "#854d0e", border: "#fde047" },
+  "Desqualificado":         { bg: "#f3f4f6", color: "#6b7280", border: "#d1d5db" },
 };
 
 export const LEAD_ORIGENS = [

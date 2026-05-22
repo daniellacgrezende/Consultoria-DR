@@ -54,7 +54,9 @@ function DaysBadge({ date }) {
 /* ─── Analytics View ─── */
 function PipelineAnalytics({ leads, stagesExit }) {
   const exitStageNames = stagesExit.map((s) => s.nome);
-  const withMetrics = leads.map((l) => {
+  // Desqualificados são excluídos do cálculo de taxa de conversão
+  const leadsParaCalculo = leads.filter((l) => l.etapa !== "Desqualificado");
+  const withMetrics = leadsParaCalculo.map((l) => {
     const isConverted = l.etapa === "Cliente";
     const isLost = exitStageNames.includes(l.etapa) && !isConverted;
     const r1 = l.data_primeira_reuniao;
@@ -68,9 +70,9 @@ function PipelineAnalytics({ leads, stagesExit }) {
   const convWithTime = converted.filter((l) => l.daysR1ToConv !== null);
   const avgConvTime = convWithTime.length > 0
     ? Math.round(convWithTime.reduce((s, l) => s + l.daysR1ToConv, 0) / convWithTime.length) : null;
-  const taxaGeral = leads.length > 0 ? Math.round((converted.length / leads.length) * 100) : 0;
+  const taxaGeral = leadsParaCalculo.length > 0 ? Math.round((converted.length / leadsParaCalculo.length) * 100) : 0;
 
-  const allOrigens = [...new Set(leads.map((l) => l.origem || "Não informado"))].sort();
+  const allOrigens = [...new Set(leadsParaCalculo.map((l) => l.origem || "Não informado"))].sort();
   const byOrigem = allOrigens.map((origem) => {
     const g = withMetrics.filter((l) => (l.origem || "Não informado") === origem);
     const conv = g.filter((l) => l.isConverted);
@@ -282,6 +284,13 @@ function DraggableLeadCard({ lead, openEdit, moveEtapa }) {
           <div style={{ fontSize: 11, color: B.muted, marginBottom: 2 }}>{lead.origem}</div>
         )}
 
+        {/* Motivo desqualificação */}
+        {lead.etapa === "Desqualificado" && lead.motivo_negativa && (
+          <div style={{ fontSize: 10, color: "#6b7280", background: "#f3f4f6", borderRadius: 5, padding: "3px 7px", marginBottom: 4, fontStyle: "italic" }}>
+            {lead.motivo_negativa}
+          </div>
+        )}
+
         {/* Patrimônio + R1 counter */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
           {patrimonio > 0
@@ -445,10 +454,11 @@ function OverlayCard({ lead }) {
 function PipelineSummaryBar({ leads }) {
   // Conta apenas leads em estágios principais conhecidos (exclui saídas e etapas desconhecidas/antigas)
   const ACTIVE_STAGES = ["Tentativa de Contato", "R1 Agendada", "FUP 1", "R2 Agendada", "Contrato Enviado", "FUP 2"];
+  const leadsCalculo = leads.filter((l) => l.etapa !== "Desqualificado");
   const ativos = leads.filter((l) => ACTIVE_STAGES.includes(l.etapa));
   const convertidos = leads.filter((l) => l.etapa === "Cliente").length;
   const quentes = leads.filter((l) => l.temperatura === "quente" && ACTIVE_STAGES.includes(l.etapa)).length;
-  const taxaConv = leads.length > 0 ? Math.round((convertidos / leads.length) * 100) : 0;
+  const taxaConv = leadsCalculo.length > 0 ? Math.round((convertidos / leadsCalculo.length) * 100) : 0;
   const totalPipeline = ativos.reduce((s, l) => s + Number(l.patrimonio_estimado || 0), 0);
   const stale = ativos.filter((l) => { const d = daysSince(l.data_ultima_interacao); return d !== null && d > 21; }).length;
 
@@ -924,6 +934,11 @@ export default function Pipeline() {
             <div style={{ gridColumn: "1/-1" }}>
               <Inp label="Data Contrato Enviado" type="date" value={form.data_contrato_enviado || ""} onChange={F("data_contrato_enviado")} />
             </div>
+            {form.etapa === "Desqualificado" && (
+              <div style={{ gridColumn: "1/-1" }}>
+                <Tarea label="Motivo da Desqualificação" value={form.motivo_negativa || ""} onChange={F("motivo_negativa")} placeholder="Ex: Residência fiscal fora do país, PL abaixo do atendido, perfil não compatível…" />
+              </div>
+            )}
             <div style={{ gridColumn: "1/-1" }}>
               <Tarea label="Notas" value={form.notas || ""} onChange={F("notas")} placeholder="Registre tudo sobre o lead..." />
             </div>
