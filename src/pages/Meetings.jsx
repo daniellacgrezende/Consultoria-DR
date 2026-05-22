@@ -827,7 +827,7 @@ export default function Meetings() {
                   const c = retAgModal.client;
                   const start = `${retAgForm.data}T${retAgForm.horaInicio}:00`;
                   const end   = `${retAgForm.data}T${retAgForm.horaFim}:00`;
-                  const title = `Reunião com ${c.nome}`;
+                  const title = `Consultoria Financeira - ${c.nome}`;
                   await saveClient({ ...c, reuniao_agendada_em: retAgForm.data, avisado_em: "" }, false);
                   const _ex2 = todos.find((t) => t.client_id === c.id && !t.done && t.texto?.startsWith("Reunião com"));
                   if (_ex2) { await saveTodo({ ..._ex2, vencimento: retAgForm.data, descricao: `Horário: ${retAgForm.horaInicio}–${retAgForm.horaFim}` }, false); }
