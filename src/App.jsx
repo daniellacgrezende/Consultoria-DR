@@ -18,6 +18,7 @@ import Settings from "./pages/Settings";
 import Repasse from "./pages/Repasse";
 import Noticias from "./pages/Noticias";
 import Relatorios from "./pages/Relatorios";
+import RebalanceIntl from "./pages/RebalanceIntl";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -43,6 +44,7 @@ function AppRoutes() {
         <Route path="tasks" element={<Tasks />} />
         <Route path="clients" element={<Clients />} />
         <Route path="clients/:slug" element={<ClientDetail />} />
+        <Route path="clients/:slug/rebalanceamento" element={<RebalanceIntl />} />
         <Route path="meetings" element={<Meetings />} />
         <Route path="relatorios" element={<Relatorios />} />
         <Route path="allocation" element={<AssetAllocation />} />

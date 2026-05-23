@@ -293,6 +293,58 @@ export function DataProvider({ children }) {
     setAssetClassesRaw((p) => p.filter((c) => c.id !== id));
   }, []);
 
+  // ─── INTL PORTFOLIO (rebalanceamento internacional) ───
+  const getIntlPortfolio = useCallback(async (clientId) => {
+    const { data: portfolios } = await supabase.from("intl_portfolios").select("*").eq("client_id", clientId).limit(1);
+    if (!portfolios?.length) return null;
+    const portfolio = portfolios[0];
+    const { data: classes } = await supabase.from("intl_classes").select("*").eq("portfolio_id", portfolio.id).order("ordem");
+    const classIds = (classes || []).map((c) => c.id);
+    const { data: products } = classIds.length
+      ? await supabase.from("intl_products").select("*").in("class_id", classIds)
+      : { data: [] };
+    return {
+      ...portfolio,
+      classes: (classes || []).map((c) => ({
+        ...c,
+        products: (products || []).filter((p) => p.class_id === c.id),
+      })),
+    };
+  }, []);
+
+  const saveIntlPortfolio = useCallback(async (clientId, nome = "Carteira Internacional") => {
+    const id = huid();
+    const { data } = await supabase.from("intl_portfolios").insert({ id, client_id: clientId, nome }).select();
+    return data?.[0] || null;
+  }, []);
+
+  const saveIntlClass = useCallback(async (cls, isNew = false) => {
+    if (isNew) {
+      cls.id = cls.id || huid();
+      await supabase.from("intl_classes").insert(cls);
+    } else {
+      await supabase.from("intl_classes").update(cls).eq("id", cls.id);
+    }
+  }, []);
+
+  const deleteIntlClass = useCallback(async (id) => {
+    await supabase.from("intl_products").delete().eq("class_id", id);
+    await supabase.from("intl_classes").delete().eq("id", id);
+  }, []);
+
+  const saveIntlProduct = useCallback(async (product, isNew = false) => {
+    if (isNew) {
+      product.id = product.id || huid();
+      await supabase.from("intl_products").insert(product);
+    } else {
+      await supabase.from("intl_products").update(product).eq("id", product.id);
+    }
+  }, []);
+
+  const deleteIntlProduct = useCallback(async (id) => {
+    await supabase.from("intl_products").delete().eq("id", id);
+  }, []);
+
   // ─── REL ENVIOS ───
   const setRelEnvios = useCallback(async (clientId, mesEnvio) => {
     if (mesEnvio) {
@@ -326,6 +378,7 @@ export function DataProvider({ children }) {
     setRelEnvios,
     savePipelineStage, deletePipelineStage,
     saveAssetClass, deleteAssetClass,
+    getIntlPortfolio, saveIntlPortfolio, saveIntlClass, deleteIntlClass, saveIntlProduct, deleteIntlProduct,
     setToast,
   };
 

@@ -461,6 +461,7 @@ export default function ClientDetail() {
         <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 8, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span>Aportes e Resgates</span>
           <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={() => navigate(`/clients/${slug}/rebalanceamento`)} style={{ background: "#f0fdf4", color: "#15803d", border: "1px solid #86efac", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>🌎 Rebalanceamento</button>
             <button onClick={() => setResumoModal(true)} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>📊 Resumo</button>
             <button onClick={() => { setAptForm({ client_id: id, data: today(), tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false, valor_reserva: "", valor_pgbl: "" }); setAptModal(true); }} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Registrar</button>
           </div>
