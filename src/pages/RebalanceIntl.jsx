@@ -8,30 +8,73 @@ import { SecH } from "../components/ui/FormFields";
 const fmt = (v) => Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const pct = (v) => Number(v || 0).toFixed(2) + "%";
 
-/* --- Algoritmo de rebalanceamento buy-only --- */
-function calcRebalance(classes, aporte) {
+const round100 = (v) => Math.round(v / 100) * 100;
+
+/* --- Sugestao de aporte: foca nas classes mais defasadas, min $100, numeros redondos --- */
+function calcSuggestion(classes, aporte) {
+  if (aporte <= 0) return { items: [], totalSugerido: 0 };
+
   const totalAtual = classes.reduce((s, c) => s + c.totalValor, 0);
   const totalApos = totalAtual + aporte;
 
-  const shortfalls = classes.map((c) => {
-    const alvo = (c.target_pct / 100) * totalApos;
-    return Math.max(0, alvo - c.totalValor);
-  });
-  const totalShortfall = shortfalls.reduce((s, v) => s + v, 0);
+  // Shortfall por classe, ordenado do maior para o menor
+  const ranked = classes
+    .map((c) => ({ ...c, shortfall: Math.max(0, (c.target_pct / 100) * totalApos - c.totalValor) }))
+    .filter((c) => c.shortfall > 1)
+    .sort((a, b) => b.shortfall - a.shortfall);
 
-  return classes.map((c, i) => {
-    let aporteClass = 0;
-    if (aporte <= 0) {
-      aporteClass = 0;
-    } else if (totalShortfall <= 0) {
-      aporteClass = aporte * (c.target_pct / 100);
-    } else if (totalShortfall <= aporte) {
-      aporteClass = shortfalls[i];
-    } else {
-      aporteClass = aporte * (shortfalls[i] / totalShortfall);
+  if (ranked.length === 0) return { items: [], totalSugerido: 0 };
+
+  const totalShortfall = ranked.reduce((s, c) => s + c.shortfall, 0);
+
+  // Alocar por classe proporcional ao shortfall, arredondado em $100
+  let restante = aporte;
+  const classAllocs = [];
+  for (let i = 0; i < ranked.length; i++) {
+    const cls = ranked[i];
+    const isLast = i === ranked.length - 1;
+    const raw = isLast ? restante : aporte * (cls.shortfall / totalShortfall);
+    const rounded = round100(raw);
+    if (rounded < 100) continue;
+    classAllocs.push({ ...cls, aporteClass: rounded });
+    restante -= rounded;
+    if (restante < 100) break;
+  }
+
+  // Ajusta eventuais sobras de arredondamento na classe mais defasada
+  if (classAllocs.length > 0) {
+    const soma = classAllocs.reduce((s, c) => s + c.aporteClass, 0);
+    const diff = round100(aporte - soma);
+    if (Math.abs(diff) >= 100) classAllocs[0].aporteClass += diff;
+  }
+
+  // Expandir para produtos dentro de cada classe
+  const items = [];
+  for (const cls of classAllocs) {
+    const prods = cls.products || [];
+    if (!prods.length) continue;
+    if (prods.length === 1) {
+      items.push({ ticker: prods[0].ticker, classe: cls.nome, valor: cls.aporteClass });
+      continue;
     }
-    return { ...c, aporteClass, shortfall: shortfalls[i] };
-  });
+    const totalProdVal = prods.reduce((s, p) => s + Number(p.valor_atual || 0), 0);
+    let restProd = cls.aporteClass;
+    prods.forEach((p, pi) => {
+      const isLastP = pi === prods.length - 1;
+      const peso = totalProdVal > 0 ? Number(p.valor_atual || 0) / totalProdVal : 1 / prods.length;
+      const raw = isLastP ? restProd : cls.aporteClass * peso;
+      const rounded = round100(raw);
+      if (rounded >= 100) {
+        items.push({ ticker: p.ticker, classe: cls.nome, valor: rounded });
+        restProd -= rounded;
+      } else if (isLastP && restProd >= 100) {
+        items.push({ ticker: p.ticker, classe: cls.nome, valor: round100(restProd) });
+      }
+    });
+  }
+
+  const totalSugerido = items.reduce((s, x) => s + x.valor, 0);
+  return { items, totalSugerido };
 }
 
 function ModalBox({ open, onClose, children }) {
@@ -169,7 +212,7 @@ export default function RebalanceIntl() {
   const totalPortfolio = classesComValor.reduce((s, c) => s + c.totalValor, 0);
   const totalTarget = (portfolio?.classes || []).reduce((s, c) => s + Number(c.target_pct || 0), 0);
   const aporteNum = Number(String(aporte).replace(",", ".")) || 0;
-  const classesRebal = calcRebalance(classesComValor, aporteNum);
+  const suggestion = calcSuggestion(classesComValor, aporteNum);
   const totalApos = totalPortfolio + aporteNum;
 
   return (
@@ -322,75 +365,59 @@ export default function RebalanceIntl() {
                 </div>
               )}
 
-              {aporteNum > 0 && (
-                <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                    <thead>
-                      <tr style={{ background: "#f8faff" }}>
-                        {[
-                          { h: "Classificacao", align: "left" },
-                          { h: "Aportar em", align: "left" },
-                          { h: "Valor (USD)", align: "right" },
-                          { h: "% do Aporte", align: "right" },
-                          { h: "% Final Estimada", align: "right" },
-                        ].map(({ h, align }) => (
-                          <th key={h} style={{ padding: "8px 12px", textAlign: align, fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: `1px solid ${B.border}`, whiteSpace: "nowrap" }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {classesRebal.map((cls, i) => {
-                        const pctDoAporte = aporteNum > 0 ? (cls.aporteClass / aporteNum) * 100 : 0;
-                        const valorFinal = cls.totalValor + cls.aporteClass;
-                        const pctFinal = totalApos > 0 ? (valorFinal / totalApos) * 100 : 0;
-                        const temAporte = cls.aporteClass > 0.01;
-                        const totalProd = (cls.products || []).reduce((s, p) => s + Number(p.valor_atual || 0), 0);
-                        return (
-                          <tr key={cls.id} style={{ borderBottom: `1px solid ${B.border}`, background: temAporte ? (i % 2 === 0 ? "#f0fdf4" : "#e8fdf1") : (i % 2 === 0 ? "white" : "#fafbff") }}>
-                            <td style={{ padding: "9px 12px", fontWeight: 600, color: B.navy, whiteSpace: "nowrap" }}>{cls.nome}</td>
-                            <td style={{ padding: "9px 12px" }}>
-                              {temAporte ? (
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                                  {(cls.products || []).map((p) => {
-                                    const peso = totalProd > 0 ? Number(p.valor_atual || 0) / totalProd : 1 / (cls.products?.length || 1);
-                                    const aporteETF = cls.aporteClass * peso;
-                                    return (
-                                      <span key={p.id} style={{ fontSize: 11, fontWeight: 700, background: "#dcfce7", color: "#15803d", borderRadius: 5, padding: "2px 9px", whiteSpace: "nowrap" }}>
-                                        {p.ticker} <span style={{ fontWeight: 400 }}>$ {fmt(aporteETF)}</span>
-                                      </span>
-                                    );
-                                  })}
-                                </div>
-                              ) : (
-                                <span style={{ fontSize: 11, color: B.muted }}>—</span>
-                              )}
-                            </td>
-                            <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 700, color: temAporte ? "#16a34a" : B.muted, whiteSpace: "nowrap" }}>
-                              {temAporte ? `$ ${fmt(cls.aporteClass)}` : "—"}
-                            </td>
-                            <td style={{ padding: "9px 12px", textAlign: "right", color: temAporte ? "#16a34a" : B.muted, fontWeight: 600 }}>
-                              {temAporte ? pct(pctDoAporte) : "—"}
-                            </td>
-                            <td style={{ padding: "9px 12px", textAlign: "right", whiteSpace: "nowrap" }}>
-                              <span style={{ fontWeight: 700, color: B.navy }}>{pct(pctFinal)}</span>
-                              <span style={{ fontSize: 10, color: Math.abs(pctFinal - cls.target_pct) < 1 ? "#16a34a" : B.muted, marginLeft: 5 }}>
-                                (alvo {pct(cls.target_pct)})
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                      <tr style={{ background: "#f0f4ff", borderTop: `2px solid ${B.border}` }}>
-                        <td style={{ padding: "9px 12px", fontWeight: 800, color: B.navy }}>Total</td>
-                        <td />
-                        <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 800, color: "#16a34a" }}>$ {fmt(aporteNum)}</td>
-                        <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 700, color: B.navy }}>100%</td>
-                        <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 700, color: B.navy }}>$ {fmt(totalApos)}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              {aporteNum > 0 && (() => {
+                const { items, totalSugerido } = suggestion;
+                const naoAlocado = aporteNum - totalSugerido;
+                return (
+                  <div style={{ padding: "0 0 16px" }}>
+                    {items.length === 0 ? (
+                      <div style={{ padding: 28, textAlign: "center", color: B.gray, fontSize: 12 }}>
+                        Nenhuma sugestao: aporte insuficiente ou carteira ja balanceada.
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ overflowX: "auto" }}>
+                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                            <thead>
+                              <tr style={{ background: "#f0f4ff" }}>
+                                <th style={{ padding: "10px 20px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: `2px solid ${B.border}` }}>Produto</th>
+                                <th style={{ padding: "10px 20px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: `2px solid ${B.border}` }}>Classe</th>
+                                <th style={{ padding: "10px 20px", textAlign: "right", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: `2px solid ${B.border}`, whiteSpace: "nowrap" }}>Valor (USD)</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {items.map((item, i) => (
+                                <tr key={`${item.ticker}-${i}`} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
+                                  <td style={{ padding: "11px 20px" }}>
+                                    <span style={{ fontWeight: 800, fontSize: 14, color: B.navy, letterSpacing: "0.03em" }}>{item.ticker}</span>
+                                  </td>
+                                  <td style={{ padding: "11px 20px", color: "#6b7280", fontSize: 12 }}>{item.classe}</td>
+                                  <td style={{ padding: "11px 20px", textAlign: "right", fontWeight: 700, fontSize: 14, color: "#16a34a", whiteSpace: "nowrap" }}>
+                                    $ {item.valor.toLocaleString("en-US")}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                            <tfoot>
+                              <tr style={{ background: "#f0fdf4", borderTop: `2px solid #86efac` }}>
+                                <td style={{ padding: "11px 20px", fontWeight: 800, fontSize: 13, color: B.navy }} colSpan={2}>Total Sugerido</td>
+                                <td style={{ padding: "11px 20px", textAlign: "right", fontWeight: 800, fontSize: 15, color: "#16a34a", whiteSpace: "nowrap" }}>
+                                  $ {totalSugerido.toLocaleString("en-US")}
+                                </td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+                        {naoAlocado >= 100 && (
+                          <div style={{ margin: "10px 20px 0", fontSize: 11, color: "#b45309", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 6, padding: "7px 12px" }}>
+                            Nao alocado: <strong>$ {naoAlocado.toLocaleString("en-US")}</strong> — valor restante apos arredondamentos.
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           )}
         </>
