@@ -88,11 +88,11 @@ function ModalBox({ open, onClose, children }) {
   );
 }
 
-function Inp({ label, value, onChange, type = "text", placeholder }) {
+function Inp({ label, value, onChange, onKeyDown, type = "text", placeholder }) {
   return (
     <div style={{ marginBottom: 12 }}>
       <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>{label}</div>
-      <input type={type} value={value} onChange={onChange} placeholder={placeholder}
+      <input type={type} value={value} onChange={onChange} onKeyDown={onKeyDown} placeholder={placeholder}
         style={{ width: "100%", boxSizing: "border-box", border: `1px solid ${B.border}`, borderRadius: 7, padding: "8px 10px", fontSize: 13, fontFamily: "inherit", outline: "none", color: B.navy }} />
     </div>
   );
@@ -426,8 +426,8 @@ export default function RebalanceIntl() {
       {/* Modal Classe */}
       <ModalBox open={classModal} onClose={() => setClassModal(false)}>
         <div style={{ fontWeight: 700, fontSize: 14, color: B.navy, marginBottom: 16 }}>{editingClass ? "Editar Classe" : "Nova Classe de Ativo"}</div>
-        <Inp label="Nome da Classe" value={classForm.nome} onChange={(e) => setClassForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Ex: RV - Global (Core)" />
-        <Inp label="% Alvo" type="number" value={classForm.target_pct} onChange={(e) => setClassForm((f) => ({ ...f, target_pct: e.target.value }))} placeholder="Ex: 22" />
+        <Inp label="Nome da Classe" value={classForm.nome} onChange={(e) => setClassForm((f) => ({ ...f, nome: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && handleSaveClass()} placeholder="Ex: RV - Global (Core)" />
+        <Inp label="% Alvo" type="number" value={classForm.target_pct} onChange={(e) => setClassForm((f) => ({ ...f, target_pct: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && handleSaveClass()} placeholder="Ex: 22" />
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
           <button onClick={() => setClassModal(false)} style={{ flex: 1, padding: 10, background: "white", border: `1px solid ${B.border}`, borderRadius: 7, cursor: "pointer", color: B.gray }}>Cancelar</button>
           <button onClick={handleSaveClass} style={{ flex: 2, padding: 10, background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700 }}>Salvar</button>
@@ -440,8 +440,8 @@ export default function RebalanceIntl() {
         <div style={{ fontSize: 11, color: B.gray, marginBottom: 14 }}>
           Classe: <strong>{portfolio?.classes?.find((c) => c.id === productClassId)?.nome}</strong>
         </div>
-        <Inp label="Ticker" value={productForm.ticker} onChange={(e) => setProductForm((f) => ({ ...f, ticker: e.target.value }))} placeholder="Ex: VT, IVV, QQQ" />
-        <Inp label="Valor Atual (USD)" type="number" value={productForm.valor_atual} onChange={(e) => setProductForm((f) => ({ ...f, valor_atual: e.target.value }))} placeholder="0.00" />
+        <Inp label="Ticker" value={productForm.ticker} onChange={(e) => setProductForm((f) => ({ ...f, ticker: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && handleSaveProduct()} placeholder="Ex: VT, IVV, QQQ" />
+        <Inp label="Valor Atual (USD)" type="number" value={productForm.valor_atual} onChange={(e) => setProductForm((f) => ({ ...f, valor_atual: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && handleSaveProduct()} placeholder="0.00" />
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
           <button onClick={() => setProductModal(false)} style={{ flex: 1, padding: 10, background: "white", border: `1px solid ${B.border}`, borderRadius: 7, cursor: "pointer", color: B.gray }}>Cancelar</button>
           {editingProduct && (
