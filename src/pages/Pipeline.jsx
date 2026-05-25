@@ -451,48 +451,102 @@ function OverlayCard({ lead }) {
 }
 
 /* ─── Summary Bar (replaces MiniStats) ─── */
-function PipelineSummaryBar({ leads }) {
-  // Conta apenas leads em estágios principais conhecidos (exclui saídas e etapas desconhecidas/antigas)
+function PipelineSummaryBar({ leads, openEdit }) {
   const ACTIVE_STAGES = ["Tentativa de Contato", "R1 Agendada", "FUP 1", "R2 Agendada", "Contrato Enviado", "FUP 2"];
   const leadsCalculo = leads.filter((l) => l.etapa !== "Desqualificado");
   const ativos = leads.filter((l) => ACTIVE_STAGES.includes(l.etapa));
-  const convertidos = leads.filter((l) => l.etapa === "Cliente").length;
-  const quentes = leads.filter((l) => l.temperatura === "quente" && ACTIVE_STAGES.includes(l.etapa)).length;
-  const taxaConv = leadsCalculo.length > 0 ? Math.round((convertidos / leadsCalculo.length) * 100) : 0;
+  const convertidos = leads.filter((l) => l.etapa === "Cliente");
+  const ativosQuentes = leads.filter((l) => l.temperatura === "quente" && ACTIVE_STAGES.includes(l.etapa));
+  const ativosStale = ativos.filter((l) => { const d = daysSince(l.data_ultima_interacao); return d !== null && d > 21; });
+  const taxaConv = leadsCalculo.length > 0 ? Math.round((convertidos.length / leadsCalculo.length) * 100) : 0;
   const totalPipeline = ativos.reduce((s, l) => s + Number(l.patrimonio_estimado || 0), 0);
-  const stale = ativos.filter((l) => { const d = daysSince(l.data_ultima_interacao); return d !== null && d > 21; }).length;
+
+  const [drill, setDrill] = useState(null); // { label, leads[] }
 
   const items = [
-    { label: "Em andamento", value: ativos.length, color: B.navy },
-    { label: "AUC Mapeado", value: totalPipeline > 0 ? money(totalPipeline) : "—", color: "#15803D" },
-    { label: "Quentes", value: quentes, color: "#EF4444" },
-    { label: "Sem contato +21d", value: stale, color: stale > 0 ? "#B45309" : B.muted, warn: stale > 0 },
-    { label: "Convertidos", value: convertidos, color: "#15803D" },
-    { label: "Taxa conv.", value: `${taxaConv}%`, color: B.navy },
+    { label: "Em andamento", value: ativos.length, color: B.navy, drillLeads: ativos },
+    { label: "AUC Mapeado", value: totalPipeline > 0 ? money(totalPipeline) : "—", color: "#15803D", drillLeads: ativos },
+    { label: "Quentes", value: ativosQuentes.length, color: "#EF4444", drillLeads: ativosQuentes },
+    { label: "Sem contato +21d", value: ativosStale.length, color: ativosStale.length > 0 ? "#B45309" : B.muted, drillLeads: ativosStale },
+    { label: "Convertidos", value: convertidos.length, color: "#15803D", drillLeads: convertidos },
+    { label: "Taxa conv.", value: `${taxaConv}%`, color: B.navy, drillLeads: null },
   ];
 
+  const TEMP_LABEL = { quente: "Quente", morna: "Morna", fria: "Fria" };
+
   return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: 0,
-      background: "white", border: `1px solid ${B.border}`,
-      borderRadius: 10, marginBottom: 16, overflow: "hidden",
-      boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-    }}>
-      {items.map((item, i) => (
-        <div key={i} style={{
-          flex: 1, padding: "10px 14px",
-          borderRight: i < items.length - 1 ? `1px solid ${B.border}` : "none",
-          textAlign: "center",
-        }}>
-          <div style={{ fontSize: 9.5, fontWeight: 700, color: B.muted, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>
-            {item.label}
+    <>
+      <div style={{
+        display: "flex", alignItems: "center", gap: 0,
+        background: "white", border: `1px solid ${B.border}`,
+        borderRadius: 10, marginBottom: 16, overflow: "hidden",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+      }}>
+        {items.map((item, i) => (
+          <div key={i}
+            onClick={() => item.drillLeads && item.drillLeads.length > 0 && setDrill({ label: item.label, leads: item.drillLeads })}
+            style={{
+              flex: 1, padding: "10px 14px",
+              borderRight: i < items.length - 1 ? `1px solid ${B.border}` : "none",
+              textAlign: "center",
+              cursor: item.drillLeads && item.drillLeads.length > 0 ? "pointer" : "default",
+              transition: "background 0.15s",
+            }}
+            onMouseEnter={(e) => { if (item.drillLeads?.length > 0) e.currentTarget.style.background = "#f8faff"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
+          >
+            <div style={{ fontSize: 9.5, fontWeight: 700, color: B.muted, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>
+              {item.label}{item.drillLeads?.length > 0 ? " ↗" : ""}
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: item.color, letterSpacing: "-0.5px", lineHeight: 1 }}>
+              {item.value}
+            </div>
           </div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: item.color, letterSpacing: "-0.5px", lineHeight: 1 }}>
-            {item.value}
+        ))}
+      </div>
+
+      {/* Drill-down modal */}
+      {drill && (
+        <div onClick={() => setDrill(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 400, backdropFilter: "blur(3px)" }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: 14, width: "100%", maxWidth: 520, maxHeight: "80vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: `1px solid ${B.border}`, position: "sticky", top: 0, background: "white", zIndex: 1 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: B.muted, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 2 }}>{drill.label}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: B.navy }}>{drill.leads.length} lead{drill.leads.length !== 1 ? "s" : ""}</div>
+              </div>
+              <button onClick={() => setDrill(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: B.muted, lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ padding: "8px 0" }}>
+              {drill.leads.map((l) => {
+                const dias = daysSince(l.data_ultima_interacao);
+                return (
+                  <div key={l.id}
+                    onClick={() => { openEdit && openEdit(l); setDrill(null); }}
+                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 20px", borderBottom: `1px solid ${B.border}`, cursor: openEdit ? "pointer" : "default", transition: "background 0.12s" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "#f8faff"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
+                  >
+                    <Avatar name={l.nome} size={32} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{l.nome}</div>
+                      <div style={{ fontSize: 11, color: B.muted, marginTop: 1 }}>{l.etapa}{l.temperatura ? ` · ${TEMP_LABEL[l.temperatura] || l.temperatura}` : ""}</div>
+                    </div>
+                    <div style={{ textAlign: "right", flexShrink: 0 }}>
+                      {l.patrimonio_estimado > 0 && (
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#15803d" }}>{money(l.patrimonio_estimado)}</div>
+                      )}
+                      {dias !== null && (
+                        <div style={{ fontSize: 10, color: dias > 21 ? "#b45309" : B.muted }}>{dias}d sem contato</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
-      ))}
-    </div>
+      )}
+    </>
   );
 }
 
@@ -682,7 +736,7 @@ export default function Pipeline() {
       </div>
 
       {/* ─── Summary bar (slim, no cards) ─── */}
-      <PipelineSummaryBar leads={leads} />
+      <PipelineSummaryBar leads={leads} openEdit={openEdit} />
 
       {/* ═══ ANALYTICS VIEW ═══ */}
       {view === "analytics" && (
