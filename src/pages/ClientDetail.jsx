@@ -46,6 +46,7 @@ export default function ClientDetail() {
   // ─── Aporte modal ───
   const [aptModal, setAptModal] = useState(false);
   const [resumoModal, setResumoModal] = useState(false);
+  const [compiladoModal, setCompiladoModal] = useState(false);
   const [liqModal, setLiqModal] = useState(false);
   const [slideModal, setSlideModal] = useState(false);
   const [slideObs, setSlideObs] = useState([]);
@@ -487,6 +488,7 @@ export default function ClientDetail() {
           <span>Aportes e Resgates</span>
           <div style={{ display: "flex", gap: 6 }}>
             <button onClick={() => navigate(`/clients/${slug}/rebalanceamento`)} style={{ background: "#f0fdf4", color: "#15803d", border: "1px solid #86efac", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>🌎 Rebalanceamento</button>
+            <button onClick={() => setCompiladoModal(true)} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>📋 Slide</button>
             <button onClick={() => setResumoModal(true)} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>📊 Resumo</button>
             <button onClick={() => { setAptForm({ client_id: id, data: today(), tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false, valor_reserva: "", valor_pgbl: "" }); setAptModal(true); }} style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Registrar</button>
           </div>
@@ -1128,6 +1130,81 @@ export default function ClientDetail() {
               </div>
 
               <button onClick={() => setLiqModal(false)} style={{ width: "100%", marginTop: 16, padding: "9px", background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Fechar</button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Modal Compilado Aportes (Slide) */}
+      {compiladoModal && (() => {
+        const periodoLabel = aptFilter.mode === "ano" ? aptFilter.ano
+          : aptFilter.mode === "periodo" ? `${aptFilter.de?.slice(0,7) || ""}–${aptFilter.ate?.slice(0,7) || ""}`
+          : "Desde o início";
+        const aportesOrdenados = [...filteredClientAportes].sort((a, b) => b.data.localeCompare(a.data));
+        const fmtObs = (obs) => {
+          if (!obs) return "";
+          const first = obs.split(/[-–,·]/)[0].trim();
+          return first.length > 20 ? first.slice(0, 20) + "…" : first;
+        };
+        return (
+          <div onClick={() => setCompiladoModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 400, backdropFilter: "blur(6px)" }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ background: "#061841", borderRadius: 18, width: "100%", maxWidth: 780, maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 32px 80px rgba(0,0,0,0.6)", overflow: "hidden" }}>
+
+              {/* Header */}
+              <div style={{ padding: "14px 24px", borderBottom: "1px solid rgba(255,255,255,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                  {client.nome.split(" ")[0]} · Aportes e Resgates · {periodoLabel}
+                </div>
+                <button onClick={() => setCompiladoModal(false)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 20, cursor: "pointer", lineHeight: 1 }}>×</button>
+              </div>
+
+              {/* Corpo: lista + cards */}
+              <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+
+                {/* Lista de lançamentos */}
+                <div style={{ flex: 1, overflowY: "auto", padding: "16px 0" }}>
+                  {aportesOrdenados.length === 0 ? (
+                    <div style={{ padding: 32, textAlign: "center", color: "rgba(255,255,255,0.3)", fontSize: 13 }}>Nenhum lançamento no período.</div>
+                  ) : (
+                    aportesOrdenados.map((a, i) => {
+                      const isAp = a.tipo === "aporte";
+                      const obs = fmtObs(a.observacao);
+                      return (
+                        <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "11px 24px", borderBottom: "1px solid rgba(255,255,255,0.06)", background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.02)" }}>
+                          <span style={{ fontSize: 16, fontWeight: 900, color: isAp ? "#4ade80" : "#f87171", width: 14, flexShrink: 0 }}>{isAp ? "+" : "−"}</span>
+                          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", width: 88, flexShrink: 0 }}>
+                            {a.data ? a.data.split("-").reverse().join("/") : "—"}
+                          </span>
+                          <span style={{ fontSize: 15, fontWeight: 800, color: isAp ? "#4ade80" : "#f87171", flex: 1 }}>
+                            {money(a.valor)}
+                          </span>
+                          {obs && (
+                            <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.07)", borderRadius: 5, padding: "2px 8px", flexShrink: 0 }}>{obs}</span>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Divisor */}
+                <div style={{ width: 1, background: "rgba(255,255,255,0.08)", flexShrink: 0 }} />
+
+                {/* Cards resumo */}
+                <div style={{ width: 200, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10, padding: 20, justifyContent: "center" }}>
+                  {[
+                    { label: "Aportado",       value: totalAp,   color: "#4ade80", bg: "rgba(22,163,74,0.15)",   border: "rgba(22,163,74,0.3)",   prefix: "" },
+                    { label: "Resgatado",       value: totalRe,   color: "#f87171", bg: "rgba(239,68,68,0.15)",   border: "rgba(239,68,68,0.3)",   prefix: "" },
+                    { label: "Líquido",         value: liquido,   color: liquido >= 0 ? "#34d399" : "#f87171", bg: "rgba(255,255,255,0.07)", border: "rgba(255,255,255,0.12)", prefix: liquido >= 0 ? "+" : "" },
+                    { label: "Média/mês (líq.)", value: mediaMes, color: "#818cf8", bg: "rgba(129,140,248,0.12)", border: "rgba(129,140,248,0.25)", prefix: "" },
+                  ].map(({ label, value, color, bg, border, prefix }) => (
+                    <div key={label} style={{ background: bg, border: `1px solid ${border}`, borderRadius: 12, padding: "14px 16px" }}>
+                      <div style={{ fontSize: 8, fontWeight: 800, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5 }}>{label}</div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color, letterSpacing: "-0.02em" }}>{prefix}{money(Math.abs(value))}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         );
