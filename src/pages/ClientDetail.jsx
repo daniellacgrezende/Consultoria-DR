@@ -47,6 +47,9 @@ export default function ClientDetail() {
   const [aptModal, setAptModal] = useState(false);
   const [resumoModal, setResumoModal] = useState(false);
   const [liqModal, setLiqModal] = useState(false);
+  const [slideModal, setSlideModal] = useState(false);
+  const [slideObs, setSlideObs] = useState([]);
+  const [slideObsInput, setSlideObsInput] = useState("");
   const [aptEditId, setAptEditId] = useState(null);
   const [aptForm, setAptForm] = useState({ client_id: "", data: "", tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false, valor_reserva: "", valor_pgbl: "" });
   const [aptHistOpen, setAptHistOpen] = useState(false);
@@ -263,7 +266,16 @@ export default function ClientDetail() {
             <div style={{ fontSize: 11, opacity: 0.5, textTransform: "uppercase" }}>PL Atual</div>
             <div style={{ fontSize: 22, fontWeight: 700 }}>{money(pl)}</div>
           </div>
-          <button onClick={() => openEditModal()} style={{ padding: "7px 16px", background: "rgba(255,255,255,0.15)", color: "white", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Editar Cadastro</button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => {
+              const obs = [];
+              if (!hasSeguro && client.seguro_vida !== "nao_aplica") obs.push("Desprotegido");
+              if (hasPgbl && pgblPct !== null) obs.push(`PGBL ${anoAtual}: ${pgblPct}% — ${money(pgblAnoAtual)} / ${money(pgblLimite)}`);
+              setSlideObs(obs);
+              setSlideModal(true);
+            }} style={{ padding: "7px 16px", background: "rgba(255,255,255,0.12)", color: "white", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>📋 Slide</button>
+            <button onClick={() => openEditModal()} style={{ padding: "7px 16px", background: "rgba(255,255,255,0.15)", color: "white", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Editar Cadastro</button>
+          </div>
         </div>
       </div>
 
@@ -924,6 +936,121 @@ export default function ClientDetail() {
           </div>
         </div>
       </Modal>
+
+      {/* Modal Slide Apresentação */}
+      {slideModal && (() => {
+        const MESES_PT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+        const fmtInicio = (v) => {
+          if (!v) return "—";
+          const parts = String(v).split("-");
+          const y = parts[0];
+          const m = parts[1] ? Number(parts[1]) : null;
+          return m ? `${MESES_PT[m-1]}/${y}` : y;
+        };
+        const fmtBenchmark = (v) => {
+          if (!v) return "—";
+          return v.replace("IPCA+", "IPCA + ").replace("%", "% aa");
+        };
+        const benchmarkVal = client.benchmark || ({ conservador: "IPCA+4%", moderado: "IPCA+5%", arrojado: "IPCA+6%", agressivo: "IPCA+8%" }[client.perfil] || "");
+        const liqA = Number(client.liquidez_atual || 0);
+        const desejada = Number(client.liquidez_desejada || 0);
+        const pctLiq = desejada > 0 ? Math.min(100, Math.round((liqA / desejada) * 100)) : 0;
+        const okLiq = liqA >= desejada;
+        const produtos = (client.liquidez_produtos || "").split(/,|\n/).map((p) => p.trim()).filter(Boolean);
+        const perfilLabel = PERFIL_MAP[client.perfil]?.label || client.perfil || "—";
+        const ROW = { display: "flex", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.08)", padding: "14px 28px", gap: 24 };
+        const LABEL = { fontSize: 13, fontWeight: 700, color: "white", width: 180, flexShrink: 0 };
+        const VAL = { fontSize: 13, color: "rgba(255,255,255,0.85)", flex: 1 };
+        return (
+          <div onClick={() => setSlideModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 400, backdropFilter: "blur(6px)" }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ background: "#061841", borderRadius: 18, width: "100%", maxWidth: 680, boxShadow: "0 32px 80px rgba(0,0,0,0.6)", overflow: "hidden" }}>
+              {/* Cabeçalho */}
+              <div style={{ padding: "16px 28px", borderBottom: "1px solid rgba(255,255,255,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.12em" }}>{client.nome} · Slide 1</div>
+                <button onClick={() => setSlideModal(false)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 20, cursor: "pointer", lineHeight: 1 }}>×</button>
+              </div>
+
+              {/* Perfil de risco */}
+              <div style={ROW}>
+                <div style={LABEL}>Perfil de risco</div>
+                <div style={{ ...VAL, fontWeight: 600 }}>{perfilLabel}</div>
+              </div>
+
+              {/* Objetivos */}
+              <div style={{ ...ROW, alignItems: "flex-start" }}>
+                <div style={LABEL}>Objetivos</div>
+                <div style={{ ...VAL, whiteSpace: "pre-line", lineHeight: 1.6 }}>{client.planejamento || "—"}</div>
+              </div>
+
+              {/* Liquidez */}
+              <div style={{ ...ROW, alignItems: "center" }}>
+                <div style={LABEL}>Liquidez</div>
+                <div style={{ display: "flex", gap: 12, alignItems: "center", flex: 1 }}>
+                  {desejada > 0 ? (
+                    <div style={{ background: okLiq ? "rgba(22,163,74,0.15)" : "rgba(249,115,22,0.15)", border: `1px solid ${okLiq ? "rgba(22,163,74,0.35)" : "rgba(249,115,22,0.35)"}`, borderRadius: 10, padding: "10px 16px", minWidth: 160 }}>
+                      <div style={{ fontSize: 8, fontWeight: 800, color: okLiq ? "rgba(134,239,172,0.8)" : "rgba(253,186,116,0.8)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>💧 Reserva</div>
+                      <div style={{ fontSize: 24, fontWeight: 900, color: okLiq ? "#4ade80" : "#fb923c", lineHeight: 1, marginBottom: 6 }}>{pctLiq}%</div>
+                      <div style={{ width: "100%", height: 4, background: "rgba(255,255,255,0.12)", borderRadius: 99, marginBottom: 6, overflow: "hidden" }}>
+                        <div style={{ width: `${pctLiq}%`, height: "100%", background: okLiq ? "#4ade80" : "#fb923c", borderRadius: 99 }} />
+                      </div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.6)" }}>{money(liqA)} / {money(desejada)}</div>
+                    </div>
+                  ) : liqA > 0 ? (
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "#67e8f9" }}>{money(liqA)}</div>
+                  ) : null}
+                  {produtos.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                      <div style={{ fontSize: 8, fontWeight: 800, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>Produtos</div>
+                      {produtos.map((p, i) => (
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, background: "rgba(56,189,248,0.1)", border: "1px solid rgba(56,189,248,0.2)", borderRadius: 6, padding: "5px 12px" }}>
+                          <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#38bdf8", flexShrink: 0 }} />
+                          <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>{p}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Observações */}
+              <div style={{ ...ROW, alignItems: "flex-start" }}>
+                <div style={LABEL}>Observações</div>
+                <div style={{ flex: 1 }}>
+                  {slideObs.length === 0 && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontStyle: "italic" }}>Nenhuma observação.</div>}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: slideObs.length > 0 ? 8 : 0 }}>
+                    {slideObs.map((ob, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 13, color: "rgba(255,255,255,0.85)" }}>⊗ {ob}</span>
+                        <button onClick={() => setSlideObs((s) => s.filter((_, j) => j !== i))} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0 }}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <input value={slideObsInput} onChange={(e) => setSlideObsInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter" && slideObsInput.trim()) { setSlideObs((s) => [...s, slideObsInput.trim()]); setSlideObsInput(""); } }}
+                      placeholder="Adicionar observação…"
+                      style={{ flex: 1, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 6, padding: "5px 10px", fontSize: 12, color: "white", outline: "none", fontFamily: "inherit" }} />
+                    <button onClick={() => { if (slideObsInput.trim()) { setSlideObs((s) => [...s, slideObsInput.trim()]); setSlideObsInput(""); } }}
+                      style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "5px 12px", color: "white", fontSize: 12, cursor: "pointer" }}>+</button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Início da Consultoria */}
+              <div style={ROW}>
+                <div style={LABEL}>Início da Consultoria</div>
+                <div style={{ ...VAL, fontWeight: 600 }}>{fmtInicio(client.inicio_carteira)}</div>
+              </div>
+
+              {/* Benchmark */}
+              <div style={{ ...ROW, borderBottom: "none" }}>
+                <div style={LABEL}>Benchmark da carteira</div>
+                <div style={{ ...VAL, fontWeight: 600 }}>{fmtBenchmark(benchmarkVal)}</div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Modal Apresentação Liquidez */}
       {liqModal && (() => {
