@@ -929,51 +929,53 @@ export default function ClientDetail() {
           .filter(Boolean);
         return (
           <div onClick={() => setLiqModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 400, backdropFilter: "blur(6px)" }}>
-            <div onClick={(e) => e.stopPropagation()} style={{ background: "#0d1f3c", borderRadius: 22, padding: "32px 28px", width: 320, boxShadow: "0 32px 80px rgba(0,0,0,0.5)" }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ background: "#0d1f3c", borderRadius: 20, padding: "22px 28px", width: "100%", maxWidth: 620, boxShadow: "0 32px 80px rgba(0,0,0,0.5)" }}>
               {/* Header */}
-              <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 6, textAlign: "center" }}>
-                {client.nome.split(" ")[0]}
-              </div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: "white", textAlign: "center", marginBottom: 24, letterSpacing: "-0.02em" }}>
-                Liquidez
+              <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 18 }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "white", letterSpacing: "-0.02em" }}>Liquidez</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.1em" }}>{client.nome.split(" ")[0]}</div>
               </div>
 
-              {/* Card reserva */}
-              {desejada > 0 && (
-                <div style={{ background: ok ? "rgba(22,163,74,0.15)" : "rgba(249,115,22,0.15)", border: `1px solid ${ok ? "rgba(22,163,74,0.35)" : "rgba(249,115,22,0.35)"}`, borderRadius: 14, padding: "18px 20px", marginBottom: 14 }}>
-                  <div style={{ fontSize: 9, fontWeight: 800, color: ok ? "rgba(134,239,172,0.8)" : "rgba(253,186,116,0.8)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 8 }}>💧 Reserva</div>
-                  <div style={{ fontSize: 36, fontWeight: 900, color: ok ? "#4ade80" : "#fb923c", letterSpacing: "-0.03em", lineHeight: 1, marginBottom: 10 }}>{pctLiq}%</div>
-                  <div style={{ width: "100%", height: 6, background: "rgba(255,255,255,0.12)", borderRadius: 99, marginBottom: 8, overflow: "hidden" }}>
-                    <div style={{ width: `${pctLiq}%`, height: "100%", background: ok ? "#4ade80" : "#fb923c", borderRadius: 99, transition: "width .4s" }} />
+              {/* Linha horizontal: reserva à esquerda + produtos à direita */}
+              <div style={{ display: "flex", gap: 14, alignItems: "stretch" }}>
+
+                {/* Card reserva */}
+                {desejada > 0 && (
+                  <div style={{ background: ok ? "rgba(22,163,74,0.15)" : "rgba(249,115,22,0.15)", border: `1px solid ${ok ? "rgba(22,163,74,0.35)" : "rgba(249,115,22,0.35)"}`, borderRadius: 14, padding: "16px 20px", minWidth: 200 }}>
+                    <div style={{ fontSize: 9, fontWeight: 800, color: ok ? "rgba(134,239,172,0.8)" : "rgba(253,186,116,0.8)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 6 }}>💧 Reserva</div>
+                    <div style={{ fontSize: 32, fontWeight: 900, color: ok ? "#4ade80" : "#fb923c", letterSpacing: "-0.03em", lineHeight: 1, marginBottom: 8 }}>{pctLiq}%</div>
+                    <div style={{ width: "100%", height: 5, background: "rgba(255,255,255,0.12)", borderRadius: 99, marginBottom: 8, overflow: "hidden" }}>
+                      <div style={{ width: `${pctLiq}%`, height: "100%", background: ok ? "#4ade80" : "#fb923c", borderRadius: 99, transition: "width .4s" }} />
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.65)" }}>{money(liqA)} <span style={{ fontWeight: 400, color: "rgba(255,255,255,0.3)" }}>/</span> {money(desejada)}</div>
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>{money(liqA)} <span style={{ fontWeight: 400, color: "rgba(255,255,255,0.35)" }}>/</span> {money(desejada)}</div>
-                </div>
-              )}
+                )}
 
-              {/* Só o valor, sem meta */}
-              {desejada === 0 && liqA > 0 && (
-                <div style={{ background: "rgba(6,182,212,0.15)", border: "1px solid rgba(6,182,212,0.35)", borderRadius: 14, padding: "18px 20px", marginBottom: 14 }}>
-                  <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(103,232,249,0.8)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 8 }}>💧 Liquidez Atual</div>
-                  <div style={{ fontSize: 30, fontWeight: 900, color: "#67e8f9", letterSpacing: "-0.03em" }}>{money(liqA)}</div>
-                </div>
-              )}
-
-              {/* Produtos */}
-              {produtos.length > 0 && (
-                <div style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, padding: "14px 18px", marginBottom: 14 }}>
-                  <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10 }}>Produtos</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                    {produtos.map((p, i) => (
-                      <div key={i} style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.85)", display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#38bdf8", flexShrink: 0 }} />
-                        {p}
-                      </div>
-                    ))}
+                {/* Só valor, sem meta */}
+                {desejada === 0 && liqA > 0 && (
+                  <div style={{ background: "rgba(6,182,212,0.15)", border: "1px solid rgba(6,182,212,0.35)", borderRadius: 14, padding: "16px 20px", minWidth: 180 }}>
+                    <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(103,232,249,0.8)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 6 }}>💧 Liquidez Atual</div>
+                    <div style={{ fontSize: 28, fontWeight: 900, color: "#67e8f9", letterSpacing: "-0.03em" }}>{money(liqA)}</div>
                   </div>
-                </div>
-              )}
+                )}
 
-              <button onClick={() => setLiqModal(false)} style={{ width: "100%", marginTop: 4, padding: "10px", background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Fechar</button>
+                {/* Produtos */}
+                {produtos.length > 0 && (
+                  <div style={{ flex: 1, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, padding: "16px 20px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                    <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10 }}>Produtos</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {produtos.map((p, i) => (
+                        <div key={i} style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.85)", display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#38bdf8", flexShrink: 0 }} />
+                          {p}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button onClick={() => setLiqModal(false)} style={{ width: "100%", marginTop: 16, padding: "9px", background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Fechar</button>
             </div>
           </div>
         );
