@@ -961,16 +961,14 @@ export default function ClientDetail() {
 
                 {/* Produtos */}
                 {produtos.length > 0 && (
-                  <div style={{ flex: 1, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, padding: "16px 20px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                    <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10 }}>Produtos</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      {produtos.map((p, i) => (
-                        <div key={i} style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.85)", display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#38bdf8", flexShrink: 0 }} />
-                          {p}
-                        </div>
-                      ))}
-                    </div>
+                  <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 6 }}>
+                    <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 2 }}>Produtos</div>
+                    {produtos.map((p, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(56,189,248,0.1)", border: "1px solid rgba(56,189,248,0.2)", borderRadius: 8, padding: "7px 14px" }}>
+                        <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#38bdf8", flexShrink: 0 }} />
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.88)", whiteSpace: "nowrap" }}>{p}</span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
