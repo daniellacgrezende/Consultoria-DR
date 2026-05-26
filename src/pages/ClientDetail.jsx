@@ -51,6 +51,7 @@ export default function ClientDetail() {
   const [slideObs, setSlideObs] = useState([]);
   const [slideObsInput, setSlideObsInput] = useState("");
   const [slideEditObs, setSlideEditObs] = useState(false);
+  const [slideObjetivos, setSlideObjetivos] = useState("");
   const [aptEditId, setAptEditId] = useState(null);
   const [aptForm, setAptForm] = useState({ client_id: "", data: "", tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false, valor_reserva: "", valor_pgbl: "" });
   const [aptHistOpen, setAptHistOpen] = useState(false);
@@ -274,6 +275,7 @@ export default function ClientDetail() {
               else if (client.seguro_vida !== "nao_aplica") obs.push("Desprotegido");
               if (hasPgbl && pgblPct !== null) obs.push(`PGBL ${anoAtual}: ${pgblPct}% — ${money(pgblAnoAtual)} / ${money(pgblLimite)}`);
               setSlideObs(obs);
+              setSlideObjetivos(client.planejamento || "");
               setSlideEditObs(false);
               setSlideModal(true);
             }} style={{ padding: "7px 16px", background: "rgba(255,255,255,0.12)", color: "white", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>📋 Slide</button>
@@ -987,7 +989,12 @@ export default function ClientDetail() {
               {/* Objetivos */}
               <div style={{ ...ROW, alignItems: "flex-start" }}>
                 <div style={LABEL}>Objetivos</div>
-                <div style={{ ...VAL, whiteSpace: "pre-line", lineHeight: 1.6 }}>{client.planejamento || "—"}</div>
+                {slideEditObs ? (
+                  <textarea value={slideObjetivos} onChange={(e) => setSlideObjetivos(e.target.value)} rows={3}
+                    style={{ flex: 1, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 7, padding: "7px 10px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.6 }} />
+                ) : (
+                  <div style={{ ...VAL, whiteSpace: "pre-line", lineHeight: 1.6 }}>{slideObjetivos || "—"}</div>
+                )}
               </div>
 
               {/* Liquidez */}
