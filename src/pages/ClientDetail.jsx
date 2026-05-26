@@ -50,6 +50,7 @@ export default function ClientDetail() {
   const [slideModal, setSlideModal] = useState(false);
   const [slideObs, setSlideObs] = useState([]);
   const [slideObsInput, setSlideObsInput] = useState("");
+  const [slideEditObs, setSlideEditObs] = useState(false);
   const [aptEditId, setAptEditId] = useState(null);
   const [aptForm, setAptForm] = useState({ client_id: "", data: "", tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false, valor_reserva: "", valor_pgbl: "" });
   const [aptHistOpen, setAptHistOpen] = useState(false);
@@ -273,6 +274,7 @@ export default function ClientDetail() {
               else if (client.seguro_vida !== "nao_aplica") obs.push("Desprotegido");
               if (hasPgbl && pgblPct !== null) obs.push(`PGBL ${anoAtual}: ${pgblPct}% — ${money(pgblAnoAtual)} / ${money(pgblLimite)}`);
               setSlideObs(obs);
+              setSlideEditObs(false);
               setSlideModal(true);
             }} style={{ padding: "7px 16px", background: "rgba(255,255,255,0.12)", color: "white", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>📋 Slide</button>
             <button onClick={() => openEditModal()} style={{ padding: "7px 16px", background: "rgba(255,255,255,0.15)", color: "white", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Editar Cadastro</button>
@@ -966,9 +968,14 @@ export default function ClientDetail() {
           <div onClick={() => setSlideModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 400, backdropFilter: "blur(6px)" }}>
             <div onClick={(e) => e.stopPropagation()} style={{ background: "#061841", borderRadius: 18, width: "100%", maxWidth: 680, boxShadow: "0 32px 80px rgba(0,0,0,0.6)", overflow: "hidden" }}>
               {/* Cabeçalho */}
-              <div style={{ padding: "16px 28px", borderBottom: "1px solid rgba(255,255,255,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ padding: "14px 28px", borderBottom: "1px solid rgba(255,255,255,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.12em" }}>{client.nome} · Slide 1</div>
-                <button onClick={() => setSlideModal(false)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 20, cursor: "pointer", lineHeight: 1 }}>×</button>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <button onClick={() => setSlideEditObs((v) => !v)} style={{ background: slideEditObs ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "4px 12px", color: "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                    {slideEditObs ? "✓ Pronto" : "✎ Editar obs"}
+                  </button>
+                  <button onClick={() => setSlideModal(false)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 20, cursor: "pointer", lineHeight: 1 }}>×</button>
+                </div>
               </div>
 
               {/* Perfil de risco */}
@@ -1017,8 +1024,8 @@ export default function ClientDetail() {
               <div style={{ ...ROW, alignItems: "flex-start" }}>
                 <div style={LABEL}>Observações</div>
                 <div style={{ flex: 1 }}>
-                  {slideObs.length === 0 && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontStyle: "italic" }}>Nenhuma observação.</div>}
-                  <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: slideObs.length > 0 ? 8 : 0 }}>
+                  {slideObs.length === 0 && !slideEditObs && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontStyle: "italic" }}>—</div>}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: slideEditObs && slideObs.length > 0 ? 8 : slideObs.length > 0 ? 0 : 0 }}>
                     {slideObs.map((ob, i) => {
                       const isProtegido = ob === "✅ Protegido";
                       return (
@@ -1026,19 +1033,23 @@ export default function ClientDetail() {
                           <span style={{ fontSize: 13, color: isProtegido ? "#4ade80" : ob === "Desprotegido" ? "#f87171" : "rgba(255,255,255,0.85)", fontWeight: isProtegido || ob === "Desprotegido" ? 700 : 400 }}>
                             {isProtegido ? "✅" : ob === "Desprotegido" ? "❌" : "⊗"} {isProtegido ? "Protegido" : ob}
                           </span>
-                          <button onClick={() => setSlideObs((s) => s.filter((_, j) => j !== i))} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0 }}>✕</button>
+                          {slideEditObs && (
+                            <button onClick={() => setSlideObs((s) => s.filter((_, j) => j !== i))} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0 }}>✕</button>
+                          )}
                         </div>
                       );
                     })}
                   </div>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <input value={slideObsInput} onChange={(e) => setSlideObsInput(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter" && slideObsInput.trim()) { setSlideObs((s) => [...s, slideObsInput.trim()]); setSlideObsInput(""); } }}
-                      placeholder="Adicionar observação…"
-                      style={{ flex: 1, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 6, padding: "5px 10px", fontSize: 12, color: "white", outline: "none", fontFamily: "inherit" }} />
-                    <button onClick={() => { if (slideObsInput.trim()) { setSlideObs((s) => [...s, slideObsInput.trim()]); setSlideObsInput(""); } }}
-                      style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "5px 12px", color: "white", fontSize: 12, cursor: "pointer" }}>+</button>
-                  </div>
+                  {slideEditObs && (
+                    <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                      <input value={slideObsInput} onChange={(e) => setSlideObsInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter" && slideObsInput.trim()) { setSlideObs((s) => [...s, slideObsInput.trim()]); setSlideObsInput(""); } }}
+                        placeholder="Adicionar observação…"
+                        style={{ flex: 1, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 6, padding: "5px 10px", fontSize: 12, color: "white", outline: "none", fontFamily: "inherit" }} />
+                      <button onClick={() => { if (slideObsInput.trim()) { setSlideObs((s) => [...s, slideObsInput.trim()]); setSlideObsInput(""); } }}
+                        style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "5px 12px", color: "white", fontSize: 12, cursor: "pointer" }}>+</button>
+                    </div>
+                  )}
                 </div>
               </div>
 
