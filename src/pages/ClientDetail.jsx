@@ -1023,8 +1023,8 @@ export default function ClientDetail() {
                       const isProtegido = ob === "✅ Protegido";
                       return (
                         <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ fontSize: 13, color: isProtegido ? "#4ade80" : "rgba(255,255,255,0.85)", fontWeight: isProtegido ? 700 : 400 }}>
-                            {isProtegido ? "✅" : "⊗"} {isProtegido ? "Protegido" : ob}
+                          <span style={{ fontSize: 13, color: isProtegido ? "#4ade80" : ob === "Desprotegido" ? "#f87171" : "rgba(255,255,255,0.85)", fontWeight: isProtegido || ob === "Desprotegido" ? 700 : 400 }}>
+                            {isProtegido ? "✅" : ob === "Desprotegido" ? "❌" : "⊗"} {isProtegido ? "Protegido" : ob}
                           </span>
                           <button onClick={() => setSlideObs((s) => s.filter((_, j) => j !== i))} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0 }}>✕</button>
                         </div>
