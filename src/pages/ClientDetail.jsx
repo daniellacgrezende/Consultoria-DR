@@ -389,7 +389,7 @@ export default function ClientDetail() {
             <>
               {/* Linha 1: Perfil+Benchmark / PL / Liq. Desejada / Liq. Atual / Aporte / Receita */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, marginBottom: 8 }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                   <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Perfil</div><InlineSelect value={client.perfil || "moderado"} onSave={(v) => {
                     const benchmarkPorPerfil = { conservador: "IPCA+4%", moderado: "IPCA+5%", arrojado: "IPCA+6%", agressivo: "IPCA+8%" };
                     updateField("perfil", v);
