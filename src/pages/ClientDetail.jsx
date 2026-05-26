@@ -395,12 +395,7 @@ export default function ClientDetail() {
         <Card style={{ gridColumn: "1/-1" }}>
           <div style={{ marginBottom: finOpen ? 10 : 0, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span onClick={() => setFinOpen((o) => !o)} style={{ fontWeight: 700, fontSize: 12, color: B.navy, cursor: "pointer", userSelect: "none", flex: 1 }}>Financeiro <span style={{ fontSize: 10, color: B.muted, fontWeight: 400 }}>{finOpen ? "▲" : "▼"}</span></span>
-            <div style={{ display: "flex", gap: 6 }}>
-              {(Number(client.liquidez_atual || 0) > 0 || client.liquidez_produtos) && (
-                <button onClick={(e) => { e.stopPropagation(); setLiqModal(true); }} style={{ fontSize: 10, fontWeight: 700, color: "#0891b2", background: "#ecfeff", border: "1px solid #a5f3fc", borderRadius: 6, padding: "3px 10px", cursor: "pointer" }}>💧 Apresentação</button>
-              )}
-              <button onClick={(e) => { e.stopPropagation(); openEditModal("financeiro"); }} style={{ fontSize: 10, fontWeight: 700, color: B.navy, background: "#f0f4ff", border: `1px solid ${B.border}`, borderRadius: 6, padding: "3px 10px", cursor: "pointer" }}>Editar</button>
-            </div>
+            <button onClick={(e) => { e.stopPropagation(); openEditModal("financeiro"); }} style={{ fontSize: 10, fontWeight: 700, color: B.navy, background: "#f0f4ff", border: `1px solid ${B.border}`, borderRadius: 6, padding: "3px 10px", cursor: "pointer" }}>Editar</button>
           </div>
           {finOpen && (
             <>
