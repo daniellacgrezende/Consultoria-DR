@@ -387,9 +387,14 @@ export default function ClientDetail() {
           </div>
           {finOpen && (
             <>
-              {/* Linha 1: Perfil / PL / Liq. Desejada / Liq. Atual / Aporte / Receita */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, marginBottom: 8 }}>
-                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Perfil</div><InlineSelect value={client.perfil || "moderado"} onSave={(v) => updateField("perfil", v)} opts={Object.entries(PERFIL_MAP).map(([k, v]) => ({ v: k, l: v.label }))} /></div>
+              {/* Linha 1: Perfil / Benchmark / PL / Liq. Desejada / Liq. Atual / Aporte / Receita */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8, marginBottom: 8 }}>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Perfil</div><InlineSelect value={client.perfil || "moderado"} onSave={(v) => {
+                  const benchmarkPorPerfil = { conservador: "IPCA+4%", moderado: "IPCA+5%", arrojado: "IPCA+6%", agressivo: "IPCA+8%" };
+                  updateField("perfil", v);
+                  if (!client.benchmark) updateField("benchmark", benchmarkPorPerfil[v] || "");
+                }} opts={Object.entries(PERFIL_MAP).map(([k, v]) => ({ v: k, l: v.label }))} /></div>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Benchmark</div><InlineSelect value={client.benchmark || ({ conservador: "IPCA+4%", moderado: "IPCA+5%", arrojado: "IPCA+6%", agressivo: "IPCA+8%" }[client.perfil] || "")} onSave={(v) => updateField("benchmark", v)} opts={[{ v: "", l: "—" }, { v: "IPCA+4%", l: "IPCA+4%" }, { v: "IPCA+5%", l: "IPCA+5%" }, { v: "IPCA+6%", l: "IPCA+6%" }, { v: "IPCA+8%", l: "IPCA+8%" }]} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>PL Atual</div><InlineMoney value={client.pl_inicial} onSave={(v) => updateField("pl_inicial", v)} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Liquidez Desejada</div><InlineMoney value={client.liquidez_desejada} onSave={(v) => updateField("liquidez_desejada", v)} /></div>
                 <div>
@@ -770,6 +775,7 @@ export default function ClientDetail() {
             <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Status e Perfil</div>
             <Sel label="Status" value={editForm.status || "ativo"} onChange={EF("status")} opts={[{ v: "ativo", l: "Ativo" }, { v: "inativo", l: "Inativo" }]} />
             <Sel label="Perfil" value={editForm.perfil || "moderado"} onChange={EF("perfil")} opts={Object.entries(PERFIL_MAP).map(([k, v]) => ({ v: k, l: v.label }))} />
+            <Sel label="Benchmark" value={editForm.benchmark || ""} onChange={EF("benchmark")} opts={[{ v: "", l: "—" }, { v: "IPCA+4%", l: "IPCA+4%" }, { v: "IPCA+5%", l: "IPCA+5%" }, { v: "IPCA+6%", l: "IPCA+6%" }, { v: "IPCA+8%", l: "IPCA+8%" }]} />
             </>}
 
             {(!editSection || editSection === "financeiro") && <>

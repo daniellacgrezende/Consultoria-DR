@@ -145,7 +145,7 @@ const CLIENT_DB_COLS = new Set([
   "periodicidade_relatorio", "pgbl", "vgbl", "renda_bruta_tributavel", "reserva_emergencia_valor",
   "reserva_emergencia_meta", "reserva_emergencia_produto", "grupo_id", "grupo_nome",
   "corretoras", "origem_cliente", "proximo_relatorio", "indicado_por", "aporte_mensal_max", "data_pedido_indicacao",
-  "email", "patrimonio_imobilizado", "financiamentos",
+  "email", "patrimonio_imobilizado", "financiamentos", "benchmark",
   "seguro_nao_aplica", "ips_nao_aplica", "prev_nao_aplica", "reuniao_agendada_em",
 ]);
 
@@ -220,6 +220,7 @@ export const mapClientToDB = (c) => {
     email: c.email ?? "",
     patrimonio_imobilizado: c.patrimonio_imobilizado ?? c.patrimonioImobilizado ?? "",
     financiamentos: c.financiamentos ?? "",
+    benchmark: c.benchmark ?? "",
   };
 
   return db;
