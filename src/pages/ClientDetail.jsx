@@ -269,7 +269,8 @@ export default function ClientDetail() {
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={() => {
               const obs = [];
-              if (!hasSeguro && client.seguro_vida !== "nao_aplica") obs.push("Desprotegido");
+              if (hasSeguro) obs.push("✅ Protegido");
+              else if (client.seguro_vida !== "nao_aplica") obs.push("Desprotegido");
               if (hasPgbl && pgblPct !== null) obs.push(`PGBL ${anoAtual}: ${pgblPct}% — ${money(pgblAnoAtual)} / ${money(pgblLimite)}`);
               setSlideObs(obs);
               setSlideModal(true);
@@ -1018,12 +1019,17 @@ export default function ClientDetail() {
                 <div style={{ flex: 1 }}>
                   {slideObs.length === 0 && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontStyle: "italic" }}>Nenhuma observação.</div>}
                   <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: slideObs.length > 0 ? 8 : 0 }}>
-                    {slideObs.map((ob, i) => (
-                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 13, color: "rgba(255,255,255,0.85)" }}>⊗ {ob}</span>
-                        <button onClick={() => setSlideObs((s) => s.filter((_, j) => j !== i))} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0 }}>✕</button>
-                      </div>
-                    ))}
+                    {slideObs.map((ob, i) => {
+                      const isProtegido = ob === "✅ Protegido";
+                      return (
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 13, color: isProtegido ? "#4ade80" : "rgba(255,255,255,0.85)", fontWeight: isProtegido ? 700 : 400 }}>
+                            {isProtegido ? "✅" : "⊗"} {isProtegido ? "Protegido" : ob}
+                          </span>
+                          <button onClick={() => setSlideObs((s) => s.filter((_, j) => j !== i))} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0 }}>✕</button>
+                        </div>
+                      );
+                    })}
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
                     <input value={slideObsInput} onChange={(e) => setSlideObsInput(e.target.value)}
