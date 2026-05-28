@@ -10,79 +10,42 @@ const pct = (v) => Number(v || 0).toFixed(2) + "%";
 const round100 = (v) => Math.round(v / 100) * 100;
 
 const CLASSES_PRESET_BR = [
-  "Agricultura",
-  "Alimentos",
-  "Bancários",
-  "Bancos",
-  "Commodities",
-  "Consumo & Varejo",
-  "Corretoras de Seguros",
-  "Energia Elétrica",
-  "FIIs",
-  "Financeiro",
-  "Industrial",
-  "Máquinas e Equipamentos",
-  "Materiais",
-  "Papel e Celulose",
-  "Petróleo & Gás",
-  "Saúde",
-  "Seguradoras",
-  "Tecnologia",
-  "Utilities",
+  "Agricultura", "Alimentos", "Bancários", "Bancos", "Commodities",
+  "Consumo & Varejo", "Corretoras de Seguros", "Energia Elétrica", "FIIs",
+  "Financeiro", "Industrial", "Máquinas e Equipamentos", "Materiais",
+  "Papel e Celulose", "Petróleo & Gás", "Saúde", "Seguradoras", "Tecnologia", "Utilities",
 ];
 
-function calcSuggestion(classes, aporte) {
+/* Algoritmo por ticker — alvo % é de cada acao */
+function calcSuggestion(tickers, aporte) {
   if (aporte <= 0) return { items: [], totalSugerido: 0 };
-  const totalAtual = classes.reduce((s, c) => s + c.totalValor, 0);
+  const totalAtual = tickers.reduce((s, t) => s + Number(t.valor_atual || 0), 0);
   const totalApos = totalAtual + aporte;
-  const ranked = classes
-    .map((c) => ({ ...c, shortfall: Math.max(0, (c.target_pct / 100) * totalApos - c.totalValor) }))
-    .filter((c) => c.shortfall > 1)
+  const ranked = tickers
+    .map((t) => ({ ...t, shortfall: Math.max(0, (t.target_pct / 100) * totalApos - Number(t.valor_atual || 0)) }))
+    .filter((t) => t.shortfall > 1)
     .sort((a, b) => b.shortfall - a.shortfall);
-  if (ranked.length === 0) return { items: [], totalSugerido: 0 };
-  const totalShortfall = ranked.reduce((s, c) => s + c.shortfall, 0);
+  if (!ranked.length) return { items: [], totalSugerido: 0 };
+  const totalShortfall = ranked.reduce((s, t) => s + t.shortfall, 0);
   let restante = aporte;
-  const classAllocs = [];
+  const allocs = [];
   for (let i = 0; i < ranked.length; i++) {
-    const cls = ranked[i];
+    const t = ranked[i];
     const isLast = i === ranked.length - 1;
-    const raw = isLast ? restante : aporte * (cls.shortfall / totalShortfall);
+    const raw = isLast ? restante : aporte * (t.shortfall / totalShortfall);
     const rounded = round100(raw);
     if (rounded < 100) continue;
-    classAllocs.push({ ...cls, aporteClass: rounded });
+    allocs.push({ ...t, valor: rounded });
     restante -= rounded;
     if (restante < 100) break;
   }
-  if (classAllocs.length > 0) {
-    const soma = classAllocs.reduce((s, c) => s + c.aporteClass, 0);
+  if (allocs.length > 0) {
+    const soma = allocs.reduce((s, t) => s + t.valor, 0);
     const diff = round100(aporte - soma);
-    if (Math.abs(diff) >= 100) classAllocs[0].aporteClass += diff;
+    if (Math.abs(diff) >= 100) allocs[0].valor += diff;
   }
-  const items = [];
-  for (const cls of classAllocs) {
-    const prods = cls.products || [];
-    if (!prods.length) continue;
-    if (prods.length === 1) {
-      items.push({ ticker: prods[0].ticker, classe: cls.nome, valor: cls.aporteClass });
-      continue;
-    }
-    const totalProdVal = prods.reduce((s, p) => s + Number(p.valor_atual || 0), 0);
-    let restProd = cls.aporteClass;
-    prods.forEach((p, pi) => {
-      const isLastP = pi === prods.length - 1;
-      const peso = totalProdVal > 0 ? Number(p.valor_atual || 0) / totalProdVal : 1 / prods.length;
-      const raw = isLastP ? restProd : cls.aporteClass * peso;
-      const rounded = round100(raw);
-      if (rounded >= 100) {
-        items.push({ ticker: p.ticker, classe: cls.nome, valor: rounded });
-        restProd -= rounded;
-      } else if (isLastP && restProd >= 100) {
-        items.push({ ticker: p.ticker, classe: cls.nome, valor: round100(restProd) });
-      }
-    });
-  }
-  const totalSugerido = items.reduce((s, x) => s + x.valor, 0);
-  return { items, totalSugerido };
+  const totalSugerido = allocs.reduce((s, t) => s + t.valor, 0);
+  return { items: allocs, totalSugerido };
 }
 
 function ModalBox({ open, onClose, children }) {
@@ -118,12 +81,12 @@ export default function RebalanceBR() {
 
   const [classModal, setClassModal] = useState(false);
   const [editingClass, setEditingClass] = useState(null);
-  const [classForm, setClassForm] = useState({ nome: "", target_pct: "" });
+  const [classForm, setClassForm] = useState({ nome: "" });
 
   const [productModal, setProductModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [productClassId, setProductClassId] = useState(null);
-  const [productForm, setProductForm] = useState({ ticker: "", valor_atual: "" });
+  const [productForm, setProductForm] = useState({ ticker: "", valor_atual: "", target_pct: "" });
 
   const load = useCallback(async () => {
     if (!client) return;
@@ -149,25 +112,19 @@ export default function RebalanceBR() {
       id: editingClass?.id || huid(),
       portfolio_id: portfolio.id,
       nome: classForm.nome.trim(),
-      target_pct: Number(classForm.target_pct) || 0,
+      target_pct: 0,
       ordem: isNew ? (portfolio?.classes?.length || 0) : editingClass.ordem,
     };
     await saveBrClass(cls, isNew);
     setClassModal(false);
     setEditingClass(null);
-    setClassForm({ nome: "", target_pct: "" });
+    setClassForm({ nome: "" });
     await load();
     setToast({ type: "success", text: isNew ? "Setor adicionado." : "Setor atualizado." });
   };
 
-  const openClassEdit = (cls) => {
-    setEditingClass(cls);
-    setClassForm({ nome: cls.nome, target_pct: String(cls.target_pct) });
-    setClassModal(true);
-  };
-
   const handleDeleteClass = async (id) => {
-    if (!confirm("Remover este setor e todas as ações?")) return;
+    if (!confirm("Remover este setor e todas as acoes?")) return;
     await deleteBrClass(id);
     await load();
     setToast({ type: "success", text: "Setor removido." });
@@ -181,26 +138,27 @@ export default function RebalanceBR() {
       class_id: productClassId,
       ticker: productForm.ticker.trim().toUpperCase(),
       valor_atual: Number(productForm.valor_atual) || 0,
+      target_pct: Number(productForm.target_pct) || 0,
     };
     await saveBrProduct(prod, isNew);
     setProductModal(false);
     setEditingProduct(null);
-    setProductForm({ ticker: "", valor_atual: "" });
+    setProductForm({ ticker: "", valor_atual: "", target_pct: "" });
     await load();
-    setToast({ type: "success", text: isNew ? "Ação adicionada." : "Ação atualizada." });
+    setToast({ type: "success", text: isNew ? "Acao adicionada." : "Acao atualizada." });
   };
 
   const openProductAdd = (classId) => {
     setProductClassId(classId);
     setEditingProduct(null);
-    setProductForm({ ticker: "", valor_atual: "" });
+    setProductForm({ ticker: "", valor_atual: "", target_pct: "" });
     setProductModal(true);
   };
 
   const openProductEdit = (prod) => {
     setProductClassId(prod.class_id);
     setEditingProduct(prod);
-    setProductForm({ ticker: prod.ticker, valor_atual: String(prod.valor_atual) });
+    setProductForm({ ticker: prod.ticker, valor_atual: String(prod.valor_atual), target_pct: String(prod.target_pct || "") });
     setProductModal(true);
   };
 
@@ -210,17 +168,18 @@ export default function RebalanceBR() {
     setToast({ type: "success", text: "Acao removida." });
   };
 
-  const classesComValor = (portfolio?.classes || [])
-    .map((c) => ({
-      ...c,
-      totalValor: (c.products || []).reduce((s, p) => s + Number(p.valor_atual || 0), 0),
-    }))
-    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  /* --- Calculos --- */
+  const classesOrdenadas = (portfolio?.classes || []).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
-  const totalPortfolio = classesComValor.reduce((s, c) => s + c.totalValor, 0);
-  const totalTarget = (portfolio?.classes || []).reduce((s, c) => s + Number(c.target_pct || 0), 0);
+  // Todos os tickers flat para o simulador
+  const allTickers = classesOrdenadas.flatMap((c) =>
+    (c.products || []).map((p) => ({ ...p, classe: c.nome }))
+  );
+
+  const totalPortfolio = allTickers.reduce((s, t) => s + Number(t.valor_atual || 0), 0);
+  const totalTarget = allTickers.reduce((s, t) => s + Number(t.target_pct || 0), 0);
   const aporteNum = Number(String(aporte).replace(",", ".")) || 0;
-  const suggestion = calcSuggestion(classesComValor, aporteNum);
+  const suggestion = calcSuggestion(allTickers, aporteNum);
   const totalApos = totalPortfolio + aporteNum;
 
   return (
@@ -231,7 +190,7 @@ export default function RebalanceBR() {
           style={{ background: "none", border: "none", color: B.navy, cursor: "pointer", fontSize: 20, padding: 0, lineHeight: 1 }}>
           ←
         </button>
-        <SecH eyebrow="Carteira Ações Brasil" title={`Rebalanceamento — ${client.nome.split(" ")[0]}`} desc="Asset allocation e simulacao de aporte em BRL" />
+        <SecH eyebrow="Carteira Acoes Brasil" title={`Rebalanceamento — ${client.nome.split(" ")[0]}`} desc="Asset allocation e simulacao de aporte em BRL" />
       </div>
 
       {loading && <div style={{ padding: 48, textAlign: "center", color: B.gray }}>Carregando...</div>}
@@ -255,7 +214,7 @@ export default function RebalanceBR() {
             {[
               { label: "Total da Carteira", value: `R$ ${fmt(totalPortfolio)}`, color: B.navy },
               { label: "Alvo Total", value: pct(totalTarget), color: Math.abs(totalTarget - 100) < 0.01 ? "#16a34a" : "#dc2626", hint: Math.abs(totalTarget - 100) >= 0.01 ? `(falta ${pct(100 - totalTarget)})` : "OK" },
-              { label: "Setores", value: portfolio.classes?.length || 0, color: B.navy },
+              { label: "Acoes", value: allTickers.length, color: B.navy },
             ].map(({ label, value, color, hint }) => (
               <div key={label} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 10, padding: "14px 18px" }}>
                 <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>{label}</div>
@@ -269,7 +228,7 @@ export default function RebalanceBR() {
           <div style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 16 }}>
             <div style={{ padding: "12px 16px", borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ fontWeight: 700, fontSize: 13, color: B.navy }}>Carteira Atual</div>
-              <button onClick={() => { setEditingClass(null); setClassForm({ nome: "", target_pct: "" }); setClassModal(true); }}
+              <button onClick={() => { setEditingClass(null); setClassForm({ nome: "" }); setClassModal(true); }}
                 style={{ background: B.brand, color: "white", border: "none", borderRadius: 6, padding: "5px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                 + Setor
               </button>
@@ -286,58 +245,66 @@ export default function RebalanceBR() {
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                   <thead>
                     <tr style={{ background: "#f8faff" }}>
-                      {[
-                        { h: "Setor", align: "left" },
-                        { h: "Acoes", align: "left" },
-                        { h: "Total (R$)", align: "right" },
-                        { h: "Atual %", align: "right" },
-                        { h: "Alvo %", align: "right" },
-                        { h: "Desvio", align: "right" },
-                        { h: "", align: "left" },
-                      ].map(({ h, align }) => (
-                        <th key={h} style={{ padding: "8px 12px", textAlign: align, fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: `1px solid ${B.border}`, whiteSpace: "nowrap" }}>{h}</th>
+                      {["Setor", "Acao", "Valor (R$)", "Atual %", "Alvo %", "Desvio", ""].map((h, j) => (
+                        <th key={j} style={{ padding: "8px 12px", textAlign: j >= 2 && j <= 5 ? "right" : "left", fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: `1px solid ${B.border}`, whiteSpace: "nowrap" }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {classesComValor.map((cls, i) => {
-                      const pctAtual = totalPortfolio > 0 ? (cls.totalValor / totalPortfolio) * 100 : 0;
-                      const desvio = pctAtual - cls.target_pct;
-                      const desvioColor = Math.abs(desvio) < 1 ? "#16a34a" : Math.abs(desvio) < 3 ? "#b45309" : "#dc2626";
-                      return (
-                        <tr key={cls.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
-                          <td style={{ padding: "9px 12px", fontWeight: 600, color: B.navy, whiteSpace: "nowrap" }}>{cls.nome}</td>
-                          <td style={{ padding: "9px 12px" }}>
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
-                              {(cls.products || []).map((p) => (
-                                <span key={p.id} onClick={() => openProductEdit(p)}
-                                  title={`R$ ${fmt(p.valor_atual)} — clique para editar`}
-                                  style={{ fontSize: 10, fontWeight: 700, background: "#e8eeff", color: B.navy, borderRadius: 5, padding: "2px 8px", cursor: "pointer" }}>
-                                  {p.ticker}
-                                </span>
-                              ))}
+                    {classesOrdenadas.map((cls) => {
+                      const prods = cls.products || [];
+                      if (!prods.length) {
+                        return (
+                          <tr key={cls.id} style={{ borderBottom: `1px solid ${B.border}` }}>
+                            <td style={{ padding: "9px 12px", fontWeight: 600, color: B.navy }}>{cls.nome}</td>
+                            <td style={{ padding: "9px 12px" }}>
                               <button onClick={() => openProductAdd(cls.id)}
                                 style={{ fontSize: 10, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px dashed #86efac", borderRadius: 5, padding: "2px 8px", cursor: "pointer" }}>
                                 + Acao
                               </button>
-                            </div>
-                          </td>
-                          <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 700, color: B.navy, whiteSpace: "nowrap" }}>R$ {fmt(cls.totalValor)}</td>
-                          <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 600, color: B.navy }}>{pct(pctAtual)}</td>
-                          <td style={{ padding: "9px 12px", textAlign: "right", color: "#6b7280" }}>{pct(cls.target_pct)}</td>
-                          <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 700, color: desvioColor, whiteSpace: "nowrap" }}>
-                            {desvio >= 0 ? "+" : ""}{pct(desvio)}
-                          </td>
-                          <td style={{ padding: "9px 12px", whiteSpace: "nowrap" }}>
-                            <button onClick={() => openClassEdit(cls)} style={{ background: "none", border: "none", cursor: "pointer", color: B.muted, fontSize: 11, marginRight: 4 }}>✎</button>
-                            <button onClick={() => handleDeleteClass(cls.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", fontSize: 11 }}>✕</button>
-                          </td>
-                        </tr>
-                      );
+                            </td>
+                            <td colSpan={4} />
+                            <td style={{ padding: "9px 12px" }}>
+                              <button onClick={() => handleDeleteClass(cls.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", fontSize: 11 }}>✕</button>
+                            </td>
+                          </tr>
+                        );
+                      }
+                      return prods.map((p, pi) => {
+                        const pctAtual = totalPortfolio > 0 ? (Number(p.valor_atual) / totalPortfolio) * 100 : 0;
+                        const desvio = pctAtual - Number(p.target_pct || 0);
+                        const desvioColor = Math.abs(desvio) < 1 ? "#16a34a" : Math.abs(desvio) < 3 ? "#b45309" : "#dc2626";
+                        const isFirst = pi === 0;
+                        const isLast = pi === prods.length - 1;
+                        return (
+                          <tr key={p.id} style={{ borderBottom: isLast ? `1px solid ${B.border}` : "1px solid #f0f4ff", background: "white" }}>
+                            {isFirst && (
+                              <td rowSpan={prods.length} style={{ padding: "9px 12px", fontWeight: 600, color: B.navy, verticalAlign: "middle", borderRight: `1px solid ${B.border}` }}>
+                                <div>{cls.nome}</div>
+                                <button onClick={() => openProductAdd(cls.id)}
+                                  style={{ fontSize: 9, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px dashed #86efac", borderRadius: 4, padding: "1px 6px", cursor: "pointer", marginTop: 4, display: "block" }}>
+                                  + Acao
+                                </button>
+                              </td>
+                            )}
+                            <td style={{ padding: "9px 12px", fontWeight: 700, color: B.navy, cursor: "pointer" }} onClick={() => openProductEdit(p)}>{p.ticker}</td>
+                            <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 700, color: B.navy, whiteSpace: "nowrap" }}>R$ {fmt(p.valor_atual)}</td>
+                            <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 600, color: B.navy }}>{pct(pctAtual)}</td>
+                            <td style={{ padding: "9px 12px", textAlign: "right", color: "#6b7280" }}>{pct(p.target_pct)}</td>
+                            <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 700, color: desvioColor, whiteSpace: "nowrap" }}>
+                              {desvio >= 0 ? "+" : ""}{pct(desvio)}
+                            </td>
+                            {isFirst && (
+                              <td rowSpan={prods.length} style={{ padding: "9px 12px", verticalAlign: "middle" }}>
+                                <button onClick={() => handleDeleteClass(cls.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", fontSize: 11 }}>✕</button>
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      });
                     })}
                     <tr style={{ background: "#f0f4ff", borderTop: `2px solid ${B.border}` }}>
-                      <td style={{ padding: "9px 12px", fontWeight: 800, color: B.navy }}>Total</td>
-                      <td />
+                      <td style={{ padding: "9px 12px", fontWeight: 800, color: B.navy }} colSpan={2}>Total</td>
                       <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 800, color: B.navy }}>R$ {fmt(totalPortfolio)}</td>
                       <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 700, color: B.navy }}>100%</td>
                       <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 700, color: Math.abs(totalTarget - 100) < 0.01 ? "#16a34a" : "#dc2626" }}>{pct(totalTarget)}</td>
@@ -350,25 +317,23 @@ export default function RebalanceBR() {
           </div>
 
           {/* Simulador */}
-          {!!portfolio.classes?.length && (
+          {allTickers.length > 0 && (
             <div style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, overflow: "hidden" }}>
               <div style={{ padding: "12px 16px", borderBottom: `1px solid ${B.border}`, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
                 <div style={{ fontWeight: 700, fontSize: 13, color: B.navy }}>Simulador de Aporte</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 0, border: `1px solid ${B.border}`, borderRadius: 7, overflow: "hidden" }}>
+                <div style={{ display: "flex", alignItems: "center", border: `1px solid ${B.border}`, borderRadius: 7, overflow: "hidden" }}>
                   <span style={{ padding: "6px 10px", background: "#f8faff", fontSize: 12, fontWeight: 700, color: B.navy, borderRight: `1px solid ${B.border}` }}>R$</span>
                   <input type="number" value={aporte} onChange={(e) => setAporte(e.target.value)} placeholder="0"
                     style={{ border: "none", outline: "none", padding: "6px 10px", fontSize: 13, fontFamily: "inherit", width: 130, color: B.navy }} />
                 </div>
                 {aporteNum > 0 && (
-                  <span style={{ fontSize: 11, color: B.gray }}>
-                    Total apos aporte: <strong style={{ color: B.navy }}>R$ {fmt(totalApos)}</strong>
-                  </span>
+                  <span style={{ fontSize: 11, color: B.gray }}>Total apos aporte: <strong style={{ color: B.navy }}>R$ {fmt(totalApos)}</strong></span>
                 )}
               </div>
 
               {aporteNum <= 0 && (
                 <div style={{ padding: 28, textAlign: "center", color: B.gray, fontSize: 12 }}>
-                  Digite um valor de aporte acima para ver a sugestao de rebalanceamento.
+                  Digite um valor de aporte para ver a sugestao de rebalanceamento.
                 </div>
               )}
 
@@ -387,15 +352,15 @@ export default function RebalanceBR() {
                           <table style={{ borderCollapse: "collapse", fontSize: 13 }}>
                             <thead>
                               <tr style={{ background: "#f0f4ff" }}>
-                                <th style={{ padding: "8px 12px", textAlign: "left", fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: `2px solid ${B.border}`, whiteSpace: "nowrap" }}>Acao</th>
-                                <th style={{ padding: "8px 12px", textAlign: "left", fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: `2px solid ${B.border}` }}>Setor</th>
-                                <th style={{ padding: "8px 12px", textAlign: "right", fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: `2px solid ${B.border}`, whiteSpace: "nowrap" }}>Valor (R$)</th>
+                                {["Acao", "Setor", "Valor (R$)"].map((h, j) => (
+                                  <th key={j} style={{ padding: "8px 12px", textAlign: j === 2 ? "right" : "left", fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: `2px solid ${B.border}`, whiteSpace: "nowrap" }}>{h}</th>
+                                ))}
                               </tr>
                             </thead>
                             <tbody>
                               {items.map((item, i) => (
                                 <tr key={`${item.ticker}-${i}`} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
-                                  <td style={{ padding: "8px 12px", fontWeight: 800, fontSize: 13, color: B.navy, letterSpacing: "0.03em", whiteSpace: "nowrap" }}>{item.ticker}</td>
+                                  <td style={{ padding: "8px 12px", fontWeight: 800, fontSize: 13, color: B.navy, whiteSpace: "nowrap" }}>{item.ticker}</td>
                                   <td style={{ padding: "8px 12px", color: "#6b7280", fontSize: 12, whiteSpace: "nowrap" }}>{item.classe}</td>
                                   <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, fontSize: 13, color: "#16a34a", whiteSpace: "nowrap" }}>R$ {item.valor.toLocaleString("pt-BR")}</td>
                                 </tr>
@@ -436,7 +401,7 @@ export default function RebalanceBR() {
               <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 7 }}>Sugestoes</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                 {disponiveis.map((nome) => (
-                  <button key={nome} onClick={() => setClassForm((f) => ({ ...f, nome }))}
+                  <button key={nome} onClick={() => setClassForm({ nome })}
                     style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 6, cursor: "pointer", whiteSpace: "nowrap",
                       background: classForm.nome === nome ? B.brand : "#f0f4ff",
                       color: classForm.nome === nome ? "white" : B.navy,
@@ -448,8 +413,7 @@ export default function RebalanceBR() {
             </div>
           );
         })()}
-        <Inp label="Nome do Setor" value={classForm.nome} onChange={(e) => setClassForm((f) => ({ ...f, nome: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && handleSaveClass()} placeholder="Ex: Bancarios" />
-        <Inp label="% Alvo" type="number" value={classForm.target_pct} onChange={(e) => setClassForm((f) => ({ ...f, target_pct: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && handleSaveClass()} placeholder="Ex: 20" />
+        <Inp label="Nome do Setor" value={classForm.nome} onChange={(e) => setClassForm({ nome: e.target.value })} onKeyDown={(e) => e.key === "Enter" && handleSaveClass()} placeholder="Ex: Bancarios" />
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
           <button onClick={() => setClassModal(false)} style={{ flex: 1, padding: 10, background: "white", border: `1px solid ${B.border}`, borderRadius: 7, cursor: "pointer", color: B.gray }}>Cancelar</button>
           <button onClick={handleSaveClass} style={{ flex: 2, padding: 10, background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700 }}>Salvar</button>
@@ -464,6 +428,7 @@ export default function RebalanceBR() {
         </div>
         <Inp label="Ticker" value={productForm.ticker} onChange={(e) => setProductForm((f) => ({ ...f, ticker: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && handleSaveProduct()} placeholder="Ex: PETR4, VALE3, ITUB4" />
         <Inp label="Valor Atual (R$)" type="number" value={productForm.valor_atual} onChange={(e) => setProductForm((f) => ({ ...f, valor_atual: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && handleSaveProduct()} placeholder="0.00" />
+        <Inp label="% Alvo" type="number" value={productForm.target_pct} onChange={(e) => setProductForm((f) => ({ ...f, target_pct: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && handleSaveProduct()} placeholder="Ex: 5" />
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
           <button onClick={() => setProductModal(false)} style={{ flex: 1, padding: 10, background: "white", border: `1px solid ${B.border}`, borderRadius: 7, cursor: "pointer", color: B.gray }}>Cancelar</button>
           {editingProduct && (
