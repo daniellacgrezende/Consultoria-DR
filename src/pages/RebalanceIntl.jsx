@@ -208,7 +208,7 @@ export default function RebalanceIntl() {
       ...c,
       totalValor: (c.products || []).reduce((s, p) => s + Number(p.valor_atual || 0), 0),
     }))
-    .sort((a, b) => Number(b.target_pct) - Number(a.target_pct));
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
   const totalPortfolio = classesComValor.reduce((s, c) => s + c.totalValor, 0);
   const totalTarget = (portfolio?.classes || []).reduce((s, c) => s + Number(c.target_pct || 0), 0);
   const aporteNum = Number(String(aporte).replace(",", ".")) || 0;
