@@ -19,6 +19,7 @@ export default function Dashboard() {
   const [showClientes, setShowClientes] = useState(false);
   const [selectedMes, setSelectedMes] = useState(null);
   const [origemDrill, setOrigemDrill] = useState(null);
+  const [perfilDrill, setPerfilDrill] = useState(null);
 
   const active = useMemo(() => clients.filter((c) => c.status === "ativo"), [clients]);
   const getPL = (c) => getCurrentPL(c, history);
@@ -271,21 +272,32 @@ export default function Dashboard() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
               {perfilData.map(({ name, value }, i) => {
-                const pct = Math.round((value / active.length) * 100);
+                const p = Math.round((value / active.length) * 100);
+                const isOpen = perfilDrill === name;
+                const clientsInPerfil = active.filter((c) => (PERFIL_MAP[c.perfil]?.label || c.perfil || "—") === name);
                 return (
-                  <div key={name} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: PCOLS[i % PCOLS.length], flexShrink: 0 }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: B.navy }}>{name}</span>
-                        <span style={{ fontSize: 11, color: B.gray, flexShrink: 0, marginLeft: 8 }}>{value}cl · {pct}%</span>
-                      </div>
-                      <div style={{ height: 4, background: "#e8eeff", borderRadius: 999 }}>
-                        <div style={{ height: "100%", width: `${pct}%`, background: PCOLS[i % PCOLS.length], borderRadius: 999 }} />
+                  <div key={name}>
+                    <div onClick={() => setPerfilDrill(isOpen ? null : name)} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "3px 5px", borderRadius: 6, background: isOpen ? "#f0f4ff" : "transparent" }}>
+                      <div style={{ width: 10, height: 10, borderRadius: "50%", background: PCOLS[i % PCOLS.length], flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: B.navy }}>{name}</span>
+                          <span style={{ fontSize: 11, color: B.gray, flexShrink: 0, marginLeft: 8 }}>{value}cl · {p}%</span>
+                        </div>
+                        <div style={{ height: 4, background: "#e8eeff", borderRadius: 999 }}>
+                          <div style={{ height: "100%", width: `${p}%`, background: PCOLS[i % PCOLS.length], borderRadius: 999 }} />
+                        </div>
                       </div>
                     </div>
+                    {isOpen && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4, marginLeft: 20, marginBottom: 2 }}>
+                        {clientsInPerfil.map((c) => (
+                          <span key={c.id} onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 10, fontWeight: 600, background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 999, padding: "1px 8px", cursor: "pointer" }}>{c.nome.split(" ")[0]}</span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })}
