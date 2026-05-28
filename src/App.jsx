@@ -19,6 +19,7 @@ import Repasse from "./pages/Repasse";
 import Noticias from "./pages/Noticias";
 import Relatorios from "./pages/Relatorios";
 import RebalanceIntl from "./pages/RebalanceIntl";
+import RebalanceBR from "./pages/RebalanceBR";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -45,6 +46,7 @@ function AppRoutes() {
         <Route path="clients" element={<Clients />} />
         <Route path="clients/:slug" element={<ClientDetail />} />
         <Route path="clients/:slug/rebalanceamento" element={<RebalanceIntl />} />
+        <Route path="clients/:slug/rebalanceamento-br" element={<RebalanceBR />} />
         <Route path="meetings" element={<Meetings />} />
         <Route path="relatorios" element={<Relatorios />} />
         <Route path="allocation" element={<AssetAllocation />} />
