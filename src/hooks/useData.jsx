@@ -16,6 +16,7 @@ export function DataProvider({ children }) {
   const [relEnvios, setRelEnviosRaw] = useState({});
   const [pipelineStages, setPipelineStagesRaw] = useState([]);
   const [assetClasses, setAssetClassesRaw] = useState([]);
+  const [metas, setMetasRaw] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [toast, setToast] = useState(null);
 
@@ -29,7 +30,7 @@ export function DataProvider({ children }) {
   // Load all data on mount
   useEffect(() => {
     const load = async () => {
-      const [c, h, r, a, rh, td, ld, rd, re, ps, ac] = await Promise.all([
+      const [c, h, r, a, rh, td, ld, rd, re, ps, ac, mt] = await Promise.all([
         supabase.from("clients").select("*"),
         supabase.from("history").select("*"),
         supabase.from("repasse").select("*"),
@@ -41,6 +42,7 @@ export function DataProvider({ children }) {
         supabase.from("rel_envios").select("*"),
         supabase.from("pipeline_stages").select("*").order("ordem"),
         supabase.from("asset_classes").select("*").order("ordem"),
+        supabase.from("metas_mensais").select("*").order("mes"),
       ]);
 
       if (c.error) console.error("Load clients error:", c.error);
@@ -55,6 +57,7 @@ export function DataProvider({ children }) {
       setRadarRaw(rd.data || []);
       setPipelineStagesRaw(ps.data || []);
       setAssetClassesRaw(ac.data || []);
+      setMetasRaw(mt.data || []);
 
       // Converter rel_envios de array para map {client_id: mes_envio}
       const envMap = {};
@@ -389,6 +392,22 @@ export function DataProvider({ children }) {
     await supabase.from("br_products").delete().eq("id", id);
   }, []);
 
+  // ─── METAS MENSAIS ───
+  const saveMeta = useCallback(async (row, isNew = false) => {
+    if (isNew) {
+      const { data } = await supabase.from("metas_mensais").insert(row).select();
+      setMetasRaw((p) => [...p, data?.[0] || row].sort((a, b) => a.mes.localeCompare(b.mes)));
+    } else {
+      await supabase.from("metas_mensais").update(row).eq("id", row.id);
+      setMetasRaw((p) => p.map((m) => (m.id === row.id ? { ...m, ...row } : m)));
+    }
+  }, []);
+
+  const deleteMeta = useCallback(async (id) => {
+    await supabase.from("metas_mensais").delete().eq("id", id);
+    setMetasRaw((p) => p.filter((m) => m.id !== id));
+  }, []);
+
   // ─── REL ENVIOS ───
   const setRelEnvios = useCallback(async (clientId, mesEnvio) => {
     if (mesEnvio) {
@@ -407,7 +426,7 @@ export function DataProvider({ children }) {
   const value = {
     // Data
     clients, history, repasse, aportes, reunioes, todos, leads, radar, relEnvios,
-    pipelineStages, assetClasses, loaded, toast,
+    pipelineStages, assetClasses, metas, loaded, toast,
     // Setters
     setClients, setHistory, setRepasse, setAportes, setReunioes, setTodos, setLeads, setRadar,
     // CRUD operations
@@ -424,6 +443,7 @@ export function DataProvider({ children }) {
     saveAssetClass, deleteAssetClass,
     getIntlPortfolio, saveIntlPortfolio, saveIntlClass, deleteIntlClass, saveIntlProduct, deleteIntlProduct,
     getBrPortfolio, saveBrPortfolio, saveBrClass, deleteBrClass, saveBrProduct, deleteBrProduct,
+    saveMeta, deleteMeta,
     setToast,
   };
 

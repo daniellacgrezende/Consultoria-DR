@@ -88,6 +88,7 @@ export const NAV_ITEMS = [
   { id: "clients", label: "Clientes", icon: "Users" },
   { id: "allocation", label: "Alocação", icon: "PieChart" },
   { id: "repasse", label: "Repasse", icon: "DollarSign" },
+  { id: "metas", label: "Metas", icon: "BarChart2" },
   { id: "calendar", label: "Calendário", icon: "Calendar" },
   { id: "noticias", label: "Notícias", icon: "Newspaper" },
 

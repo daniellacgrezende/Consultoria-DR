@@ -20,6 +20,7 @@ import Noticias from "./pages/Noticias";
 import Relatorios from "./pages/Relatorios";
 import RebalanceIntl from "./pages/RebalanceIntl";
 import RebalanceBR from "./pages/RebalanceBR";
+import Metas from "./pages/Metas";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -51,6 +52,7 @@ function AppRoutes() {
         <Route path="relatorios" element={<Relatorios />} />
         <Route path="allocation" element={<AssetAllocation />} />
         <Route path="repasse" element={<Repasse />} />
+        <Route path="metas" element={<Metas />} />
         <Route path="noticias" element={<Noticias />} />
         <Route path="backup" element={<Backup />} />
         <Route path="settings" element={<Settings />} />
