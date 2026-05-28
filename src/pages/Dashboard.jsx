@@ -257,42 +257,44 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Clientes por Perfil */}
-      {perfilData.length > 0 && (
-        <Card style={{ marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Clientes por Perfil</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-            <div style={{ flexShrink: 0, width: 200, height: 200 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={perfilData} cx="50%" cy="50%" outerRadius={88} innerRadius={36} dataKey="value" paddingAngle={2}>
-                    {perfilData.map((_, i) => (<Cell key={i} fill={PCOLS[i % PCOLS.length]} />))}
-                  </Pie>
-                  <Tooltip formatter={(v, n) => [`${v} clientes`, n]} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-                </PieChart>
-              </ResponsiveContainer>
+      {/* Perfil + Aportes lado a lado */}
+      <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 16, marginBottom: 16, alignItems: "start" }}>
+        {perfilData.length > 0 && (
+          <Card>
+            <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Clientes por Perfil</div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
+              <div style={{ width: 140, height: 140 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={perfilData} cx="50%" cy="50%" outerRadius={62} innerRadius={26} dataKey="value" paddingAngle={2}>
+                      {perfilData.map((_, i) => (<Cell key={i} fill={PCOLS[i % PCOLS.length]} />))}
+                    </Pie>
+                    <Tooltip formatter={(v, n) => [`${v} clientes`, n]} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
               {perfilData.map(({ name, value }, i) => {
                 const p = Math.round((value / active.length) * 100);
                 const isOpen = perfilDrill === name;
                 const clientsInPerfil = active.filter((c) => (PERFIL_MAP[c.perfil]?.label || c.perfil || "—") === name);
                 return (
                   <div key={name}>
-                    <div onClick={() => setPerfilDrill(isOpen ? null : name)} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "3px 5px", borderRadius: 6, background: isOpen ? "#f0f4ff" : "transparent" }}>
-                      <div style={{ width: 10, height: 10, borderRadius: "50%", background: PCOLS[i % PCOLS.length], flexShrink: 0 }} />
+                    <div onClick={() => setPerfilDrill(isOpen ? null : name)} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "3px 5px", borderRadius: 6, background: isOpen ? "#f0f4ff" : "transparent" }}>
+                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: PCOLS[i % PCOLS.length], flexShrink: 0 }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: B.navy }}>{name}</span>
-                          <span style={{ fontSize: 11, color: B.gray, flexShrink: 0, marginLeft: 8 }}>{value}cl · {p}%</span>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: B.navy }}>{name}</span>
+                          <span style={{ fontSize: 10, color: B.gray, flexShrink: 0, marginLeft: 6 }}>{value}cl · {p}%</span>
                         </div>
-                        <div style={{ height: 4, background: "#e8eeff", borderRadius: 999 }}>
+                        <div style={{ height: 3, background: "#e8eeff", borderRadius: 999 }}>
                           <div style={{ height: "100%", width: `${p}%`, background: PCOLS[i % PCOLS.length], borderRadius: 999 }} />
                         </div>
                       </div>
                     </div>
                     {isOpen && (
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4, marginLeft: 20, marginBottom: 2 }}>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4, marginLeft: 16, marginBottom: 2 }}>
                         {clientsInPerfil.map((c) => (
                           <span key={c.id} onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 10, fontWeight: 600, background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 999, padding: "1px 8px", cursor: "pointer" }}>{c.nome.split(" ")[0]}</span>
                         ))}
@@ -302,14 +304,12 @@ export default function Dashboard() {
                 );
               })}
             </div>
-          </div>
-        </Card>
-      )}
+          </Card>
+        )}
 
-      {/* Aportes e Resgates Mensais */}
-      {aportesMonthly.length > 0 && (
-        <Card style={{ marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", alignItems: "center", gap: 8 }}>
+        {aportesMonthly.length > 0 && (
+          <Card>
+          <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}`, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             Aportes e Resgates por Mês
             <span style={{ fontSize: 10, fontWeight: 400, color: B.gray }}>a partir de 2026 · clique no mês para detalhar</span>
           </div>
@@ -394,7 +394,8 @@ export default function Dashboard() {
             </table>
           </div>
         </Card>
-      )}
+        )}
+      </div>
 
       {topIndicadores.length > 0 && (
         <Card style={{ marginBottom: 16 }}>
