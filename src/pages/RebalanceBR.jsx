@@ -10,15 +10,23 @@ const pct = (v) => Number(v || 0).toFixed(2) + "%";
 const round100 = (v) => Math.round(v / 100) * 100;
 
 const CLASSES_PRESET_BR = [
+  "Agricultura",
+  "Alimentos",
   "Bancários",
+  "Bancos",
   "Commodities",
   "Consumo & Varejo",
+  "Corretoras de Seguros",
   "Energia Elétrica",
   "FIIs",
   "Financeiro",
   "Industrial",
+  "Máquinas e Equipamentos",
+  "Materiais",
+  "Papel e Celulose",
   "Petróleo & Gás",
   "Saúde",
+  "Seguradoras",
   "Tecnologia",
   "Utilities",
 ];
