@@ -18,6 +18,7 @@ export default function Dashboard() {
   const [showAUM, setShowAUM] = useState(false);
   const [showClientes, setShowClientes] = useState(false);
   const [selectedMes, setSelectedMes] = useState(null);
+  const [origemDrill, setOrigemDrill] = useState(null);
 
   const active = useMemo(() => clients.filter((c) => c.status === "ativo"), [clients]);
   const getPL = (c) => getCurrentPL(c, history);
@@ -181,22 +182,53 @@ export default function Dashboard() {
             ))}
           </Card>
 
-          {/* Perfil */}
-          <Card>
-            <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 8, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Clientes por Perfil</div>
-            {perfilData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={260}>
-                <PieChart>
-                  <Pie data={perfilData} cx="50%" cy="50%" outerRadius={95} dataKey="value" label={({ name, percent }) => `${name}: ${Math.round(percent * 100)}%`} labelLine={true} fontSize={12}>
-                    {perfilData.map((_, i) => (<Cell key={i} fill={PCOLS[i % PCOLS.length]} />))}
-                  </Pie>
-                  <Tooltip formatter={(v, n) => [`${v} clientes`, n]} contentStyle={{ borderRadius: 8, fontSize: 13 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div style={{ padding: 20, textAlign: "center", color: B.gray, fontSize: 12 }}>Sem dados</div>
-            )}
-          </Card>
+          {/* Origem dos Clientes */}
+          {origemData.length > 0 && (
+            <Card>
+              <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Origem dos Clientes</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+                <div style={{ flexShrink: 0, width: 160, height: 160 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={origemData} cx="50%" cy="50%" outerRadius={72} innerRadius={30} dataKey="value" paddingAngle={2}>
+                        {origemData.map((_, i) => (<Cell key={i} fill={OCOLS[i % OCOLS.length]} />))}
+                      </Pie>
+                      <Tooltip formatter={(v, n) => [`${v} clientes`, n]} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                  {origemData.map(({ name, value }, i) => {
+                    const pct = Math.round((value / active.length) * 100);
+                    const isOpen = origemDrill === name;
+                    return (
+                      <div key={name}>
+                        <div onClick={() => setOrigemDrill(isOpen ? null : name)} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "3px 5px", borderRadius: 6, background: isOpen ? "#f0f4ff" : "transparent" }}>
+                          <div style={{ width: 9, height: 9, borderRadius: "50%", background: OCOLS[i % OCOLS.length], flexShrink: 0 }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
+                              <span style={{ fontSize: 11, fontWeight: 600, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</span>
+                              <span style={{ fontSize: 10, color: B.gray, flexShrink: 0, marginLeft: 6 }}>{value}cl · {pct}%</span>
+                            </div>
+                            <div style={{ height: 3, background: "#e8eeff", borderRadius: 999 }}>
+                              <div style={{ height: "100%", width: `${pct}%`, background: OCOLS[i % OCOLS.length], borderRadius: 999 }} />
+                            </div>
+                          </div>
+                        </div>
+                        {isOpen && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4, marginLeft: 17, marginBottom: 2 }}>
+                            {active.filter((c) => (c.origem_cliente || "—") === name).map((c) => (
+                              <span key={c.id} onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 10, fontWeight: 600, background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 999, padding: "1px 8px", cursor: "pointer" }}>{c.nome.split(" ")[0]}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </Card>
+          )}
 
           {/* UF Filter */}
           <Card>
@@ -224,36 +256,34 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Origem dos Clientes */}
-      {origemData.length > 0 && (
+      {/* Clientes por Perfil */}
+      {perfilData.length > 0 && (
         <Card style={{ marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>
-            Origem dos Clientes
-          </div>
+          <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Clientes por Perfil</div>
           <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-            <div style={{ flexShrink: 0, width: 220, height: 220 }}>
+            <div style={{ flexShrink: 0, width: 200, height: 200 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={origemData} cx="50%" cy="50%" outerRadius={95} innerRadius={40} dataKey="value" paddingAngle={2}>
-                    {origemData.map((_, i) => (<Cell key={i} fill={OCOLS[i % OCOLS.length]} />))}
+                  <Pie data={perfilData} cx="50%" cy="50%" outerRadius={88} innerRadius={36} dataKey="value" paddingAngle={2}>
+                    {perfilData.map((_, i) => (<Cell key={i} fill={PCOLS[i % PCOLS.length]} />))}
                   </Pie>
                   <Tooltip formatter={(v, n) => [`${v} clientes`, n]} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 7 }}>
-              {origemData.map(({ name, value }, i) => {
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+              {perfilData.map(({ name, value }, i) => {
                 const pct = Math.round((value / active.length) * 100);
                 return (
                   <div key={name} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: OCOLS[i % OCOLS.length], flexShrink: 0 }} />
+                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: PCOLS[i % PCOLS.length], flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: B.navy }}>{name}</span>
                         <span style={{ fontSize: 11, color: B.gray, flexShrink: 0, marginLeft: 8 }}>{value}cl · {pct}%</span>
                       </div>
                       <div style={{ height: 4, background: "#e8eeff", borderRadius: 999 }}>
-                        <div style={{ height: "100%", width: `${pct}%`, background: OCOLS[i % OCOLS.length], borderRadius: 999 }} />
+                        <div style={{ height: "100%", width: `${pct}%`, background: PCOLS[i % PCOLS.length], borderRadius: 999 }} />
                       </div>
                     </div>
                   </div>
