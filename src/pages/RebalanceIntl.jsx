@@ -10,6 +10,19 @@ const pct = (v) => Number(v || 0).toFixed(2) + "%";
 
 const round100 = (v) => Math.round(v / 100) * 100;
 
+const ETFS_PRESET = {
+  "Ex EUA - High Profitability": ["DIHP"],
+  "Ex EUA - Value":              ["DFIV"],
+  "RV Global (Core)":            ["VT"],
+  "USA - High Profitability":    ["DUHP"],
+  "USA - Quality":               ["QUAL"],
+  "USA - REITs (Ativos Reais)":  ["VNQ"],
+  "USA - RF (High Yield)":       ["SHYG"],
+  "USA - S&P 500":               ["IVV"],
+  "USA - Tech":                  ["QQQ"],
+  "USA - Value":                 ["DFUV"],
+};
+
 const CLASSES_PRESET = [
   "Ex EUA - High Profitability",
   "Ex EUA - Value",
@@ -465,9 +478,38 @@ export default function RebalanceIntl() {
       {/* Modal Produto */}
       <ModalBox open={productModal} onClose={() => setProductModal(false)}>
         <div style={{ fontWeight: 700, fontSize: 14, color: B.navy, marginBottom: 4 }}>{editingProduct ? "Editar ETF" : "Novo ETF"}</div>
-        <div style={{ fontSize: 11, color: B.gray, marginBottom: 14 }}>
-          Classe: <strong>{portfolio?.classes?.find((c) => c.id === productClassId)?.nome}</strong>
-        </div>
+        {(() => {
+          const nomeClasse = portfolio?.classes?.find((c) => c.id === productClassId)?.nome;
+          const jaAdicionados = (portfolio?.classes?.find((c) => c.id === productClassId)?.products || []).map((p) => p.ticker);
+          const sugestoes = (ETFS_PRESET[nomeClasse] || []).filter((t) => !editingProduct && !jaAdicionados.includes(t));
+          return (
+            <div style={{ fontSize: 11, color: B.gray, marginBottom: sugestoes.length ? 10 : 14 }}>
+              Classe: <strong>{nomeClasse}</strong>
+            </div>
+          );
+        })()}
+        {!editingProduct && (() => {
+          const nomeClasse = portfolio?.classes?.find((c) => c.id === productClassId)?.nome;
+          const jaAdicionados = (portfolio?.classes?.find((c) => c.id === productClassId)?.products || []).map((p) => p.ticker);
+          const sugestoes = (ETFS_PRESET[nomeClasse] || []).filter((t) => !jaAdicionados.includes(t));
+          if (!sugestoes.length) return null;
+          return (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 7 }}>Sugestões</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                {sugestoes.map((ticker) => (
+                  <button key={ticker} onClick={() => setProductForm((f) => ({ ...f, ticker }))}
+                    style={{ fontSize: 12, fontWeight: 700, padding: "5px 12px", borderRadius: 6, cursor: "pointer",
+                      background: productForm.ticker === ticker ? B.brand : "#e8eeff",
+                      color: productForm.ticker === ticker ? "white" : B.navy,
+                      border: `1px solid ${productForm.ticker === ticker ? B.brand : B.border}` }}>
+                    {ticker}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
         <Inp label="Ticker" value={productForm.ticker} onChange={(e) => setProductForm((f) => ({ ...f, ticker: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && handleSaveProduct()} placeholder="Ex: VT, IVV, QQQ" />
         <Inp label="Valor Atual (USD)" type="number" value={productForm.valor_atual} onChange={(e) => setProductForm((f) => ({ ...f, valor_atual: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && handleSaveProduct()} placeholder="0.00" />
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
