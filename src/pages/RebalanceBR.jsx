@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useData } from "../hooks/useData";
 import { B } from "../utils/constants";
@@ -87,7 +87,7 @@ export default function RebalanceBR() {
   const [productModal, setProductModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [productClassId, setProductClassId] = useState(null);
-  const [productForm, setProductForm] = useState({ ticker: "", valor_atual: "", target_pct: "" });
+  const [productForm, setProductForm] = useState({ ticker: "", valor_atual: "", target_pct: "", grupo: "" });
 
   const load = useCallback(async () => {
     if (!client) return;
@@ -140,11 +140,12 @@ export default function RebalanceBR() {
       ticker: productForm.ticker.trim().toUpperCase(),
       valor_atual: Number(productForm.valor_atual) || 0,
       target_pct: Number(productForm.target_pct) || 0,
+      grupo: productForm.grupo.trim() || null,
     };
     await saveBrProduct(prod, isNew);
     setProductModal(false);
     setEditingProduct(null);
-    setProductForm({ ticker: "", valor_atual: "", target_pct: "" });
+    setProductForm({ ticker: "", valor_atual: "", target_pct: "", grupo: "" });
     await load();
     setToast({ type: "success", text: isNew ? "Acao adicionada." : "Acao atualizada." });
   };
@@ -152,14 +153,14 @@ export default function RebalanceBR() {
   const openProductAdd = (classId) => {
     setProductClassId(classId);
     setEditingProduct(null);
-    setProductForm({ ticker: "", valor_atual: "", target_pct: "" });
+    setProductForm({ ticker: "", valor_atual: "", target_pct: "", grupo: "" });
     setProductModal(true);
   };
 
   const openProductEdit = (prod) => {
     setProductClassId(prod.class_id);
     setEditingProduct(prod);
-    setProductForm({ ticker: prod.ticker, valor_atual: String(prod.valor_atual), target_pct: String(prod.target_pct || "") });
+    setProductForm({ ticker: prod.ticker, valor_atual: String(prod.valor_atual), target_pct: String(prod.target_pct || ""), grupo: prod.grupo || "" });
     setProductModal(true);
   };
 
@@ -291,35 +292,81 @@ export default function RebalanceBR() {
                           </tr>
                         );
                       }
-                      return prods.map((p, pi) => {
+
+                      // Build display items: groups collapsed into one row, singles as-is
+                      const grupoMap = {};
+                      prods.forEach((p) => { if (p.grupo) { if (!grupoMap[p.grupo]) grupoMap[p.grupo] = []; grupoMap[p.grupo].push(p); } });
+                      const processedIds = new Set();
+                      const displayItems = [];
+                      prods.forEach((p) => {
+                        if (processedIds.has(p.id)) return;
+                        if (p.grupo && grupoMap[p.grupo]?.length > 1) {
+                          grupoMap[p.grupo].forEach((m) => processedIds.add(m.id));
+                          displayItems.push({ type: "group", grupo: p.grupo, members: grupoMap[p.grupo] });
+                        } else {
+                          processedIds.add(p.id);
+                          displayItems.push({ type: "single", product: p });
+                        }
+                      });
+                      const rowCount = displayItems.length;
+
+                      return displayItems.map((item, idx) => {
+                        const isFirst = idx === 0;
+                        const isLast = idx === displayItems.length - 1;
+                        const sectorCell = isFirst ? (
+                          <td rowSpan={rowCount} style={{ padding: "9px 12px", fontWeight: 600, color: B.navy, verticalAlign: "middle", borderRight: `1px solid ${B.border}` }}>
+                            <div>{cls.nome}</div>
+                            <button onClick={() => openProductAdd(cls.id)}
+                              style={{ fontSize: 9, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px dashed #86efac", borderRadius: 4, padding: "1px 6px", cursor: "pointer", marginTop: 4, display: "block" }}>
+                              + Acao
+                            </button>
+                          </td>
+                        ) : null;
+                        const actionCell = isFirst ? (
+                          <td rowSpan={rowCount} style={{ padding: "9px 12px", verticalAlign: "middle" }}>
+                            <button onClick={() => handleDeleteClass(cls.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", fontSize: 11 }}>✕</button>
+                          </td>
+                        ) : null;
+
+                        if (item.type === "group") {
+                          const combinedValor = item.members.reduce((s, m) => s + Number(m.valor_atual || 0), 0);
+                          const combinedTarget = item.members.reduce((s, m) => s + Number(m.target_pct || 0), 0);
+                          const combinedAtual = totalPortfolio > 0 ? (combinedValor / totalPortfolio) * 100 : 0;
+                          const combinedDesvio = combinedAtual - combinedTarget;
+                          const desvioColor = Math.abs(combinedDesvio) < 1 ? "#16a34a" : Math.abs(combinedDesvio) < 3 ? "#b45309" : "#dc2626";
+                          return (
+                            <tr key={item.grupo + cls.id} style={{ borderBottom: isLast ? `1px solid ${B.border}` : "1px solid #f0f4ff", background: "white" }}>
+                              {sectorCell}
+                              <td style={{ padding: "9px 12px" }}>
+                                {item.members.map((m, mi) => (
+                                  <Fragment key={m.id}>
+                                    {mi > 0 && <span style={{ color: "#aaa", fontWeight: 400, margin: "0 3px" }}>·</span>}
+                                    <span onClick={() => openProductEdit(m)} style={{ fontWeight: 700, color: B.navy, cursor: "pointer" }}>{m.ticker}</span>
+                                  </Fragment>
+                                ))}
+                              </td>
+                              <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 700, color: B.navy, whiteSpace: "nowrap" }}>R$ {fmt(combinedValor)}</td>
+                              <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 600, color: B.navy }}>{pct(combinedAtual)}</td>
+                              <td style={{ padding: "9px 12px", textAlign: "right", color: "#6b7280" }}>{pct(combinedTarget)}</td>
+                              <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 700, color: desvioColor, whiteSpace: "nowrap" }}>{combinedDesvio >= 0 ? "+" : ""}{pct(combinedDesvio)}</td>
+                              {actionCell}
+                            </tr>
+                          );
+                        }
+
+                        const p = item.product;
                         const pctAtual = totalPortfolio > 0 ? (Number(p.valor_atual) / totalPortfolio) * 100 : 0;
                         const desvio = pctAtual - Number(p.target_pct || 0);
                         const desvioColor = Math.abs(desvio) < 1 ? "#16a34a" : Math.abs(desvio) < 3 ? "#b45309" : "#dc2626";
-                        const isFirst = pi === 0;
-                        const isLast = pi === prods.length - 1;
                         return (
                           <tr key={p.id} style={{ borderBottom: isLast ? `1px solid ${B.border}` : "1px solid #f0f4ff", background: "white" }}>
-                            {isFirst && (
-                              <td rowSpan={prods.length} style={{ padding: "9px 12px", fontWeight: 600, color: B.navy, verticalAlign: "middle", borderRight: `1px solid ${B.border}` }}>
-                                <div>{cls.nome}</div>
-                                <button onClick={() => openProductAdd(cls.id)}
-                                  style={{ fontSize: 9, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px dashed #86efac", borderRadius: 4, padding: "1px 6px", cursor: "pointer", marginTop: 4, display: "block" }}>
-                                  + Acao
-                                </button>
-                              </td>
-                            )}
+                            {sectorCell}
                             <td style={{ padding: "9px 12px", fontWeight: 700, color: B.navy, cursor: "pointer" }} onClick={() => openProductEdit(p)}>{p.ticker}</td>
                             <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 700, color: B.navy, whiteSpace: "nowrap" }}>R$ {fmt(p.valor_atual)}</td>
                             <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 600, color: B.navy }}>{pct(pctAtual)}</td>
                             <td style={{ padding: "9px 12px", textAlign: "right", color: "#6b7280" }}>{pct(p.target_pct)}</td>
-                            <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 700, color: desvioColor, whiteSpace: "nowrap" }}>
-                              {desvio >= 0 ? "+" : ""}{pct(desvio)}
-                            </td>
-                            {isFirst && (
-                              <td rowSpan={prods.length} style={{ padding: "9px 12px", verticalAlign: "middle" }}>
-                                <button onClick={() => handleDeleteClass(cls.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", fontSize: 11 }}>✕</button>
-                              </td>
-                            )}
+                            <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 700, color: desvioColor, whiteSpace: "nowrap" }}>{desvio >= 0 ? "+" : ""}{pct(desvio)}</td>
+                            {actionCell}
                           </tr>
                         );
                       });
@@ -450,6 +497,13 @@ export default function RebalanceBR() {
         <Inp label="Ticker" value={productForm.ticker} onChange={(e) => setProductForm((f) => ({ ...f, ticker: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && handleSaveProduct()} placeholder="Ex: PETR4, VALE3, ITUB4" />
         <Inp label="Valor Atual (R$)" type="number" value={productForm.valor_atual} onChange={(e) => setProductForm((f) => ({ ...f, valor_atual: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && handleSaveProduct()} placeholder="0.00" />
         <Inp label="% Alvo" type="number" value={productForm.target_pct} onChange={(e) => setProductForm((f) => ({ ...f, target_pct: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && handleSaveProduct()} placeholder="Ex: 5" />
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Grupo (opcional)</div>
+          <input value={productForm.grupo} onChange={(e) => setProductForm((f) => ({ ...f, grupo: e.target.value }))}
+            placeholder="Ex: KLBN — para agrupar classes diferentes da mesma empresa"
+            style={{ width: "100%", boxSizing: "border-box", border: `1px solid ${B.border}`, borderRadius: 7, padding: "8px 10px", fontSize: 13, fontFamily: "inherit", outline: "none", color: B.navy }} />
+          <div style={{ fontSize: 10, color: "#9baabf", marginTop: 3 }}>Ações com o mesmo grupo são somadas na tabela de carteira.</div>
+        </div>
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
           <button onClick={() => setProductModal(false)} style={{ flex: 1, padding: 10, background: "white", border: `1px solid ${B.border}`, borderRadius: 7, cursor: "pointer", color: B.gray }}>Cancelar</button>
           {editingProduct && (
