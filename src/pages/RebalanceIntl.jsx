@@ -10,6 +10,19 @@ const pct = (v) => Number(v || 0).toFixed(2) + "%";
 
 const round100 = (v) => Math.round(v / 100) * 100;
 
+const CLASSES_PRESET = [
+  "Ex EUA - High Profitability",
+  "Ex EUA - Value",
+  "RV Global (Core)",
+  "USA - High Profitability",
+  "USA - Quality",
+  "USA - REITs (Ativos Reais)",
+  "USA - RF (High Yield)",
+  "USA - S&P 500",
+  "USA - Tech",
+  "USA - Value",
+];
+
 /* --- Sugestao de aporte: foca nas classes mais defasadas, min $100, numeros redondos --- */
 function calcSuggestion(classes, aporte) {
   if (aporte <= 0) return { items: [], totalSugerido: 0 };
@@ -420,6 +433,27 @@ export default function RebalanceIntl() {
       {/* Modal Classe */}
       <ModalBox open={classModal} onClose={() => setClassModal(false)}>
         <div style={{ fontWeight: 700, fontSize: 14, color: B.navy, marginBottom: 16 }}>{editingClass ? "Editar Classe" : "Nova Classe de Ativo"}</div>
+        {!editingClass && (() => {
+          const usadas = (portfolio?.classes || []).map((c) => c.nome);
+          const disponiveis = CLASSES_PRESET.filter((p) => !usadas.includes(p));
+          if (!disponiveis.length) return null;
+          return (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 7 }}>Sugestões</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                {disponiveis.map((nome) => (
+                  <button key={nome} onClick={() => setClassForm((f) => ({ ...f, nome }))}
+                    style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 6, cursor: "pointer", whiteSpace: "nowrap",
+                      background: classForm.nome === nome ? B.brand : "#f0f4ff",
+                      color: classForm.nome === nome ? "white" : B.navy,
+                      border: `1px solid ${classForm.nome === nome ? B.brand : B.border}` }}>
+                    {nome}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
         <Inp label="Nome da Classe" value={classForm.nome} onChange={(e) => setClassForm((f) => ({ ...f, nome: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && handleSaveClass()} placeholder="Ex: RV - Global (Core)" />
         <Inp label="% Alvo" type="number" value={classForm.target_pct} onChange={(e) => setClassForm((f) => ({ ...f, target_pct: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && handleSaveClass()} placeholder="Ex: 22" />
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
