@@ -173,15 +173,31 @@ export default function RebalanceBR() {
   /* --- Calculos --- */
   const classesOrdenadas = (portfolio?.classes || []).slice().sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
-  // Todos os tickers flat para o simulador
+  // Todos os tickers flat
   const allTickers = classesOrdenadas.flatMap((c) =>
     (c.products || []).map((p) => ({ ...p, classe: c.nome }))
   );
 
+  // Colapsa grupos: cada grupo vira um "ticker virtual" com valor somado e target do grupo (1x)
+  const _gruposGlobal = {};
+  allTickers.forEach((t) => { if (t.grupo) { if (!_gruposGlobal[t.grupo]) _gruposGlobal[t.grupo] = []; _gruposGlobal[t.grupo].push(t); } });
+  const _processedGrupos = new Set();
+  const effectiveTickers = [];
+  allTickers.forEach((t) => {
+    if (t.grupo && _gruposGlobal[t.grupo]?.length > 1) {
+      if (_processedGrupos.has(t.grupo)) return;
+      _processedGrupos.add(t.grupo);
+      const members = _gruposGlobal[t.grupo];
+      effectiveTickers.push({ ...members[0], ticker: members.map((m) => m.ticker).join("/"), valor_atual: members.reduce((s, m) => s + Number(m.valor_atual || 0), 0) });
+    } else {
+      effectiveTickers.push(t);
+    }
+  });
+
   const totalPortfolio = allTickers.reduce((s, t) => s + Number(t.valor_atual || 0), 0);
-  const totalTarget = allTickers.reduce((s, t) => s + Number(t.target_pct || 0), 0);
+  const totalTarget = effectiveTickers.reduce((s, t) => s + Number(t.target_pct || 0), 0);
   const aporteNum = Number(String(aporte).replace(",", ".")) || 0;
-  const suggestion = calcSuggestion(allTickers, aporteNum);
+  const suggestion = calcSuggestion(effectiveTickers, aporteNum);
   const totalApos = totalPortfolio + aporteNum;
 
   return (
@@ -330,7 +346,7 @@ export default function RebalanceBR() {
 
                         if (item.type === "group") {
                           const combinedValor = item.members.reduce((s, m) => s + Number(m.valor_atual || 0), 0);
-                          const combinedTarget = item.members.reduce((s, m) => s + Number(m.target_pct || 0), 0);
+                          const combinedTarget = Number(item.members[0].target_pct || 0);
                           const combinedAtual = totalPortfolio > 0 ? (combinedValor / totalPortfolio) * 100 : 0;
                           const combinedDesvio = combinedAtual - combinedTarget;
                           const desvioColor = Math.abs(combinedDesvio) < 1 ? "#16a34a" : Math.abs(combinedDesvio) < 3 ? "#b45309" : "#dc2626";
@@ -496,14 +512,14 @@ export default function RebalanceBR() {
         </div>
         <Inp label="Ticker" value={productForm.ticker} onChange={(e) => setProductForm((f) => ({ ...f, ticker: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && handleSaveProduct()} placeholder="Ex: PETR4, VALE3, ITUB4" />
         <Inp label="Valor Atual (R$)" type="number" value={productForm.valor_atual} onChange={(e) => setProductForm((f) => ({ ...f, valor_atual: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && handleSaveProduct()} placeholder="0.00" />
-        <Inp label="% Alvo" type="number" value={productForm.target_pct} onChange={(e) => setProductForm((f) => ({ ...f, target_pct: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && handleSaveProduct()} placeholder="Ex: 5" />
         <div style={{ marginBottom: 12 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Grupo (opcional)</div>
           <input value={productForm.grupo} onChange={(e) => setProductForm((f) => ({ ...f, grupo: e.target.value }))}
-            placeholder="Ex: KLBN — para agrupar classes diferentes da mesma empresa"
+            placeholder="Ex: KLBN — para agrupar ações da mesma empresa"
             style={{ width: "100%", boxSizing: "border-box", border: `1px solid ${B.border}`, borderRadius: 7, padding: "8px 10px", fontSize: 13, fontFamily: "inherit", outline: "none", color: B.navy }} />
-          <div style={{ fontSize: 10, color: "#9baabf", marginTop: 3 }}>Ações com o mesmo grupo são somadas na tabela de carteira.</div>
+          <div style={{ fontSize: 10, color: "#9baabf", marginTop: 3 }}>Ações com o mesmo grupo são somadas. Use o mesmo % Alvo em todas.</div>
         </div>
+        <Inp label={productForm.grupo.trim() ? "% Alvo (do grupo inteiro)" : "% Alvo"} type="number" value={productForm.target_pct} onChange={(e) => setProductForm((f) => ({ ...f, target_pct: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && handleSaveProduct()} placeholder="Ex: 5" />
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
           <button onClick={() => setProductModal(false)} style={{ flex: 1, padding: 10, background: "white", border: `1px solid ${B.border}`, borderRadius: 7, cursor: "pointer", color: B.gray }}>Cancelar</button>
           {editingProduct && (
