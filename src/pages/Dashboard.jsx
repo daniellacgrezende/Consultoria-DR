@@ -58,6 +58,11 @@ export default function Dashboard() {
   const perfilData = Object.entries(perfilMap).map(([name, value]) => ({ name, value }));
   const PCOLS = ["#2563eb", "#7c3aed", "#0891b2", "#dc2626", "#9f1239", "#16a34a"];
 
+  const origemMap = {};
+  active.forEach((c) => { const k = c.origem_cliente || "—"; origemMap[k] = (origemMap[k] || 0) + 1; });
+  const origemData = Object.entries(origemMap).sort((a, b) => b[1] - a[1]).map(([name, value]) => ({ name, value }));
+  const OCOLS = ["#2563eb", "#7c3aed", "#0891b2", "#16a34a", "#f59e0b", "#dc2626", "#8b5cf6", "#06b6d4", "#ec4899", "#64748b"];
+
   const leadsAtivos = leads.filter((l) => !["Cliente", "Perdido", "Nutrição", "Desqualificado"].includes(l.etapa)).length;
   const leadsConvertidos = leads.filter((l) => l.etapa === "Cliente").length;
 
@@ -218,6 +223,46 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
+
+      {/* Origem dos Clientes */}
+      {origemData.length > 0 && (
+        <Card style={{ marginBottom: 16 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>
+            Origem dos Clientes
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+            <div style={{ flexShrink: 0, width: 220, height: 220 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={origemData} cx="50%" cy="50%" outerRadius={95} innerRadius={40} dataKey="value" paddingAngle={2}>
+                    {origemData.map((_, i) => (<Cell key={i} fill={OCOLS[i % OCOLS.length]} />))}
+                  </Pie>
+                  <Tooltip formatter={(v, n) => [`${v} clientes`, n]} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 7 }}>
+              {origemData.map(({ name, value }, i) => {
+                const pct = Math.round((value / active.length) * 100);
+                return (
+                  <div key={name} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: OCOLS[i % OCOLS.length], flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</span>
+                        <span style={{ fontSize: 11, color: B.gray, flexShrink: 0, marginLeft: 8 }}>{value}cl · {pct}%</span>
+                      </div>
+                      <div style={{ height: 4, background: "#e8eeff", borderRadius: 999 }}>
+                        <div style={{ height: "100%", width: `${pct}%`, background: OCOLS[i % OCOLS.length], borderRadius: 999 }} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Aportes e Resgates Mensais */}
       {aportesMonthly.length > 0 && (
