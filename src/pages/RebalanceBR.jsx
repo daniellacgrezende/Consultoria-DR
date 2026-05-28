@@ -78,6 +78,7 @@ export default function RebalanceBR() {
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [aporte, setAporte] = useState("");
+  const [sortTicker, setSortTicker] = useState(false);
 
   const [classModal, setClassModal] = useState(false);
   const [editingClass, setEditingClass] = useState(null);
@@ -169,7 +170,7 @@ export default function RebalanceBR() {
   };
 
   /* --- Calculos --- */
-  const classesOrdenadas = (portfolio?.classes || []).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  const classesOrdenadas = (portfolio?.classes || []).slice().sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
   // Todos os tickers flat para o simulador
   const allTickers = classesOrdenadas.flatMap((c) =>
@@ -246,12 +247,32 @@ export default function RebalanceBR() {
                   <thead>
                     <tr style={{ background: "#f8faff" }}>
                       {["Setor", "Acao", "Valor (R$)", "Atual %", "Alvo %", "Desvio", ""].map((h, j) => (
-                        <th key={j} style={{ padding: "8px 12px", textAlign: j >= 2 && j <= 5 ? "right" : "left", fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: `1px solid ${B.border}`, whiteSpace: "nowrap" }}>{h}</th>
+                        <th key={j} onClick={h === "Acao" ? () => setSortTicker((v) => !v) : undefined}
+                          style={{ padding: "8px 12px", textAlign: j >= 2 && j <= 5 ? "right" : "left", fontSize: 9, fontWeight: 700, color: h === "Acao" ? B.navy : "#8899bb", textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: `1px solid ${B.border}`, whiteSpace: "nowrap", cursor: h === "Acao" ? "pointer" : "default", userSelect: "none" }}>
+                          {h}{h === "Acao" && <span style={{ marginLeft: 4, opacity: 0.6 }}>{sortTicker ? "▲" : "↕"}</span>}
+                        </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {classesOrdenadas.map((cls) => {
+                    {sortTicker ? (
+                      allTickers.slice().sort((a, b) => a.ticker.localeCompare(b.ticker)).map((p, i) => {
+                        const pctAtual = totalPortfolio > 0 ? (Number(p.valor_atual) / totalPortfolio) * 100 : 0;
+                        const desvio = pctAtual - Number(p.target_pct || 0);
+                        const desvioColor = Math.abs(desvio) < 1 ? "#16a34a" : Math.abs(desvio) < 3 ? "#b45309" : "#dc2626";
+                        return (
+                          <tr key={p.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
+                            <td style={{ padding: "9px 12px", color: "#6b7280", fontSize: 12 }}>{p.classe}</td>
+                            <td style={{ padding: "9px 12px", fontWeight: 700, color: B.navy, cursor: "pointer" }} onClick={() => openProductEdit(p)}>{p.ticker}</td>
+                            <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 700, color: B.navy, whiteSpace: "nowrap" }}>R$ {fmt(p.valor_atual)}</td>
+                            <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 600, color: B.navy }}>{pct(pctAtual)}</td>
+                            <td style={{ padding: "9px 12px", textAlign: "right", color: "#6b7280" }}>{pct(p.target_pct)}</td>
+                            <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 700, color: desvioColor, whiteSpace: "nowrap" }}>{desvio >= 0 ? "+" : ""}{pct(desvio)}</td>
+                            <td />
+                          </tr>
+                        );
+                      })
+                    ) : classesOrdenadas.map((cls) => {
                       const prods = cls.products || [];
                       if (!prods.length) {
                         return (
