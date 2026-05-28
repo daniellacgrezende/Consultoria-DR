@@ -258,7 +258,7 @@ export default function Dashboard() {
       </div>
 
       {/* Perfil + Aportes lado a lado */}
-      <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 16, marginBottom: 16, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "420px 1fr", gap: 16, marginBottom: 16, alignItems: "start" }}>
         {perfilData.length > 0 && (
           <Card>
             <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Clientes por Perfil</div>
