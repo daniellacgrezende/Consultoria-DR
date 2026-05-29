@@ -36,9 +36,10 @@ const CLASSES_PRESET = [
   "USA - Value",
 ];
 
-/* --- Sugestao de aporte: foca nas classes mais defasadas, min $100, numeros redondos --- */
-function calcSuggestion(classes, aporte) {
+/* --- Sugestao de aporte: foca nas classes mais defasadas, minimo configuravel, numeros redondos --- */
+function calcSuggestion(classes, aporte, min = 100) {
   if (aporte <= 0) return { items: [], totalSugerido: 0 };
+  const roundMin = (v) => Math.round(v / min) * min;
 
   const totalAtual = classes.reduce((s, c) => s + c.totalValor, 0);
   const totalApos = totalAtual + aporte;
@@ -53,25 +54,25 @@ function calcSuggestion(classes, aporte) {
 
   const totalShortfall = ranked.reduce((s, c) => s + c.shortfall, 0);
 
-  // Alocar por classe proporcional ao shortfall, arredondado em $100
+  // Alocar por classe proporcional ao shortfall, arredondado no minimo configuravel
   let restante = aporte;
   const classAllocs = [];
   for (let i = 0; i < ranked.length; i++) {
     const cls = ranked[i];
     const isLast = i === ranked.length - 1;
     const raw = isLast ? restante : aporte * (cls.shortfall / totalShortfall);
-    const rounded = round100(raw);
-    if (rounded < 100) continue;
+    const rounded = roundMin(raw);
+    if (rounded < min) continue;
     classAllocs.push({ ...cls, aporteClass: rounded });
     restante -= rounded;
-    if (restante < 100) break;
+    if (restante < min) break;
   }
 
   // Ajusta eventuais sobras de arredondamento na classe mais defasada
   if (classAllocs.length > 0) {
     const soma = classAllocs.reduce((s, c) => s + c.aporteClass, 0);
-    const diff = round100(aporte - soma);
-    if (Math.abs(diff) >= 100) classAllocs[0].aporteClass += diff;
+    const diff = roundMin(aporte - soma);
+    if (Math.abs(diff) >= min) classAllocs[0].aporteClass += diff;
   }
 
   // Expandir para produtos dentro de cada classe
@@ -89,12 +90,12 @@ function calcSuggestion(classes, aporte) {
       const isLastP = pi === prods.length - 1;
       const peso = totalProdVal > 0 ? Number(p.valor_atual || 0) / totalProdVal : 1 / prods.length;
       const raw = isLastP ? restProd : cls.aporteClass * peso;
-      const rounded = round100(raw);
-      if (rounded >= 100) {
+      const rounded = roundMin(raw);
+      if (rounded >= min) {
         items.push({ ticker: p.ticker, classe: cls.nome, valor: rounded });
         restProd -= rounded;
-      } else if (isLastP && restProd >= 100) {
-        items.push({ ticker: p.ticker, classe: cls.nome, valor: round100(restProd) });
+      } else if (isLastP && restProd >= min) {
+        items.push({ ticker: p.ticker, classe: cls.nome, valor: roundMin(restProd) });
       }
     });
   }
@@ -133,6 +134,7 @@ export default function RebalanceIntl() {
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [aporte, setAporte] = useState("");
+  const [minAlocacao, setMinAlocacao] = useState("100");
 
   const [classModal, setClassModal] = useState(false);
   const [editingClass, setEditingClass] = useState(null);
@@ -238,7 +240,8 @@ export default function RebalanceIntl() {
   const totalPortfolio = classesComValor.reduce((s, c) => s + c.totalValor, 0);
   const totalTarget = (portfolio?.classes || []).reduce((s, c) => s + Number(c.target_pct || 0), 0);
   const aporteNum = Number(String(aporte).replace(",", ".")) || 0;
-  const suggestion = calcSuggestion(classesComValor, aporteNum);
+  const minAllocNum = Number(String(minAlocacao).replace(",", ".")) || 100;
+  const suggestion = calcSuggestion(classesComValor, aporteNum, minAllocNum);
   const totalApos = totalPortfolio + aporteNum;
 
   return (
@@ -377,6 +380,11 @@ export default function RebalanceIntl() {
                   <span style={{ padding: "6px 10px", background: "#f8faff", fontSize: 12, fontWeight: 700, color: B.navy, borderRight: `1px solid ${B.border}` }}>USD $</span>
                   <input type="number" value={aporte} onChange={(e) => setAporte(e.target.value)} placeholder="0"
                     style={{ border: "none", outline: "none", padding: "6px 10px", fontSize: 13, fontFamily: "inherit", width: 130, color: B.navy }} />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 0, border: `1px solid ${B.border}`, borderRadius: 7, overflow: "hidden" }}>
+                  <span style={{ padding: "6px 10px", background: "#f8faff", fontSize: 11, fontWeight: 700, color: "#8899bb", borderRight: `1px solid ${B.border}`, whiteSpace: "nowrap" }}>Mín $</span>
+                  <input type="number" value={minAlocacao} onChange={(e) => setMinAlocacao(e.target.value)} placeholder="100"
+                    style={{ border: "none", outline: "none", padding: "6px 10px", fontSize: 13, fontFamily: "inherit", width: 80, color: B.navy }} />
                 </div>
                 {aporteNum > 0 && (
                   <span style={{ fontSize: 11, color: B.gray }}>

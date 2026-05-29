@@ -63,7 +63,8 @@ export default function Metas() {
   const sorted = useMemo(() => [...metas].sort((a, b) => a.mes.localeCompare(b.mes)), [metas]);
 
   const now = new Date();
-  const currentMes = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const currentMes = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, "0")}`;
   const currentIdx = sorted.findIndex((m) => m.mes === currentMes);
   const current = sorted[currentIdx] || sorted[sorted.length - 1];
   const prev = currentIdx > 0 ? sorted[currentIdx - 1] : sorted.length > 1 ? sorted[sorted.length - 2] : null;

@@ -17,8 +17,9 @@ const CLASSES_PRESET_BR = [
 ];
 
 /* Algoritmo por ticker — alvo % é de cada acao */
-function calcSuggestion(tickers, aporte) {
+function calcSuggestion(tickers, aporte, min = 100) {
   if (aporte <= 0) return { items: [], totalSugerido: 0 };
+  const roundMin = (v) => Math.round(v / min) * min;
   const totalAtual = tickers.reduce((s, t) => s + Number(t.valor_atual || 0), 0);
   const totalApos = totalAtual + aporte;
   const ranked = tickers
@@ -33,16 +34,16 @@ function calcSuggestion(tickers, aporte) {
     const t = ranked[i];
     const isLast = i === ranked.length - 1;
     const raw = isLast ? restante : aporte * (t.shortfall / totalShortfall);
-    const rounded = round100(raw);
-    if (rounded < 100) continue;
+    const rounded = roundMin(raw);
+    if (rounded < min) continue;
     allocs.push({ ...t, valor: rounded });
     restante -= rounded;
-    if (restante < 100) break;
+    if (restante < min) break;
   }
   if (allocs.length > 0) {
     const soma = allocs.reduce((s, t) => s + t.valor, 0);
-    const diff = round100(aporte - soma);
-    if (Math.abs(diff) >= 100) allocs[0].valor += diff;
+    const diff = roundMin(aporte - soma);
+    if (Math.abs(diff) >= min) allocs[0].valor += diff;
   }
   const totalSugerido = allocs.reduce((s, t) => s + t.valor, 0);
   return { items: allocs, totalSugerido };
@@ -78,6 +79,7 @@ export default function RebalanceBR() {
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [aporte, setAporte] = useState("");
+  const [minAlocacao, setMinAlocacao] = useState("100");
   const [sortTicker, setSortTicker] = useState(false);
 
   const [classModal, setClassModal] = useState(false);
@@ -197,7 +199,8 @@ export default function RebalanceBR() {
   const totalPortfolio = allTickers.reduce((s, t) => s + Number(t.valor_atual || 0), 0);
   const totalTarget = effectiveTickers.reduce((s, t) => s + Number(t.target_pct || 0), 0);
   const aporteNum = Number(String(aporte).replace(",", ".")) || 0;
-  const suggestion = calcSuggestion(effectiveTickers, aporteNum);
+  const minAllocNum = Number(String(minAlocacao).replace(",", ".")) || 100;
+  const suggestion = calcSuggestion(effectiveTickers, aporteNum, minAllocNum);
   const totalApos = totalPortfolio + aporteNum;
 
   return (
@@ -409,6 +412,11 @@ export default function RebalanceBR() {
                   <span style={{ padding: "6px 10px", background: "#f8faff", fontSize: 12, fontWeight: 700, color: B.navy, borderRight: `1px solid ${B.border}` }}>R$</span>
                   <input type="number" value={aporte} onChange={(e) => setAporte(e.target.value)} placeholder="0"
                     style={{ border: "none", outline: "none", padding: "6px 10px", fontSize: 13, fontFamily: "inherit", width: 130, color: B.navy }} />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", border: `1px solid ${B.border}`, borderRadius: 7, overflow: "hidden" }}>
+                  <span style={{ padding: "6px 10px", background: "#f8faff", fontSize: 11, fontWeight: 700, color: "#8899bb", borderRight: `1px solid ${B.border}`, whiteSpace: "nowrap" }}>Mín R$</span>
+                  <input type="number" value={minAlocacao} onChange={(e) => setMinAlocacao(e.target.value)} placeholder="100"
+                    style={{ border: "none", outline: "none", padding: "6px 10px", fontSize: 13, fontFamily: "inherit", width: 80, color: B.navy }} />
                 </div>
                 {aporteNum > 0 && (
                   <span style={{ fontSize: 11, color: B.gray }}>Total apos aporte: <strong style={{ color: B.navy }}>R$ {fmt(totalApos)}</strong></span>
