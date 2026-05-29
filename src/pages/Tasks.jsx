@@ -327,6 +327,8 @@ export default function Tasks() {
     const pDays = getPeriodDays(c.periodicidade_reuniao || c.periodicidadeReuniao || "Trimestral");
     const proxima = addDays(c.reuniao_agendada_em, pDays);
     await saveClient({ ...c, ultima_reuniao: c.reuniao_agendada_em, proxima_reuniao: proxima, reuniao_agendada_em: null, avisado_em: null }, false);
+    const mt = todos.find((t) => t.client_id === c.id && !t.done && t.texto?.startsWith("Reunião com"));
+    if (mt) await saveTodo({ ...mt, done: true, done_at: today() }, false);
     setToast({ type: "success", text: `Reunião com ${c.nome.split(" ")[0]} marcada como realizada!` });
   };
   const meetAtrasadas = meetingClients.filter((c) => c.reuniao_agendada_em < today());
