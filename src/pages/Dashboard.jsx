@@ -259,7 +259,7 @@ export default function Dashboard() {
       </div>
 
       {/* Perfil + Aportes lado a lado */}
-      <div style={{ display: "grid", gridTemplateColumns: "420px 1fr", gap: 16, marginBottom: 16, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16, alignItems: "start" }}>
         {perfilData.length > 0 && (
           <Card>
             <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>Clientes por Perfil</div>
@@ -398,43 +398,36 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Seguro de Vida */}
+      {/* Seguro de Vida — faixa compacta */}
       {active.length > 0 && (
-        <Card style={{ marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>
-            🛡️ Seguro de Vida
-          </div>
-          <div style={{ display: "flex", gap: 16 }}>
-            {[
-              { key: "com", label: "Com seguro", clients: active.filter((c) => c.seguro_vida || c.seguroVida), color: "#16a34a", bg: "#dcfce7" },
-              { key: "sem", label: "Sem seguro", clients: active.filter((c) => !c.seguro_vida && !c.seguroVida), color: "#dc2626", bg: "#fee2e2" },
-            ].map(({ key, label, clients: cls, color, bg }) => {
-              const pct = Math.round((cls.length / active.length) * 100);
-              const isOpen = seguroDrill === key;
-              return (
-                <div key={key} onClick={() => setSeguroDrill(isOpen ? null : key)} style={{ flex: 1, background: isOpen ? bg : "#f8faff", border: `1px solid ${isOpen ? color : B.border}`, borderRadius: 10, padding: "12px 14px", cursor: "pointer", transition: "background 0.15s" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color }}>{label}</span>
-                    <span style={{ fontSize: 18, fontWeight: 800, color }}>{pct}%</span>
-                  </div>
-                  <div style={{ height: 5, background: "#e8eeff", borderRadius: 999, marginBottom: 4 }}>
-                    <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 999 }} />
-                  </div>
-                  <div style={{ fontSize: 10, color: "#6b7280" }}>{cls.length} cliente{cls.length !== 1 ? "s" : ""}</div>
-                  {isOpen && cls.length > 0 && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
-                      {cls.map((c) => (
-                        <span key={c.id} onClick={(e) => { e.stopPropagation(); navigate(`/clients/${slugify(c.nome)}`); }} style={{ fontSize: 10, fontWeight: 600, background: "white", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 999, padding: "1px 8px", cursor: "pointer" }}>
-                          {c.nome.split(" ")[0]}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+        <div style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "10px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: B.navy, whiteSpace: "nowrap" }}>🛡️ Seguro de Vida</span>
+          {[
+            { key: "com", label: "Com seguro", clients: active.filter((c) => c.seguro_vida || c.seguroVida), color: "#16a34a", bg: "#dcfce7" },
+            { key: "sem", label: "Sem seguro", clients: active.filter((c) => !c.seguro_vida && !c.seguroVida), color: "#dc2626", bg: "#fee2e2" },
+          ].map(({ key, label, clients: cls, color, bg }) => {
+            const pct = Math.round((cls.length / active.length) * 100);
+            const isOpen = seguroDrill === key;
+            return (
+              <div key={key} style={{ flex: "0 0 auto" }}>
+                <div onClick={() => setSeguroDrill(isOpen ? null : key)} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: isOpen ? bg : "#f8faff", border: `1px solid ${isOpen ? color : B.border}`, borderRadius: 8, padding: "5px 12px" }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color }}>{pct}%</span>
+                  <span style={{ fontSize: 11, color, fontWeight: 600 }}>{label}</span>
+                  <span style={{ fontSize: 10, color: "#9baabf" }}>{cls.length}cl</span>
                 </div>
-              );
-            })}
-          </div>
-        </Card>
+                {isOpen && cls.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
+                    {cls.map((c) => (
+                      <span key={c.id} onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 10, fontWeight: 600, background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 999, padding: "1px 8px", cursor: "pointer" }}>
+                        {c.nome.split(" ")[0]}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       )}
 
       {topIndicadores.length > 0 && (
