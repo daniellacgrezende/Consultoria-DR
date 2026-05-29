@@ -117,7 +117,7 @@ export default function Dashboard() {
       <SecH eyebrow="Dashboard" title="Home" desc="Visão geral da carteira." />
 
       {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
         <div onClick={() => setShowClientes((v) => !v)} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${B.navy}`, cursor: "pointer", userSelect: "none" }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5, display: "flex", justifyContent: "space-between" }}>
             <span>Clientes Ativos</span>
@@ -138,6 +138,30 @@ export default function Dashboard() {
           <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5 }}>Patrimônio Médio</div>
           <div style={{ fontSize: 20, fontWeight: 700, color: B.navy }}>{showAUM ? money(aumMedio) : "R$ ••••••"}</div>
           <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>por cliente ativo</div>
+        </div>
+        <div onClick={() => setSeguroDrill(seguroDrill ? null : "com")} style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid #16a34a`, cursor: "pointer", userSelect: "none" }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5 }}>🛡️ Seguro de Vida</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>{active.length > 0 ? Math.round((totalSeguro / active.length) * 100) : 0}%</div>
+          <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>{totalSeguro} de {active.length} clientes</div>
+          {seguroDrill && (
+            <div style={{ marginTop: 8, borderTop: `1px solid ${B.border}`, paddingTop: 8 }}>
+              {[
+                { key: "com", label: "Com seguro", cls: active.filter((c) => c.seguro_vida || c.seguroVida), color: "#16a34a" },
+                { key: "sem", label: "Sem seguro", cls: active.filter((c) => !c.seguro_vida && !c.seguroVida), color: "#dc2626" },
+              ].map(({ key, label, cls, color }) => (
+                <div key={key} style={{ marginBottom: 6 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color, marginBottom: 3 }}>{label} ({cls.length})</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                    {cls.map((c) => (
+                      <span key={c.id} onClick={(e) => { e.stopPropagation(); navigate(`/clients/${slugify(c.nome)}`); }} style={{ fontSize: 10, fontWeight: 600, background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 999, padding: "1px 7px", cursor: "pointer" }}>
+                        {c.nome.split(" ")[0]}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -398,37 +422,6 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Seguro de Vida — faixa compacta */}
-      {active.length > 0 && (
-        <div style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "10px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: B.navy, whiteSpace: "nowrap" }}>🛡️ Seguro de Vida</span>
-          {[
-            { key: "com", label: "Com seguro", clients: active.filter((c) => c.seguro_vida || c.seguroVida), color: "#16a34a", bg: "#dcfce7" },
-            { key: "sem", label: "Sem seguro", clients: active.filter((c) => !c.seguro_vida && !c.seguroVida), color: "#dc2626", bg: "#fee2e2" },
-          ].map(({ key, label, clients: cls, color, bg }) => {
-            const pct = Math.round((cls.length / active.length) * 100);
-            const isOpen = seguroDrill === key;
-            return (
-              <div key={key} style={{ flex: "0 0 auto" }}>
-                <div onClick={() => setSeguroDrill(isOpen ? null : key)} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: isOpen ? bg : "#f8faff", border: `1px solid ${isOpen ? color : B.border}`, borderRadius: 8, padding: "5px 12px" }}>
-                  <span style={{ fontSize: 13, fontWeight: 800, color }}>{pct}%</span>
-                  <span style={{ fontSize: 11, color, fontWeight: 600 }}>{label}</span>
-                  <span style={{ fontSize: 10, color: "#9baabf" }}>{cls.length}cl</span>
-                </div>
-                {isOpen && cls.length > 0 && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
-                    {cls.map((c) => (
-                      <span key={c.id} onClick={() => navigate(`/clients/${slugify(c.nome)}`)} style={{ fontSize: 10, fontWeight: 600, background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 999, padding: "1px 8px", cursor: "pointer" }}>
-                        {c.nome.split(" ")[0]}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
 
       {topIndicadores.length > 0 && (
         <Card style={{ marginBottom: 16 }}>
