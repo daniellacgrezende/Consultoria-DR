@@ -164,7 +164,7 @@ export default function ClientDetail() {
   const anoAtual = new Date().getFullYear().toString();
   const pgblAnoAtual = clientAportes
     .filter((a) => a.tipo === "aporte" && a.is_pgbl && a.data?.startsWith(anoAtual))
-    .reduce((s, a) => s + Number(a.valor || 0), 0);
+    .reduce((s, a) => s + Number(a.valor_pgbl || a.valor || 0), 0);
   const hasPgbl = client.pgbl === true || client.pgbl === "true";
   const rendaMensal = Number(client.receita_mensal || 0);
   const rendaBrutaTributavel = Number(client.renda_bruta_tributavel || 0);
