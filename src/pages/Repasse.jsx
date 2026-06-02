@@ -185,14 +185,14 @@ export default function Repasse() {
         <div style={{ padding: "14px 18px", borderBottom: `1px solid ${B.border}` }}><span style={{ fontWeight: 700, fontSize: 13, color: B.navy }}>Lançamentos ({filtrado.length})</span></div>
         {filtrado.length === 0 ? <div style={{ padding: 40, textAlign: "center", color: B.gray }}>Nenhum lançamento{anoFilter !== "todos" ? ` em ${anoFilter}` : ""}.</div> : (
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr style={{ background: "#f5f7ff" }}>
-                  <th style={{ padding: "10px 14px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, whiteSpace: "nowrap" }}>Competência</th>
+                  <th style={{ padding: "8px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, whiteSpace: "nowrap" }}>Competência</th>
                   {CATS.map((c) => (
-                    <th key={c.key} style={{ padding: "10px 12px", textAlign: "right", fontSize: 10, fontWeight: 700, color: c.color, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, whiteSpace: "nowrap" }}>{c.label}</th>
+                    <th key={c.key} style={{ padding: "8px 8px", textAlign: "right", fontSize: 10, fontWeight: 700, color: c.color, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, whiteSpace: "nowrap" }}>{c.label}</th>
                   ))}
-                  <th style={{ padding: "10px 12px", textAlign: "right", fontSize: 10, fontWeight: 700, color: "#2563eb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, whiteSpace: "nowrap" }}>Repasse Final</th>
+                  <th style={{ padding: "8px 12px", textAlign: "right", fontSize: 10, fontWeight: 700, color: "#2563eb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, whiteSpace: "nowrap" }}>Repasse Final</th>
                   <th style={{ borderBottom: `1px solid ${B.border}` }}></th>
                 </tr>
               </thead>
@@ -201,17 +201,17 @@ export default function Repasse() {
                   const total = totalRow(r) || Number(r.receita_bruta || 0);
                   return (
                     <tr key={r.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
-                      <td style={{ padding: "10px 14px", fontWeight: 700, color: B.navy, whiteSpace: "nowrap" }}>{fmtComp(r.competencia)}</td>
+                      <td style={{ padding: "8px 12px", fontWeight: 700, color: B.navy, whiteSpace: "nowrap" }}>{fmtComp(r.competencia)}</td>
                       {CATS.map((c) => (
-                        <td key={c.key} style={{ padding: "10px 12px", textAlign: "right", color: Number(r[c.key] || 0) > 0 ? c.color : "#d1d5db", fontWeight: Number(r[c.key] || 0) > 0 ? 700 : 400 }}>
+                        <td key={c.key} style={{ padding: "8px 8px", textAlign: "right", color: Number(r[c.key] || 0) > 0 ? c.color : "#d1d5db", fontWeight: Number(r[c.key] || 0) > 0 ? 700 : 400, whiteSpace: "nowrap" }}>
                           {Number(r[c.key] || 0) > 0 ? money(r[c.key]) : "—"}
                         </td>
                       ))}
-                      <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 800, color: B.navy, whiteSpace: "nowrap" }}>{total > 0 ? money(total) : "—"}</td>
-                      <td style={{ padding: "10px 12px" }}>
-                        <div style={{ display: "flex", gap: 5 }}>
-                          <button onClick={() => openEdit(r)} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Editar</button>
-                          <button onClick={() => setDelConf(r.id)} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "4px 10px", fontSize: 11, cursor: "pointer" }}>Remover</button>
+                      <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 800, fontSize: 14, color: "#2563eb", whiteSpace: "nowrap" }}>{total > 0 ? money(total) : "—"}</td>
+                      <td style={{ padding: "8px 10px" }}>
+                        <div style={{ display: "flex", gap: 4 }}>
+                          <button onClick={() => openEdit(r)} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "3px 9px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Editar</button>
+                          <button onClick={() => setDelConf(r.id)} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "3px 9px", fontSize: 11, cursor: "pointer" }}>Remover</button>
                         </div>
                       </td>
                     </tr>
@@ -221,12 +221,12 @@ export default function Repasse() {
               {filtrado.length > 0 && (
                 <tfoot>
                   <tr style={{ background: "#f0f4ff", borderTop: `2px solid ${B.border}` }}>
-                    <td style={{ padding: "10px 14px", fontWeight: 700, color: B.navy, fontSize: 12 }}>TOTAL</td>
+                    <td style={{ padding: "8px 12px", fontWeight: 700, color: B.navy, fontSize: 12 }}>TOTAL</td>
                     {CATS.map((c) => {
                       const t = filtrado.reduce((s, r) => s + Number(r[c.key] || 0), 0);
-                      return <td key={c.key} style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, color: t > 0 ? c.color : "#d1d5db", fontSize: 12 }}>{t > 0 ? money(t) : "—"}</td>;
+                      return <td key={c.key} style={{ padding: "8px 8px", textAlign: "right", fontWeight: 700, color: t > 0 ? c.color : "#d1d5db", fontSize: 13, whiteSpace: "nowrap" }}>{t > 0 ? money(t) : "—"}</td>;
                     })}
-                    <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 800, color: B.navy, fontSize: 13 }}>{money(acumulado)}</td>
+                    <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 800, color: "#2563eb", fontSize: 14 }}>{money(acumulado)}</td>
                     <td></td>
                   </tr>
                 </tfoot>
