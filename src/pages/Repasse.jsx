@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { useData } from "../hooks/useData";
 import { B } from "../utils/constants";
 import { money, moneyDec, fmtComp } from "../utils/formatters";
@@ -9,11 +9,27 @@ import MiniStat from "../components/ui/MiniStat";
 import Modal from "../components/ui/Modal";
 import { Inp, SecH } from "../components/ui/FormFields";
 
+const CATS = [
+  { key: "repasse_final", label: "Repasse Final", color: "#2563eb" },
+  { key: "xp",           label: "XP",            color: "#7c3aed" },
+  { key: "btg",          label: "BTG",            color: "#0891b2" },
+  { key: "seguro_vida",  label: "Seguro Vida",    color: "#16a34a" },
+  { key: "seguro_rcp",   label: "Seguro RCP",     color: "#b45309" },
+  { key: "cambio",       label: "Câmbio",         color: "#dc2626" },
+  { key: "outros",       label: "Outros",         color: "#6b7280" },
+];
+
+const EMPTY_FORM = { competencia: "", repasse_final: "", xp: "", btg: "", seguro_vida: "", seguro_rcp: "", cambio: "", outros: "" };
+
+function totalRow(r) {
+  return CATS.reduce((s, c) => s + Number(r[c.key] || 0), 0);
+}
+
 export default function Repasse() {
   const { repasse, saveRepasse, deleteRepasse, setToast } = useData();
   const [modal, setModal] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ competencia: "", receita_bruta: "" });
+  const [form, setForm] = useState(EMPTY_FORM);
   const [anoFilter, setAnoFilter] = useState("todos");
   const [delConf, setDelConf] = useState(null);
 
@@ -24,26 +40,49 @@ export default function Repasse() {
   }, [repasse]);
   const filtrado = useMemo(() => anoFilter === "todos" ? sorted : sorted.filter((r) => r.competencia?.startsWith(anoFilter)), [sorted, anoFilter]);
 
-  const chartData = useMemo(() => filtrado.map((r) => ({ name: fmtComp(r.competencia), receitaBruta: Number(r.receita_bruta || 0) })), [filtrado]);
-  const maiorRep = useMemo(() => filtrado.length ? filtrado.reduce((mx, r) => Number(r.receita_bruta || 0) > Number(mx.receita_bruta || 0) ? r : mx, filtrado[0]) : null, [filtrado]);
-  const acumulado = useMemo(() => filtrado.reduce((s, r) => s + Number(r.receita_bruta || 0), 0), [filtrado]);
+  const chartData = useMemo(() => filtrado.map((r) => {
+    const total = totalRow(r) || Number(r.receita_bruta || 0);
+    const obj = { name: fmtComp(r.competencia), total };
+    CATS.forEach((c) => { obj[c.key] = Number(r[c.key] || 0); });
+    return obj;
+  }), [filtrado]);
+
+  const acumulado = useMemo(() => filtrado.reduce((s, r) => s + (totalRow(r) || Number(r.receita_bruta || 0)), 0), [filtrado]);
+  const maiorRep = useMemo(() => filtrado.length ? filtrado.reduce((mx, r) => {
+    const t = totalRow(r) || Number(r.receita_bruta || 0);
+    return t > (totalRow(mx) || Number(mx.receita_bruta || 0)) ? r : mx;
+  }, filtrado[0]) : null, [filtrado]);
   const crescUltimoMes = useMemo(() => {
     if (filtrado.length < 2) return null;
-    const curr = Number(filtrado[filtrado.length - 1].receita_bruta || 0);
-    const prev = Number(filtrado[filtrado.length - 2].receita_bruta || 0);
+    const curr = totalRow(filtrado[filtrado.length - 1]) || Number(filtrado[filtrado.length - 1].receita_bruta || 0);
+    const prev = totalRow(filtrado[filtrado.length - 2]) || Number(filtrado[filtrado.length - 2].receita_bruta || 0);
     if (!prev) return null;
-    return { pct: ((curr - prev) / prev) * 100, val: curr - prev, curr, prev };
+    return { pct: ((curr - prev) / prev) * 100, val: curr - prev };
   }, [filtrado]);
+
+  // Totais por categoria (período filtrado)
+  const catTotals = useMemo(() => CATS.map((c) => ({
+    ...c,
+    total: filtrado.reduce((s, r) => s + Number(r[c.key] || 0), 0),
+  })).filter((c) => c.total > 0), [filtrado]);
 
   const RF = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const openNew = () => { setEditId(null); setForm({ competencia: "", receita_bruta: "" }); setModal(true); };
-  const openEdit = (r) => { setEditId(r.id); setForm({ competencia: r.competencia, receita_bruta: r.receita_bruta }); setModal(true); };
+  const openNew = () => { setEditId(null); setForm(EMPTY_FORM); setModal(true); };
+  const openEdit = (r) => {
+    setEditId(r.id);
+    const f = { competencia: r.competencia };
+    CATS.forEach((c) => { f[c.key] = r[c.key] != null ? String(r[c.key]) : ""; });
+    setModal(true);
+    setForm(f);
+  };
 
   const save = async () => {
     if (!form.competencia) { setToast({ type: "error", text: "Informe a competência." }); return; }
     if (!editId && repasse.some((r) => r.competencia === form.competencia)) { setToast({ type: "error", text: "Já existe lançamento para esta competência." }); return; }
-    const entry = { competencia: form.competencia, receita_bruta: form.receita_bruta, id: editId || huid() };
+    const entry = { competencia: form.competencia, id: editId || huid() };
+    CATS.forEach((c) => { entry[c.key] = form[c.key] !== "" ? Number(form[c.key]) : null; });
+    entry.receita_bruta = CATS.reduce((s, c) => s + (entry[c.key] || 0), 0) || null;
     await saveRepasse(entry, !editId);
     setModal(false);
     if (!editId && form.competencia) setAnoFilter(form.competencia.slice(0, 4));
@@ -55,8 +94,6 @@ export default function Repasse() {
     setDelConf(null);
     setToast({ type: "success", text: "Removido." });
   };
-
-  const GradDef = ({ id, c = B.navy }) => (<defs><linearGradient id={id} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={c} stopOpacity={0.28} /><stop offset="95%" stopColor={c} stopOpacity={0} /></linearGradient></defs>);
 
   return (
     <>
@@ -77,7 +114,7 @@ export default function Repasse() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
         <div style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: "3px solid #b45309" }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 5 }}>Maior Repasse</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: "#b45309" }}>{maiorRep ? money(maiorRep.receita_bruta) : "—"}</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: "#b45309" }}>{maiorRep ? money(totalRow(maiorRep) || maiorRep.receita_bruta) : "—"}</div>
           {maiorRep && <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>{fmtComp(maiorRep.competencia)}</div>}
         </div>
         <div style={{ background: "white", border: `1px solid ${crescUltimoMes ? (crescUltimoMes.pct >= 0 ? "#bbf7d0" : "#fecaca") : B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${crescUltimoMes ? (crescUltimoMes.pct >= 0 ? "#16a34a" : "#dc2626") : B.navy}` }}>
@@ -89,27 +126,51 @@ export default function Repasse() {
         <MiniStat label={`Acumulado ${anoFilter === "todos" ? "(Todos)" : anoFilter}`} value={money(acumulado)} sub="total" />
       </div>
 
+      {/* Breakdown por categoria */}
+      {catTotals.length > 0 && (
+        <Card style={{ marginBottom: 16 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${B.border}` }}>
+            Composição do Repasse {anoFilter !== "todos" ? anoFilter : ""}
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {catTotals.map(({ key, label, color, total }) => {
+              const pct = acumulado > 0 ? Math.round((total / acumulado) * 100) : 0;
+              return (
+                <div key={key} style={{ flex: "1 1 120px", background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 10, padding: "10px 14px", borderLeft: `3px solid ${color}` }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>{label}</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color }}>{money(total)}</div>
+                  <div style={{ fontSize: 10, color: "#9baabf", marginTop: 2 }}>{pct}% do total</div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
       {/* Gráfico */}
       {chartData.length > 0 && (
         <Card style={{ marginBottom: 16 }}>
           <div style={{ fontWeight: 700, fontSize: 13, color: B.navy, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${B.border}` }}>
             Evolução Mensal
           </div>
-          <ResponsiveContainer width="100%" height={380}>
-            <AreaChart data={chartData} margin={{ top: 20, right: 24, left: 16, bottom: 8 }}>
-              <GradDef id="rb" c="#2563eb" />
+          <ResponsiveContainer width="100%" height={320}>
+            <AreaChart data={chartData} margin={{ top: 10, right: 24, left: 16, bottom: 8 }}>
+              <defs>
+                {CATS.map((c) => (
+                  <linearGradient key={c.key} id={`grad_${c.key}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={c.color} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={c.color} stopOpacity={0} />
+                  </linearGradient>
+                ))}
+              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke={B.border} />
-              <XAxis dataKey="name" tick={{ fontSize: 12, fill: B.gray }} />
-              <YAxis
-                tick={{ fontSize: 11, fill: B.gray }}
-                tickFormatter={(v) => v >= 1000 ? `R$${(v / 1000).toFixed(0)}K` : `R$${v}`}
-                width={70}
-              />
-              <Tooltip
-                formatter={(v) => [moneyDec(v), "Receita Bruta"]}
-                contentStyle={{ borderRadius: 8, fontSize: 13 }}
-              />
-              <Area type="monotone" dataKey="receitaBruta" stroke="#2563eb" strokeWidth={3} fill="url(#rb)" dot={{ r: 5, fill: "#2563eb", strokeWidth: 2, stroke: "white" }} activeDot={{ r: 7 }} />
+              <XAxis dataKey="name" tick={{ fontSize: 11, fill: B.gray }} />
+              <YAxis tick={{ fontSize: 11, fill: B.gray }} tickFormatter={(v) => v >= 1000 ? `R$${(v / 1000).toFixed(0)}K` : `R$${v}`} width={64} />
+              <Tooltip formatter={(v, name) => [moneyDec(v), CATS.find((c) => c.key === name)?.label || name]} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+              <Legend formatter={(name) => CATS.find((c) => c.key === name)?.label || name} wrapperStyle={{ fontSize: 11 }} />
+              {CATS.filter((c) => catTotals.some((ct) => ct.key === c.key)).map((c) => (
+                <Area key={c.key} type="monotone" dataKey={c.key} stroke={c.color} strokeWidth={2} fill={`url(#grad_${c.key})`} stackId="1" />
+              ))}
             </AreaChart>
           </ResponsiveContainer>
         </Card>
@@ -120,28 +181,51 @@ export default function Repasse() {
         <div style={{ padding: "14px 18px", borderBottom: `1px solid ${B.border}` }}><span style={{ fontWeight: 700, fontSize: 13, color: B.navy }}>Lançamentos ({filtrado.length})</span></div>
         {filtrado.length === 0 ? <div style={{ padding: 40, textAlign: "center", color: B.gray }}>Nenhum lançamento{anoFilter !== "todos" ? ` em ${anoFilter}` : ""}.</div> : (
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-              <thead><tr style={{ background: "#f5f7ff" }}>{["Competência", "Receita Bruta", ""].map((h) => (<th key={h} style={{ padding: "11px 16px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}` }}>{h}</th>))}</tr></thead>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead>
+                <tr style={{ background: "#f5f7ff" }}>
+                  <th style={{ padding: "10px 14px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, whiteSpace: "nowrap" }}>Competência</th>
+                  {CATS.map((c) => (
+                    <th key={c.key} style={{ padding: "10px 12px", textAlign: "right", fontSize: 10, fontWeight: 700, color: c.color, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, whiteSpace: "nowrap" }}>{c.label}</th>
+                  ))}
+                  <th style={{ padding: "10px 12px", textAlign: "right", fontSize: 10, fontWeight: 700, color: B.navy, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, whiteSpace: "nowrap" }}>Total</th>
+                  <th style={{ borderBottom: `1px solid ${B.border}` }}></th>
+                </tr>
+              </thead>
               <tbody>
-                {[...filtrado].reverse().map((r, i) => (
-                  <tr key={r.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
-                    <td style={{ padding: "12px 16px", fontWeight: 700, color: B.navy, fontSize: 14 }}>{fmtComp(r.competencia)}</td>
-                    <td style={{ padding: "12px 16px" }}><span style={{ fontWeight: 800, fontSize: 16, color: "#2563eb" }}>{r.receita_bruta ? money(r.receita_bruta) : "—"}</span></td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <button onClick={() => openEdit(r)} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "5px 11px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Editar</button>
-                        <button onClick={() => setDelConf(r.id)} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "5px 11px", fontSize: 11, cursor: "pointer" }}>Remover</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {[...filtrado].reverse().map((r, i) => {
+                  const total = totalRow(r) || Number(r.receita_bruta || 0);
+                  return (
+                    <tr key={r.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
+                      <td style={{ padding: "10px 14px", fontWeight: 700, color: B.navy, whiteSpace: "nowrap" }}>{fmtComp(r.competencia)}</td>
+                      {CATS.map((c) => (
+                        <td key={c.key} style={{ padding: "10px 12px", textAlign: "right", color: Number(r[c.key] || 0) > 0 ? c.color : "#d1d5db", fontWeight: Number(r[c.key] || 0) > 0 ? 700 : 400 }}>
+                          {Number(r[c.key] || 0) > 0 ? money(r[c.key]) : "—"}
+                        </td>
+                      ))}
+                      <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 800, color: B.navy, whiteSpace: "nowrap" }}>{total > 0 ? money(total) : "—"}</td>
+                      <td style={{ padding: "10px 12px" }}>
+                        <div style={{ display: "flex", gap: 5 }}>
+                          <button onClick={() => openEdit(r)} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Editar</button>
+                          <button onClick={() => setDelConf(r.id)} style={{ background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "4px 10px", fontSize: 11, cursor: "pointer" }}>Remover</button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
               {filtrado.length > 0 && (
-                <tfoot><tr style={{ background: "#f0f4ff", borderTop: `2px solid ${B.border}` }}>
-                  <td style={{ padding: "12px 16px", fontWeight: 700, color: B.navy }}>TOTAL</td>
-                  <td style={{ padding: "12px 16px", fontWeight: 800, color: "#2563eb", fontSize: 15 }}>{money(filtrado.reduce((s, r) => s + Number(r.receita_bruta || 0), 0))}</td>
-                  <td></td>
-                </tr></tfoot>
+                <tfoot>
+                  <tr style={{ background: "#f0f4ff", borderTop: `2px solid ${B.border}` }}>
+                    <td style={{ padding: "10px 14px", fontWeight: 700, color: B.navy, fontSize: 12 }}>TOTAL</td>
+                    {CATS.map((c) => {
+                      const t = filtrado.reduce((s, r) => s + Number(r[c.key] || 0), 0);
+                      return <td key={c.key} style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, color: t > 0 ? c.color : "#d1d5db", fontSize: 12 }}>{t > 0 ? money(t) : "—"}</td>;
+                    })}
+                    <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 800, color: B.navy, fontSize: 13 }}>{money(acumulado)}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
               )}
             </table>
           </div>
@@ -156,7 +240,21 @@ export default function Repasse() {
             <button onClick={() => setModal(false)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: B.gray }}>×</button>
           </div>
           <Inp label="Competência *" type="month" value={form.competencia} onChange={RF("competencia")} />
-          <Inp label="Receita Bruta (R$) *" type="number" value={form.receita_bruta} onChange={RF("receita_bruta")} placeholder="Valor total" />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+            {CATS.map((c) => (
+              <div key={c.key}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: c.color, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>{c.label}</div>
+                <input type="number" value={form[c.key]} onChange={RF(c.key)} placeholder="0"
+                  style={{ width: "100%", boxSizing: "border-box", border: `1px solid ${B.border}`, borderRadius: 7, padding: "7px 9px", fontSize: 13, fontFamily: "inherit", outline: "none", color: B.navy }} />
+              </div>
+            ))}
+          </div>
+          {CATS.some((c) => Number(form[c.key] || 0) > 0) && (
+            <div style={{ background: "#f0f4ff", border: `1px solid ${B.border}`, borderRadius: 8, padding: "8px 12px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 11, color: B.gray }}>Total calculado</span>
+              <span style={{ fontSize: 15, fontWeight: 800, color: B.navy }}>{money(CATS.reduce((s, c) => s + Number(form[c.key] || 0), 0))}</span>
+            </div>
+          )}
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => setModal(false)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>
             <button onClick={save} style={{ flex: 2, padding: "10px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>{editId ? "SALVAR" : "ADICIONAR"}</button>
