@@ -9,20 +9,22 @@ import MiniStat from "../components/ui/MiniStat";
 import Modal from "../components/ui/Modal";
 import { Inp, SecH } from "../components/ui/FormFields";
 
+// Categorias componentes (sem repasse_final)
 const CATS = [
-  { key: "repasse_final", label: "Repasse Final", color: "#2563eb" },
-  { key: "xp",           label: "XP",            color: "#7c3aed" },
-  { key: "btg",          label: "BTG",            color: "#0891b2" },
-  { key: "seguro_vida",  label: "Seguro Vida",    color: "#16a34a" },
-  { key: "seguro_rcp",   label: "Seguro RCP",     color: "#b45309" },
-  { key: "cambio",       label: "Câmbio",         color: "#dc2626" },
-  { key: "outros",       label: "Outros",         color: "#6b7280" },
+  { key: "xp",          label: "XP",          color: "#7c3aed" },
+  { key: "btg",         label: "BTG",         color: "#0891b2" },
+  { key: "seguro_vida", label: "Seguro Vida",  color: "#16a34a" },
+  { key: "seguro_rcp",  label: "Seguro RCP",   color: "#b45309" },
+  { key: "cambio",      label: "Câmbio",       color: "#dc2626" },
+  { key: "outros",      label: "Outros",       color: "#6b7280" },
 ];
 
-const EMPTY_FORM = { competencia: "", repasse_final: "", xp: "", btg: "", seguro_vida: "", seguro_rcp: "", cambio: "", outros: "" };
+const EMPTY_FORM = { competencia: "", xp: "", btg: "", seguro_vida: "", seguro_rcp: "", cambio: "", outros: "" };
 
+// Repasse Final = soma dos componentes (ou valor legado em repasse_final/receita_bruta)
 function totalRow(r) {
-  return CATS.reduce((s, c) => s + Number(r[c.key] || 0), 0);
+  const soma = CATS.reduce((s, c) => s + Number(r[c.key] || 0), 0);
+  return soma || Number(r.repasse_final || r.receita_bruta || 0);
 }
 
 export default function Repasse() {
@@ -82,7 +84,9 @@ export default function Repasse() {
     if (!editId && repasse.some((r) => r.competencia === form.competencia)) { setToast({ type: "error", text: "Já existe lançamento para esta competência." }); return; }
     const entry = { competencia: form.competencia, id: editId || huid() };
     CATS.forEach((c) => { entry[c.key] = form[c.key] !== "" ? Number(form[c.key]) : null; });
-    entry.receita_bruta = CATS.reduce((s, c) => s + (entry[c.key] || 0), 0) || null;
+    const soma = CATS.reduce((s, c) => s + (entry[c.key] || 0), 0);
+    entry.repasse_final = soma || null;
+    entry.receita_bruta = soma || null;
     await saveRepasse(entry, !editId);
     setModal(false);
     if (!editId && form.competencia) setAnoFilter(form.competencia.slice(0, 4));
@@ -188,7 +192,7 @@ export default function Repasse() {
                   {CATS.map((c) => (
                     <th key={c.key} style={{ padding: "10px 12px", textAlign: "right", fontSize: 10, fontWeight: 700, color: c.color, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, whiteSpace: "nowrap" }}>{c.label}</th>
                   ))}
-                  <th style={{ padding: "10px 12px", textAlign: "right", fontSize: 10, fontWeight: 700, color: B.navy, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, whiteSpace: "nowrap" }}>Total</th>
+                  <th style={{ padding: "10px 12px", textAlign: "right", fontSize: 10, fontWeight: 700, color: "#2563eb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, whiteSpace: "nowrap" }}>Repasse Final</th>
                   <th style={{ borderBottom: `1px solid ${B.border}` }}></th>
                 </tr>
               </thead>
@@ -251,7 +255,7 @@ export default function Repasse() {
           </div>
           {CATS.some((c) => Number(form[c.key] || 0) > 0) && (
             <div style={{ background: "#f0f4ff", border: `1px solid ${B.border}`, borderRadius: 8, padding: "8px 12px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 11, color: B.gray }}>Total calculado</span>
+              <span style={{ fontSize: 11, color: B.gray, fontWeight: 700 }}>Repasse Final</span>
               <span style={{ fontSize: 15, fontWeight: 800, color: B.navy }}>{money(CATS.reduce((s, c) => s + Number(form[c.key] || 0), 0))}</span>
             </div>
           )}
