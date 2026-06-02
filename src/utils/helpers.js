@@ -42,8 +42,8 @@ export const calcIdade = (dataNasc) => {
 export const getLiquidezAtual = (client, aportes) => {
   const base = Number(client.reserva_emergencia_valor || 0);
   const movs = aportes.filter((a) => a.client_id === client.id && a.is_reserva);
-  const entradas = movs.filter((a) => a.tipo === "aporte").reduce((s, a) => s + Number(a.valor || 0), 0);
-  const saidas = movs.filter((a) => a.tipo === "resgate").reduce((s, a) => s + Number(a.valor || 0), 0);
+  const entradas = movs.filter((a) => a.tipo === "aporte").reduce((s, a) => s + Number(a.valor_reserva || a.valor || 0), 0);
+  const saidas = movs.filter((a) => a.tipo === "resgate").reduce((s, a) => s + Number(a.valor_reserva || a.valor || 0), 0);
   return base + entradas - saidas;
 };
 
