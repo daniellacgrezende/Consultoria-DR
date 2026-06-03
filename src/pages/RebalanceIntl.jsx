@@ -203,10 +203,10 @@ export default function RebalanceIntl() {
       valor_atual: Number(productForm.valor_atual) || 0,
     };
     await saveIntlProduct(prod, isNew);
+    await load();
     setProductModal(false);
     setEditingProduct(null);
     setProductForm({ ticker: "", valor_atual: "" });
-    await load();
     setToast({ type: "success", text: isNew ? "ETF adicionado." : "ETF atualizado." });
   };
 

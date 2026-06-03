@@ -384,8 +384,8 @@ export function DataProvider({ children }) {
   }, []);
 
   const saveBrProduct = useCallback(async (product, isNew = false) => {
-    if (isNew) { product.id = product.id || huid(); await supabase.from("br_products").insert(product); }
-    else { await supabase.from("br_products").update(product).eq("id", product.id); }
+    if (isNew) { product.id = product.id || huid(); await supabase.from("br_products").insert(product).select(); }
+    else { await supabase.from("br_products").update(product).eq("id", product.id).select(); }
   }, []);
 
   const deleteBrProduct = useCallback(async (id) => {

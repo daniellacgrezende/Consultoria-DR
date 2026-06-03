@@ -145,10 +145,10 @@ export default function RebalanceBR() {
       grupo: productForm.grupo.trim() || null,
     };
     await saveBrProduct(prod, isNew);
+    await load();
     setProductModal(false);
     setEditingProduct(null);
     setProductForm({ ticker: "", valor_atual: "", target_pct: "", grupo: "" });
-    await load();
     setToast({ type: "success", text: isNew ? "Acao adicionada." : "Acao atualizada." });
   };
 
