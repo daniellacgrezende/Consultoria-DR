@@ -172,6 +172,9 @@ export default function Tasks() {
   const [notaDia, setNotaDia]           = useState(() => localStorage.getItem(NOTA_KEY()) || "");
   const [notaOpen, setNotaOpen]         = useState(false);
   const [clientSearch, setClientSearch] = useState("");
+  const [regSearch, setRegSearch]       = useState("");
+  const [regClient, setRegClient]       = useState(null);
+  const [regDate, setRegDate]           = useState(today());
   const [collapsedSections, setCollapsedSections] = useState(() => new Set(["futAmanha", "futSemana", "futAlem", "concluidas"]));
   const toggleSection = (key) => setCollapsedSections(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
 
@@ -331,6 +334,20 @@ export default function Tasks() {
     if (mt) await saveTodo({ ...mt, done: true, done_at: today() }, false);
     setToast({ type: "success", text: `Reunião com ${c.nome.split(" ")[0]} marcada como realizada!` });
   };
+
+  const handleRegistrarReuniao = async () => {
+    if (!regClient) return;
+    const c = regClient;
+    const pDays = getPeriodDays(c.periodicidade_reuniao || c.periodicidadeReuniao || "Trimestral");
+    const proxima = addDays(regDate, pDays);
+    await saveClient({ ...c, ultima_reuniao: regDate, proxima_reuniao: proxima, reuniao_agendada_em: null, avisado_em: null }, false);
+    const mt = todos.find((t) => t.client_id === c.id && !t.done && t.texto?.startsWith("Reunião com"));
+    if (mt) await saveTodo({ ...mt, done: true, done_at: today() }, false);
+    setToast({ type: "success", text: `Reunião com ${c.nome.split(" ")[0]} registrada!` });
+    setRegClient(null);
+    setRegSearch("");
+    setRegDate(today());
+  };
   const meetAtrasadas = meetingClients.filter((c) => c.reuniao_agendada_em < today());
   const meetHoje      = meetingClients.filter((c) => c.reuniao_agendada_em === today());
   const meetAmanha    = meetingClients.filter((c) => c.reuniao_agendada_em === tomorrowStr);
@@ -422,6 +439,12 @@ export default function Tasks() {
 
   const showNota = notaDia || notaOpen;
 
+  /* ── Sugestões para registrar reunião ── */
+  const regSugg = useMemo(() => {
+    if (!regSearch.trim() || regClient) return [];
+    return clients.filter((c) => c.status === "ativo" && c.nome.toLowerCase().includes(regSearch.toLowerCase())).slice(0, 6);
+  }, [clients, regSearch, regClient]);
+
   /* ── Clientes filtrados no modal ── */
   const clientesModal = useMemo(() => {
     if (!clientSearch.trim()) return clients.filter((c) => c.status === "ativo").slice(0, 8);
@@ -489,6 +512,43 @@ export default function Tasks() {
           </button>
         </div>
       </form>
+
+      {/* Registrar Reunião */}
+      <div style={{ marginBottom: 14, background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 10, padding: "10px 14px" }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: "#0369a1", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 7 }}>🤝 Registrar Reunião Realizada</div>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 180, position: "relative" }}>
+            <input
+              value={regSearch}
+              onChange={(e) => { setRegSearch(e.target.value); setRegClient(null); }}
+              placeholder="Buscar cliente…"
+              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: `1.5px solid ${regClient ? "#7dd3fc" : "#bae6fd"}`, borderRadius: 7, fontSize: 13, color: B.navy, fontFamily: "inherit", outline: "none", background: regClient ? "#e0f2fe" : "white" }}
+            />
+            {regSugg.length > 0 && (
+              <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, border: `1px solid ${B.border}`, borderRadius: 7, background: "white", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", marginTop: 2 }}>
+                {regSugg.map((c) => (
+                  <div key={c.id}
+                    onClick={() => { setRegClient(c); setRegSearch(c.nome); }}
+                    style={{ padding: "8px 12px", fontSize: 13, color: B.navy, cursor: "pointer", borderBottom: `1px solid ${B.border}` }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "#f0f4ff"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "white"}
+                  >{c.nome}</div>
+                ))}
+              </div>
+            )}
+          </div>
+          <input type="date" value={regDate} onChange={(e) => setRegDate(e.target.value)}
+            style={{ padding: "8px 10px", border: "1.5px solid #bae6fd", borderRadius: 7, fontSize: 13, color: B.navy, outline: "none", fontFamily: "inherit", background: "white" }} />
+          <button onClick={handleRegistrarReuniao} disabled={!regClient}
+            style={{ padding: "8px 18px", background: regClient ? "#0369a1" : "#e0f2fe", color: regClient ? "white" : "#7dd3fc", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 700, cursor: regClient ? "pointer" : "default", flexShrink: 0 }}>
+            ✓ Marcar
+          </button>
+          {regClient && (
+            <button onClick={() => { setRegClient(null); setRegSearch(""); setRegDate(today()); }}
+              style={{ background: "none", border: "none", color: "#0369a1", cursor: "pointer", fontSize: 12, alignSelf: "center" }}>limpar</button>
+          )}
+        </div>
+      </div>
 
       {/* Filter bar */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
