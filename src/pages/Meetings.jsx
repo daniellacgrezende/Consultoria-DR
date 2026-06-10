@@ -84,6 +84,7 @@ export default function Meetings() {
   const [sortCol, setSortCol]     = useState("status");
   const [sortDir, setSortDir]     = useState("asc");
   const [statusFilter, setStatusFilter] = useState(null); // filtro por status ao clicar no badge
+  const [nameSearch, setNameSearch]     = useState("");
   const [rhFilter, setRhFilter]   = useState(null);
   const [rhSearch, setRhSearch]   = useState("");
   const [rhShowSug, setRhShowSug] = useState(false);
@@ -140,9 +141,11 @@ export default function Meetings() {
   }), [rows]);
 
   // Tabela filtrada pelo badge clicado
-  const filteredRows = useMemo(() =>
-    statusFilter ? rows.filter((r) => r.st.key === statusFilter) : rows,
-  [rows, statusFilter]);
+  const filteredRows = useMemo(() => {
+    let r = statusFilter ? rows.filter((r) => r.st.key === statusFilter) : rows;
+    if (nameSearch.trim()) r = r.filter((c) => c.nome.toLowerCase().includes(nameSearch.toLowerCase()));
+    return r;
+  }, [rows, statusFilter, nameSearch]);
 
   const toggleSort = (col) => {
     if (sortCol === col) setSortDir((d) => d === "asc" ? "desc" : "asc");
@@ -198,12 +201,13 @@ export default function Meetings() {
     ? (a, b) => (CURVA_ORDER[a.curva] ?? 3) - (CURVA_ORDER[b.curva] ?? 3)
     : (a, b) => (b.diasSem ?? 0) - (a.diasSem ?? 0);
 
-  const agendadas    = rows.filter((r) => r.reuniao_agendada_em).sort((a, b) => (a.reuniao_agendada_em || "").localeCompare(b.reuniao_agendada_em || ""));
-  const atrasados    = rows.filter((r) => !r.reuniao_agendada_em && r.st.key === "atrasado").sort(alertSortFn);
-  const aAgendar     = rows.filter((r) => !r.reuniao_agendada_em && r.st.key === "agendar").sort(alertSortFn);
-  const retentativas = rows.filter((r) => !r.reuniao_agendada_em && r.st.key === "retentativa").sort(alertSortFn);
-  const semResposta  = rows.filter((r) => !r.reuniao_agendada_em && r.st.key === "sem_resposta").sort(alertSortFn);
-  const aguardando   = rows.filter((r) => !r.reuniao_agendada_em && r.st.key === "aguardando").sort(alertSortFn);
+  const nameFiltered = nameSearch.trim() ? rows.filter((r) => r.nome.toLowerCase().includes(nameSearch.toLowerCase())) : rows;
+  const agendadas    = nameFiltered.filter((r) => r.reuniao_agendada_em).sort((a, b) => (a.reuniao_agendada_em || "").localeCompare(b.reuniao_agendada_em || ""));
+  const atrasados    = nameFiltered.filter((r) => !r.reuniao_agendada_em && r.st.key === "atrasado").sort(alertSortFn);
+  const aAgendar     = nameFiltered.filter((r) => !r.reuniao_agendada_em && r.st.key === "agendar").sort(alertSortFn);
+  const retentativas = nameFiltered.filter((r) => !r.reuniao_agendada_em && r.st.key === "retentativa").sort(alertSortFn);
+  const semResposta  = nameFiltered.filter((r) => !r.reuniao_agendada_em && r.st.key === "sem_resposta").sort(alertSortFn);
+  const aguardando   = nameFiltered.filter((r) => !r.reuniao_agendada_em && r.st.key === "aguardando").sort(alertSortFn);
 
   /* ─── Histórico ─── */
   const rhFiltered = useMemo(() =>
@@ -229,6 +233,16 @@ export default function Meetings() {
   return (
     <>
       <SecH eyebrow="Agenda" title="Reuniões" desc="Controle de frequência e pendências por cliente." />
+
+      {/* ─── Busca por nome ─── */}
+      <div style={{ marginBottom: 14 }}>
+        <input
+          value={nameSearch}
+          onChange={(e) => setNameSearch(e.target.value)}
+          placeholder="🔍  Buscar cliente por nome…"
+          style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", border: `1.5px solid ${nameSearch ? B.navy : B.border}`, borderRadius: 9, fontSize: 13, color: B.navy, outline: "none", fontFamily: "inherit", background: nameSearch ? "#f0f4ff" : "white", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
+        />
+      </div>
 
       {/* ─── Summary bar (clicável) ─── */}
       <div style={{
