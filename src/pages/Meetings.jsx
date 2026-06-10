@@ -641,6 +641,11 @@ export default function Meetings() {
                         >Ficha</button>
 
                         <button
+                          onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "" }); }}
+                          style={{ fontSize: 10, fontWeight: 600, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 9px", cursor: "pointer" }}
+                        >Agendei</button>
+
+                        <button
                           onClick={() => openAction("realizada", c)}
                           style={{ fontSize: 10, fontWeight: 600, background: "#F0FDF4", color: "#16A34A", border: "1px solid #BBF7D0", borderRadius: 5, padding: "4px 9px", cursor: "pointer" }}
                         >Realizada</button>
