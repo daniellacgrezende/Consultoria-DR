@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useData } from "../hooks/useData";
 import { B } from "../utils/constants";
 import { money, moneyDec, fmtComp } from "../utils/formatters";
@@ -160,21 +160,16 @@ export default function Repasse() {
           <ResponsiveContainer width="100%" height={320}>
             <AreaChart data={chartData} margin={{ top: 10, right: 24, left: 16, bottom: 8 }}>
               <defs>
-                {CATS.map((c) => (
-                  <linearGradient key={c.key} id={`grad_${c.key}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={c.color} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={c.color} stopOpacity={0} />
-                  </linearGradient>
-                ))}
+                <linearGradient id="grad_total" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#2563eb" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
+                </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke={B.border} />
               <XAxis dataKey="name" tick={{ fontSize: 11, fill: B.gray }} />
               <YAxis tick={{ fontSize: 11, fill: B.gray }} tickFormatter={(v) => v >= 1000 ? `R$${(v / 1000).toFixed(0)}K` : `R$${v}`} width={64} />
-              <Tooltip formatter={(v, name) => [moneyDec(v), CATS.find((c) => c.key === name)?.label || name]} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-              <Legend formatter={(name) => CATS.find((c) => c.key === name)?.label || name} wrapperStyle={{ fontSize: 11 }} />
-              {CATS.filter((c) => catTotals.some((ct) => ct.key === c.key)).map((c) => (
-                <Area key={c.key} type="monotone" dataKey={c.key} stroke={c.color} strokeWidth={2} fill={`url(#grad_${c.key})`} stackId="1" />
-              ))}
+              <Tooltip formatter={(v) => [moneyDec(v), "Repasse Total"]} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+              <Area type="monotone" dataKey="total" stroke="#2563eb" strokeWidth={2.5} fill="url(#grad_total)" dot={false} />
             </AreaChart>
           </ResponsiveContainer>
         </Card>
