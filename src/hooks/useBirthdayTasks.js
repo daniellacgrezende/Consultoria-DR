@@ -30,8 +30,9 @@ export function useBirthdayTasks() {
       if (!mmdd || mmdd.length !== 5) return;
       const birthdayThisYear = `${currentYear}-${mmdd}`;
       if (birthdayThisYear < today()) return;
+      // Compara data exata para não bloquear caso exista tarefa com data errada no mesmo ano
       const alreadyExists = todos.some(
-        (t) => t.texto === texto && t.vencimento && t.vencimento.startsWith(String(currentYear))
+        (t) => t.texto === texto && t.vencimento === birthdayThisYear
       );
       if (!alreadyExists) {
         tasks.push({
