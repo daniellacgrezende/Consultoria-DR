@@ -204,8 +204,10 @@ export default function ClientDetail() {
     const isNew = !aptEditId;
     const valorReserva = Number(aptForm.valor_reserva) || 0;
     const valorPgbl    = Number(aptForm.valor_pgbl)    || 0;
+    // eslint-disable-next-line no-unused-vars
+    const { is_externo: _drop, ...aptRest } = aptForm;
     const entry = {
-      ...aptForm,
+      ...aptRest,
       client_id: id,
       id: aptEditId || huid(),
       tipo: aptForm.is_externo ? "pgbl_externo" : aptForm.tipo,
