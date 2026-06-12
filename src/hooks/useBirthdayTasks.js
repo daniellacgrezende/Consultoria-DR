@@ -70,5 +70,5 @@ export function useBirthdayTasks() {
     };
     insert();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loaded]);
+  }, [loaded, clients]);
 }
