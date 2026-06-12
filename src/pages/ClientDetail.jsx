@@ -54,7 +54,7 @@ export default function ClientDetail() {
   const [slideEditObs, setSlideEditObs] = useState(false);
   const [slideObjetivos, setSlideObjetivos] = useState("");
   const [aptEditId, setAptEditId] = useState(null);
-  const [aptForm, setAptForm] = useState({ client_id: "", data: "", tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false, valor_reserva: "", valor_pgbl: "" });
+  const [aptForm, setAptForm] = useState({ client_id: "", data: "", tipo: "aporte", valor: "", observacao: "", is_reserva: false, is_pgbl: false, valor_reserva: "", valor_pgbl: "", is_externo: false });
   const [aptHistOpen, setAptHistOpen] = useState(false);
   const [aptFilter, setAptFilter] = useState({ mode: "todos", ano: "", de: "", ate: "" });
   const [rhExpandedIds, setRhExpandedIds] = useState(new Set());
@@ -163,7 +163,7 @@ export default function ClientDetail() {
   // PGBL: aportes do ano corrente marcados is_pgbl
   const anoAtual = new Date().getFullYear().toString();
   const pgblAnoAtual = clientAportes
-    .filter((a) => a.tipo === "aporte" && a.is_pgbl && a.data?.startsWith(anoAtual))
+    .filter((a) => (a.tipo === "aporte" && a.is_pgbl || a.tipo === "pgbl_externo") && a.data?.startsWith(anoAtual))
     .reduce((s, a) => s + Number(a.valor_pgbl || a.valor || 0), 0);
   const hasPgbl = client.pgbl === true || client.pgbl === "true";
   const rendaMensal = Number(client.receita_mensal || 0);
@@ -196,7 +196,11 @@ export default function ClientDetail() {
   };
 
   const saveAptEntry = async () => {
-    if (!aptForm.data || !aptForm.valor) { setToast({ type: "error", text: "Preencha data e valor." }); return; }
+    if (aptForm.is_externo) {
+      if (!aptForm.data || !aptForm.valor_pgbl) { setToast({ type: "error", text: "Preencha data e valor do PGBL." }); return; }
+    } else {
+      if (!aptForm.data || !aptForm.valor) { setToast({ type: "error", text: "Preencha data e valor." }); return; }
+    }
     const isNew = !aptEditId;
     const valorReserva = Number(aptForm.valor_reserva) || 0;
     const valorPgbl    = Number(aptForm.valor_pgbl)    || 0;
@@ -204,11 +208,12 @@ export default function ClientDetail() {
       ...aptForm,
       client_id: id,
       id: aptEditId || huid(),
-      valor: Number(aptForm.valor),
-      valor_reserva: valorReserva,
+      tipo: aptForm.is_externo ? "pgbl_externo" : aptForm.tipo,
+      valor: aptForm.is_externo ? 0 : Number(aptForm.valor),
+      valor_reserva: aptForm.is_externo ? 0 : valorReserva,
       valor_pgbl: valorPgbl,
-      is_reserva: valorReserva > 0,
-      is_pgbl: valorPgbl > 0,
+      is_reserva: false,
+      is_pgbl: aptForm.is_externo ? true : valorPgbl > 0,
     };
     await saveAporte(entry, isNew);
     if (isNew && valorReserva > 0) {
@@ -222,11 +227,14 @@ export default function ClientDetail() {
 
   const openAptEdit = (a) => {
     setAptEditId(a.id);
+    const isExterno = a.tipo === "pgbl_externo";
     setAptForm({
       ...a,
-      valor: String(a.valor),
+      tipo: isExterno ? "aporte" : a.tipo,
+      valor: isExterno ? "" : String(a.valor),
       valor_reserva: a.valor_reserva ? String(a.valor_reserva) : (a.is_reserva ? String(a.valor) : ""),
       valor_pgbl:    a.valor_pgbl    ? String(a.valor_pgbl)    : (a.is_pgbl    ? String(a.valor) : ""),
+      is_externo: isExterno,
     });
     setAptModal(true);
   };
@@ -645,19 +653,26 @@ export default function ClientDetail() {
                     {filteredClientAportes.map((a, i) => (
                       <tr key={a.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
                         <td style={{ padding: "5px 8px", width: 14 }}>
-                          <span style={{ fontWeight: 800, fontSize: 13, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "aporte" ? "+" : "−"}</span>
+                          <span style={{ fontWeight: 800, fontSize: 13, color: a.tipo === "pgbl_externo" ? "#7c3aed" : a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{a.tipo === "resgate" ? "−" : "+"}</span>
                         </td>
                         <td style={{ padding: "5px 8px", whiteSpace: "nowrap", color: "#6b7280" }}>{fmtDate(a.data)}</td>
-                        <td style={{ padding: "5px 14px 5px 8px", whiteSpace: "nowrap", fontWeight: 700, color: a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>{money(a.valor)}</td>
+                        <td style={{ padding: "5px 14px 5px 8px", whiteSpace: "nowrap", fontWeight: 700, color: a.tipo === "pgbl_externo" ? "#7c3aed" : a.tipo === "aporte" ? "#16a34a" : "#dc2626" }}>
+                          {a.tipo === "pgbl_externo" ? money(a.valor_pgbl) : money(a.valor)}
+                        </td>
                         <td style={{ padding: "5px 8px 5px 16px", color: "#6b7280", fontSize: 11, width: "100%" }}>{a.observacao || ""}</td>
                         <td style={{ padding: "5px 8px", whiteSpace: "nowrap" }}>
                           <span style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                            {(Number(a.valor_reserva) > 0 || a.is_reserva) && (
+                            {a.tipo === "pgbl_externo" && (
+                              <span style={{ fontSize: 9, background: "#f5f3ff", color: "#7c3aed", borderRadius: 4, padding: "1px 5px", fontWeight: 700, border: "1px solid #c4b5fd" }}>
+                                PGBL EXTERNO
+                              </span>
+                            )}
+                            {a.tipo !== "pgbl_externo" && (Number(a.valor_reserva) > 0 || a.is_reserva) && (
                               <span style={{ fontSize: 9, background: "#e0f2fe", color: "#0369a1", borderRadius: 4, padding: "1px 5px", fontWeight: 700 }}>
                                 RESERVA{Number(a.valor_reserva) > 0 && Number(a.valor_reserva) < Number(a.valor) ? ` ${money(a.valor_reserva)}` : ""}
                               </span>
                             )}
-                            {(Number(a.valor_pgbl) > 0 || a.is_pgbl) && (
+                            {a.tipo !== "pgbl_externo" && (Number(a.valor_pgbl) > 0 || a.is_pgbl) && (
                               <span style={{ fontSize: 9, background: "#f5f3ff", color: "#7c3aed", borderRadius: 4, padding: "1px 5px", fontWeight: 700 }}>
                                 PGBL{Number(a.valor_pgbl) > 0 && Number(a.valor_pgbl) < Number(a.valor) ? ` ${money(a.valor_pgbl)}` : ""}
                               </span>
@@ -878,44 +893,65 @@ export default function ClientDetail() {
       {/* Modal Aporte */}
       <Modal open={aptModal} onClose={() => { setAptModal(false); setAptEditId(null); }}>
         <div style={{ padding: "26px 30px" }} onKeyDown={(e) => { if (e.key === "Enter" && e.target.type !== "checkbox") { e.preventDefault(); saveAptEntry(); } }}>
-          <h3 style={{ margin: "0 0 20px", fontSize: 17, fontWeight: 700, color: B.navy }}>{aptEditId ? "Editar Lançamento" : "Novo Aporte / Resgate"}</h3>
-          <Inp label="Data *" type="date" value={aptForm.data} onChange={(e) => setAptForm((f) => ({ ...f, data: e.target.value }))} />
-          <div style={{ display: "flex", gap: 8, marginBottom: 13 }}>
-            {["aporte", "resgate"].map((t) => (
-              <button key={t} onClick={() => setAptForm((f) => ({ ...f, tipo: t }))} style={{ flex: 1, padding: "9px", border: `2px solid ${aptForm.tipo === t ? (t === "aporte" ? "#16a34a" : "#dc2626") : B.border}`, borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13, background: aptForm.tipo === t ? (t === "aporte" ? "#f0fdf4" : "#fff5f5") : "white", color: aptForm.tipo === t ? (t === "aporte" ? "#16a34a" : "#dc2626") : B.gray }}>{t === "aporte" ? "Aporte" : "Resgate"}</button>
-            ))}
-          </div>
-          <Inp label="Valor Total (R$) *" type="number" value={aptForm.valor} onChange={(e) => setAptForm((f) => ({ ...f, valor: e.target.value }))} placeholder="0" />
-
-          {/* Split: Reserva de Emergência */}
-          <div style={{ marginBottom: 13 }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: B.navy, cursor: "pointer", marginBottom: 5 }}>
+          <h3 style={{ margin: "0 0 16px", fontSize: 17, fontWeight: 700, color: B.navy }}>
+            {aptEditId ? "Editar Lançamento" : aptForm.is_externo ? "Registrar PGBL Externo" : "Novo Aporte / Resgate"}
+          </h3>
+          {/* Checkbox PGBL externo */}
+          <div style={{ marginBottom: 14, padding: "10px 12px", background: aptForm.is_externo ? "#f5f3ff" : "#f8faff", border: `1px solid ${aptForm.is_externo ? "#c4b5fd" : B.border}`, borderRadius: 8 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: aptForm.is_externo ? "#7c3aed" : B.navy, cursor: "pointer", fontWeight: aptForm.is_externo ? 700 : 400 }}>
               <input type="checkbox"
-                checked={!!aptForm.is_reserva}
-                onChange={(e) => setAptForm((f) => ({ ...f, is_reserva: e.target.checked, valor_reserva: e.target.checked ? (f.valor || "") : "" }))}
-                style={{ width: 16, height: 16, cursor: "pointer" }} />
-              Parte para Reserva de Emergência
+                checked={!!aptForm.is_externo}
+                onChange={(e) => setAptForm((f) => ({ ...f, is_externo: e.target.checked, is_pgbl: e.target.checked ? true : f.is_pgbl, valor_pgbl: e.target.checked ? (f.valor_pgbl || "") : f.valor_pgbl, valor: e.target.checked ? "" : f.valor }))}
+                style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#7c3aed" }} />
+              Já feito fora da consultoria (PGBL externo)
             </label>
-            {aptForm.is_reserva && (
-              <div style={{ paddingLeft: 22 }}>
-                <Inp label="Valor destinado à Reserva (R$)" type="number" value={aptForm.valor_reserva}
-                  onChange={(e) => setAptForm((f) => ({ ...f, valor_reserva: e.target.value }))} placeholder="0" />
-              </div>
-            )}
+            {aptForm.is_externo && <div style={{ fontSize: 10, color: "#7c3aed", marginTop: 4, paddingLeft: 24 }}>Registra o valor no controle PGBL sem lançar como aporte da consultoria.</div>}
           </div>
+          <Inp label="Data *" type="date" value={aptForm.data} onChange={(e) => setAptForm((f) => ({ ...f, data: e.target.value }))} />
+          {!aptForm.is_externo && (
+            <div style={{ display: "flex", gap: 8, marginBottom: 13 }}>
+              {["aporte", "resgate"].map((t) => (
+                <button key={t} onClick={() => setAptForm((f) => ({ ...f, tipo: t }))} style={{ flex: 1, padding: "9px", border: `2px solid ${aptForm.tipo === t ? (t === "aporte" ? "#16a34a" : "#dc2626") : B.border}`, borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13, background: aptForm.tipo === t ? (t === "aporte" ? "#f0fdf4" : "#fff5f5") : "white", color: aptForm.tipo === t ? (t === "aporte" ? "#16a34a" : "#dc2626") : B.gray }}>{t === "aporte" ? "Aporte" : "Resgate"}</button>
+              ))}
+            </div>
+          )}
+          {!aptForm.is_externo && <Inp label="Valor Total (R$) *" type="number" value={aptForm.valor} onChange={(e) => setAptForm((f) => ({ ...f, valor: e.target.value }))} placeholder="0" />}
+
+          {/* Split: Reserva de Emergência — oculto se externo */}
+          {!aptForm.is_externo && (
+            <div style={{ marginBottom: 13 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: B.navy, cursor: "pointer", marginBottom: 5 }}>
+                <input type="checkbox"
+                  checked={!!aptForm.is_reserva}
+                  onChange={(e) => setAptForm((f) => ({ ...f, is_reserva: e.target.checked, valor_reserva: e.target.checked ? (f.valor || "") : "" }))}
+                  style={{ width: 16, height: 16, cursor: "pointer" }} />
+                Parte para Reserva de Emergência
+              </label>
+              {aptForm.is_reserva && (
+                <div style={{ paddingLeft: 22 }}>
+                  <Inp label="Valor destinado à Reserva (R$)" type="number" value={aptForm.valor_reserva}
+                    onChange={(e) => setAptForm((f) => ({ ...f, valor_reserva: e.target.value }))} placeholder="0" />
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Split: PGBL */}
           <div style={{ marginBottom: 13 }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: B.navy, cursor: "pointer", marginBottom: 5 }}>
-              <input type="checkbox"
-                checked={!!aptForm.is_pgbl}
-                onChange={(e) => setAptForm((f) => ({ ...f, is_pgbl: e.target.checked, valor_pgbl: e.target.checked ? (f.valor || "") : "" }))}
-                style={{ width: 16, height: 16, cursor: "pointer" }} />
-              Parte para PGBL
-            </label>
-            {aptForm.is_pgbl && (
-              <div style={{ paddingLeft: 22 }}>
-                <Inp label="Valor destinado ao PGBL (R$)" type="number" value={aptForm.valor_pgbl}
+            {!aptForm.is_externo && (
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: B.navy, cursor: "pointer", marginBottom: 5 }}>
+                <input type="checkbox"
+                  checked={!!aptForm.is_pgbl}
+                  onChange={(e) => setAptForm((f) => ({ ...f, is_pgbl: e.target.checked, valor_pgbl: e.target.checked ? (f.valor || "") : "" }))}
+                  style={{ width: 16, height: 16, cursor: "pointer" }} />
+                Parte para PGBL
+              </label>
+            )}
+            {(aptForm.is_pgbl || aptForm.is_externo) && (
+              <div style={{ paddingLeft: aptForm.is_externo ? 0 : 22 }}>
+                <Inp
+                  label={aptForm.is_externo ? "Valor do PGBL (R$) *" : "Valor destinado ao PGBL (R$)"}
+                  type="number" value={aptForm.valor_pgbl}
                   onChange={(e) => setAptForm((f) => ({ ...f, valor_pgbl: e.target.value }))} placeholder="0" />
               </div>
             )}
