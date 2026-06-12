@@ -10,6 +10,37 @@ export const fmtDate = (d) => {
   return isNaN(dt) ? d : dt.toLocaleDateString("pt-BR");
 };
 
+// Formata data de aniversário: "1900-MM-DD" → "DD/MM" | "AAAA-MM-DD" → "DD/MM/AAAA"
+export const fmtBirthday = (d) => {
+  if (!d || d.length < 10) return "";
+  const y = d.slice(0, 4);
+  const m = d.slice(5, 7);
+  const day = d.slice(8, 10);
+  return y === "1900" ? `${day}/${m}` : `${day}/${m}/${y}`;
+};
+
+// Faz o parse do texto digitado → formato DB
+// Aceita: "DD/MM", "DD/MM/AAAA", "YYYY-MM-DD"
+export const parseBirthday = (text) => {
+  if (!text || !text.trim()) return null;
+  const t = text.trim();
+  // Já está no formato DB
+  if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
+  // DD/MM/AAAA
+  const full = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (full) {
+    const [, d, m, y] = full;
+    return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+  // DD/MM
+  const partial = t.match(/^(\d{1,2})\/(\d{1,2})$/);
+  if (partial) {
+    const [, d, m] = partial;
+    return `1900-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+  return null;
+};
+
 export const fmtComp = (c) => {
   if (!c) return "—";
   const [y, m] = c.split("-");

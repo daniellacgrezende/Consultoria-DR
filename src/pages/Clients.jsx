@@ -3,7 +3,7 @@ import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import { useData } from "../hooks/useData";
 import { B, PERFIL_MAP, EMPTY_CLIENT, LEAD_ORIGENS, PERIOD_OPTIONS } from "../utils/constants";
-import { money, fmtDate } from "../utils/formatters";
+import { money, fmtDate, fmtBirthday, parseBirthday } from "../utils/formatters";
 import { getCurva, getCurrentPL, daysSince, cuid, slugify } from "../utils/helpers";
 import Card from "../components/ui/Card";
 import MiniStat from "../components/ui/MiniStat";
@@ -489,8 +489,14 @@ export default function Clients() {
             <Sel label="Estado Civil" value={form.estado_civil || form.estadoCivil || ""} onChange={F("estado_civil")} opts={[{ v: "", l: "—" }, { v: "Solteiro", l: "Solteiro" }, { v: "Casado", l: "Casado" }, { v: "Divorciado", l: "Divorciado" }, { v: "Viúvo", l: "Viúvo" }, { v: "União estável", l: "União estável" }]} />
             <Inp label="Filhos" value={form.filhos} onChange={F("filhos")} />
             <Inp label="Cônjuge" value={form.conjuge} onChange={F("conjuge")} />
-            <Inp label="Data Nascimento" value={form.data_nascimento || form.dataNascimento || ""} onChange={F("data_nascimento")} type="date" />
-            <Inp label="Nasc. Parceiro(a)" value={form.data_nascimento_parceiro || ""} onChange={F("data_nascimento_parceiro")} type="date" />
+            <Inp label="Data Nascimento (DD/MM ou DD/MM/AAAA)" type="text"
+              value={fmtBirthday(form.data_nascimento || form.dataNascimento) || ""}
+              placeholder="DD/MM ou DD/MM/AAAA"
+              onChange={(e) => { const p = parseBirthday(e.target.value); F("data_nascimento")({ target: { value: p || e.target.value } }); }} />
+            <Inp label="Nasc. Parceiro(a) (DD/MM ou DD/MM/AAAA)" type="text"
+              value={fmtBirthday(form.data_nascimento_parceiro) || ""}
+              placeholder="DD/MM ou DD/MM/AAAA"
+              onChange={(e) => { const p = parseBirthday(e.target.value); F("data_nascimento_parceiro")({ target: { value: p || e.target.value } }); }} />
             <div style={{ gridColumn: "1/-1" }}><Inp label="Hobbies" value={form.hobbies} onChange={F("hobbies")} /></div>
 
             <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Status e Perfil</div>

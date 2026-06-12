@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { fmtDate } from "../../utils/formatters";
+import { fmtDate, fmtBirthday, parseBirthday } from "../../utils/formatters";
 
 export function InlineText({ value, onSave, placeholder = "—", style = {}, multiline = false, saveOnEnter = false }) {
   const [editing, setEditing] = useState(false);
@@ -66,6 +66,43 @@ export function InlineSelect({ value, onSave, opts = [], placeholder = "—", st
   return (
     <span onClick={() => setEditing(true)} title="Clique para editar" style={{ cursor: "pointer", borderBottom: "1px dashed rgba(10,8,9,0.2)", paddingBottom: 1, fontSize: 12, color: val !== "" && val !== null ? "inherit" : "#9E9C9E", display: "inline-block", ...style }}>
       {label}
+    </span>
+  );
+}
+
+// Campo de aniversário: aceita "DD/MM" ou "DD/MM/AAAA"
+export function InlineBirthday({ value, onSave, style = {} }) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(fmtBirthday(value));
+  useEffect(() => { if (!editing) setText(fmtBirthday(value)); }, [value, editing]);
+
+  const commit = () => {
+    if (!text.trim()) { onSave(null); setEditing(false); return; }
+    const parsed = parseBirthday(text);
+    if (parsed) { onSave(parsed); setEditing(false); }
+    else setEditing(false); // não salva se inválido
+  };
+  const cancel = () => { setText(fmtBirthday(value)); setEditing(false); };
+
+  const display = fmtBirthday(value);
+  if (editing) return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+      <input
+        type="text"
+        value={text}
+        autoFocus
+        placeholder="DD/MM ou DD/MM/AAAA"
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") commit(); if (e.key === "Escape") cancel(); }}
+        style={{ padding: "3px 8px", border: "1px solid #D30000", borderRadius: 6, fontSize: 12, fontFamily: "inherit", outline: "none", width: 130, ...style }}
+      />
+      <button onClick={commit} title="Salvar" style={{ background: "#16a34a", color: "white", border: "none", borderRadius: 4, padding: "2px 7px", fontSize: 12, cursor: "pointer", fontWeight: 700, lineHeight: 1.4 }}>✓</button>
+      <button onClick={cancel} title="Cancelar" style={{ background: "#e5e7eb", color: "#6b7280", border: "none", borderRadius: 4, padding: "2px 7px", fontSize: 12, cursor: "pointer", fontWeight: 700, lineHeight: 1.4 }}>✕</button>
+    </span>
+  );
+  return (
+    <span onClick={() => setEditing(true)} title="Clique para editar (DD/MM ou DD/MM/AAAA)" style={{ cursor: "pointer", borderBottom: "1px dashed rgba(10,8,9,0.2)", paddingBottom: 1, fontSize: 12, color: display ? "inherit" : "#9E9C9E", ...style }}>
+      {display || "—"}
     </span>
   );
 }

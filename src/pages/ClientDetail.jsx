@@ -2,13 +2,13 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useData } from "../hooks/useData";
 import { B, PERFIL_MAP, EMPTY_CLIENT, LEAD_ORIGENS, PERIOD_OPTIONS, STATUS_MAP } from "../utils/constants";
-import { money, fmtDate } from "../utils/formatters";
+import { money, fmtDate, fmtBirthday, parseBirthday } from "../utils/formatters";
 import { getCurva, getCurrentPL, calcIdade, daysSince, getPeriodDays, getReuniaoStatusDynamic, getLiquidezAtual, huid, today, slugify, addDays } from "../utils/helpers";
 import Card from "../components/ui/Card";
 import Avatar from "../components/ui/Avatar";
 import Modal from "../components/ui/Modal";
 import { SBadge, PBadge, CBadge } from "../components/ui/Badge";
-import { InlineText, InlineDate, InlineSelect, InlineMoney } from "../components/ui/InlineEdit";
+import { InlineText, InlineDate, InlineSelect, InlineMoney, InlineBirthday } from "../components/ui/InlineEdit";
 import { SecH, Inp, Sel, Tarea } from "../components/ui/FormFields";
 
 export default function ClientDetail() {
@@ -327,7 +327,7 @@ export default function ClientDetail() {
                 </div>
                 <div>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Data Nascimento</div>
-                  <InlineDate value={client.data_nascimento} onSave={(v) => updateField("data_nascimento", v)} />
+                  <InlineBirthday value={client.data_nascimento} onSave={(v) => updateField("data_nascimento", v)} />
                   {idade !== null && <div style={{ fontSize: 13, fontWeight: 700, color: B.navy, marginTop: 2 }}>{idade} anos</div>}
                 </div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Profissão</div><InlineText value={client.profissao} onSave={(v) => updateField("profissao", v)} /></div>
@@ -339,7 +339,7 @@ export default function ClientDetail() {
                   {(client.data_nascimento_parceiro || client.conjuge) && (
                     <div style={{ marginTop: 4 }}>
                       <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 2 }}>Nasc. parceiro</div>
-                      <InlineDate value={client.data_nascimento_parceiro} onSave={(v) => updateField("data_nascimento_parceiro", v)} />
+                      <InlineBirthday value={client.data_nascimento_parceiro} onSave={(v) => updateField("data_nascimento_parceiro", v)} />
                     </div>
                   )}
                 </div>
@@ -809,8 +809,14 @@ export default function ClientDetail() {
             <Sel label="Estado Civil" value={editForm.estado_civil || editForm.estadoCivil || ""} onChange={EF("estado_civil")} opts={[{ v: "", l: "—" }, { v: "Solteiro", l: "Solteiro" }, { v: "Casado", l: "Casado" }, { v: "Divorciado", l: "Divorciado" }, { v: "Viúvo", l: "Viúvo" }, { v: "União estável", l: "União estável" }]} />
             <Inp label="Filhos" value={editForm.filhos || ""} onChange={EF("filhos")} />
             <Inp label="Cônjuge" value={editForm.conjuge || ""} onChange={EF("conjuge")} />
-            <Inp label="Data Nascimento" value={editForm.data_nascimento || editForm.dataNascimento || ""} onChange={EF("data_nascimento")} type="date" />
-            <Inp label="Nasc. Parceiro(a)" value={editForm.data_nascimento_parceiro || ""} onChange={EF("data_nascimento_parceiro")} type="date" />
+            <Inp label="Data Nascimento (DD/MM ou DD/MM/AAAA)" type="text"
+              value={fmtBirthday(editForm.data_nascimento || editForm.dataNascimento) || ""}
+              placeholder="DD/MM ou DD/MM/AAAA"
+              onChange={(e) => { const p = parseBirthday(e.target.value); EF("data_nascimento")({ target: { value: p || e.target.value } }); }} />
+            <Inp label="Nasc. Parceiro(a) (DD/MM ou DD/MM/AAAA)" type="text"
+              value={fmtBirthday(editForm.data_nascimento_parceiro) || ""}
+              placeholder="DD/MM ou DD/MM/AAAA"
+              onChange={(e) => { const p = parseBirthday(e.target.value); EF("data_nascimento_parceiro")({ target: { value: p || e.target.value } }); }} />
             <div style={{ gridColumn: "1/-1" }}><Inp label="Hobbies" value={editForm.hobbies || ""} onChange={EF("hobbies")} /></div>
             <div style={{ gridColumn: "1/-1" }}><Inp label="Grupo (PJ+PF)" value={editForm.grupo_nome ?? editForm.grupoNome ?? ""} onChange={EF("grupo_nome")} placeholder="Nome do grupo" /></div>
             <Sel label="Origem do Cliente" value={editForm.origem_cliente || editForm.origemCliente || ""} onChange={EF("origem_cliente")} opts={[{ v: "", l: "—" }, ...LEAD_ORIGENS.map((o) => ({ v: o, l: o }))]} />

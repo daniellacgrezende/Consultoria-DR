@@ -31,6 +31,7 @@ export const getCurrentPL = (client, history) => {
 
 export const calcIdade = (dataNasc) => {
   if (!dataNasc) return null;
+  if (String(dataNasc).startsWith("1900-")) return null; // só dia/mês, ano desconhecido
   const hoje = new Date();
   const nasc = new Date(dataNasc);
   let idade = hoje.getFullYear() - nasc.getFullYear();
