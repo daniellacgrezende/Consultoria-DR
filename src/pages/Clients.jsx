@@ -490,6 +490,7 @@ export default function Clients() {
             <Inp label="Filhos" value={form.filhos} onChange={F("filhos")} />
             <Inp label="Cônjuge" value={form.conjuge} onChange={F("conjuge")} />
             <Inp label="Data Nascimento" value={form.data_nascimento || form.dataNascimento || ""} onChange={F("data_nascimento")} type="date" />
+            <Inp label="Nasc. Parceiro(a)" value={form.data_nascimento_parceiro || ""} onChange={F("data_nascimento_parceiro")} type="date" />
             <div style={{ gridColumn: "1/-1" }}><Inp label="Hobbies" value={form.hobbies} onChange={F("hobbies")} /></div>
 
             <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Status e Perfil</div>

@@ -132,6 +132,7 @@ export const mapClientFromDB = (c) => ({
   email: c.email,
   patrimonioImobilizado: c.patrimonio_imobilizado,
   financiamentos: c.financiamentos,
+  dataNascimentoParceiro: c.data_nascimento_parceiro,
 });
 
 // Colunas válidas da tabela clients no Supabase
@@ -148,6 +149,7 @@ const CLIENT_DB_COLS = new Set([
   "corretoras", "origem_cliente", "proximo_relatorio", "indicado_por", "aporte_mensal_max", "data_pedido_indicacao",
   "email", "patrimonio_imobilizado", "financiamentos", "benchmark",
   "seguro_nao_aplica", "ips_nao_aplica", "prev_nao_aplica", "reuniao_agendada_em",
+  "data_nascimento_parceiro",
 ]);
 
 // Converte valor para número, retornando 0 se vazio/inválido
@@ -223,6 +225,7 @@ export const mapClientToDB = (c) => {
     patrimonio_imobilizado: c.patrimonio_imobilizado ?? c.patrimonioImobilizado ?? "",
     financiamentos: c.financiamentos ?? "",
     benchmark: c.benchmark ?? "",
+    data_nascimento_parceiro: toDate(c.data_nascimento_parceiro ?? c.dataNascimentoParceiro),
   };
 
   return db;

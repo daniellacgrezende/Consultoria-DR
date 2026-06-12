@@ -20,39 +20,23 @@ export function useBirthdayTasks() {
     // MM-DD de hoje para comparação
     const todayMMDD = `${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
-    const active = clients.filter((c) => c.status === "ativo" && c.data_nascimento);
+    const active = clients.filter((c) => c.status === "ativo");
 
     const tasks = [];
 
-    for (const c of active) {
-      const raw = c.data_nascimento || c.dataNascimento;
-      if (!raw || raw.length < 10) continue;
-
-      // Extrai MM-DD da data de nascimento
-      const mmdd = raw.slice(5, 10); // "MM-DD"
-      if (!mmdd || mmdd.length !== 5) continue;
-
-      // Data do aniversário no ano corrente
+    const addBirthdayTask = (rawDate, texto) => {
+      if (!rawDate || rawDate.length < 10) return;
+      const mmdd = rawDate.slice(5, 10);
+      if (!mmdd || mmdd.length !== 5) return;
       const birthdayThisYear = `${currentYear}-${mmdd}`;
-
-      // Se já passou este ano, pular
-      if (birthdayThisYear < today()) continue;
-
-      // Padrão de texto único para detecção de duplicatas
-      const expectedTexto = `🎂 Aniversário — ${c.nome}`;
-
-      // Verifica se já existe tarefa para este cliente neste ano
+      if (birthdayThisYear < today()) return;
       const alreadyExists = todos.some(
-        (t) =>
-          t.texto === expectedTexto &&
-          t.vencimento &&
-          t.vencimento.startsWith(String(currentYear))
+        (t) => t.texto === texto && t.vencimento && t.vencimento.startsWith(String(currentYear))
       );
-
       if (!alreadyExists) {
         tasks.push({
           id: huid(),
-          texto: expectedTexto,
+          texto,
           recorrencia: "anual",
           vencimento: birthdayThisYear,
           descricao: "",
@@ -62,6 +46,17 @@ export function useBirthdayTasks() {
           data: today(),
           ordem: 9999,
         });
+      }
+    };
+
+    for (const c of active) {
+      if (c.data_nascimento) {
+        addBirthdayTask(c.data_nascimento || c.dataNascimento, `🎂 Aniversário — ${c.nome}`);
+      }
+      const rawParceiro = c.data_nascimento_parceiro || c.dataNascimentoParceiro;
+      if (rawParceiro) {
+        const nomeParceiro = c.conjuge ? `${c.conjuge} (parceiro de ${c.nome.split(" ")[0]})` : `Parceiro de ${c.nome.split(" ")[0]}`;
+        addBirthdayTask(rawParceiro, `🎂 Aniversário — ${nomeParceiro}`);
       }
     }
 
