@@ -415,23 +415,24 @@ export default function RebalanceIntl() {
                             <thead>
                               <tr style={{ background: "#f0f4ff" }}>
                                 <th style={{ padding: "8px 12px", textAlign: "left", fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: `2px solid ${B.border}`, whiteSpace: "nowrap" }}>Produto</th>
-                                <th style={{ padding: "8px 12px", textAlign: "left", fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: `2px solid ${B.border}` }}>Classe</th>
                                 <th style={{ padding: "8px 12px", textAlign: "right", fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: `2px solid ${B.border}`, whiteSpace: "nowrap" }}>Valor (USD)</th>
+                                <th style={{ padding: "8px 12px", textAlign: "left", fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: `2px solid ${B.border}` }}>Classe</th>
                               </tr>
                             </thead>
                             <tbody>
                               {items.map((item, i) => (
                                 <tr key={`${item.ticker}-${i}`} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
                                   <td style={{ padding: "8px 12px", fontWeight: 800, fontSize: 13, color: B.navy, letterSpacing: "0.03em", whiteSpace: "nowrap" }}>{item.ticker}</td>
-                                  <td style={{ padding: "8px 12px", color: "#6b7280", fontSize: 12, whiteSpace: "nowrap" }}>{item.classe}</td>
                                   <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, fontSize: 13, color: "#16a34a", whiteSpace: "nowrap" }}>$ {item.valor.toLocaleString("en-US")}</td>
+                                  <td style={{ padding: "8px 12px", color: "#6b7280", fontSize: 12, whiteSpace: "nowrap" }}>{item.classe}</td>
                                 </tr>
                               ))}
                             </tbody>
                             <tfoot>
                               <tr style={{ background: "#f0fdf4", borderTop: `2px solid #86efac` }}>
-                                <td style={{ padding: "8px 12px", fontWeight: 800, fontSize: 12, color: B.navy }} colSpan={2}>Total Sugerido</td>
+                                <td style={{ padding: "8px 12px", fontWeight: 800, fontSize: 12, color: B.navy }}>Total Sugerido</td>
                                 <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 800, fontSize: 14, color: "#16a34a", whiteSpace: "nowrap" }}>$ {totalSugerido.toLocaleString("en-US")}</td>
+                                <td />
                               </tr>
                             </tfoot>
                           </table>
