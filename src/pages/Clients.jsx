@@ -549,7 +549,7 @@ export default function Clients() {
             </div>
 
             <div style={{ gridColumn: "1/-1" }}><Inp label="Observação Rápida" value={form.observacao_rapida ?? form.observacaoRapida ?? ""} onChange={F("observacao_rapida")} placeholder="Aparece destacada na ficha" /></div>
-            <div style={{ gridColumn: "1/-1" }}><Inp label="Grupo (PJ+PF)" value={form.grupo_nome ?? form.grupoNome ?? ""} onChange={F("grupo_nome")} placeholder="Nome do grupo" /></div>
+            <div style={{ gridColumn: "1/-1" }}><Inp label="Grupo Familiar" value={form.grupo_nome ?? form.grupoNome ?? ""} onChange={F("grupo_nome")} placeholder="Ex: Família Dadalto" /></div>
             <div style={{ gridColumn: "1/-1" }}><Inp label="Link Rebalanceamento" value={form.link_rebalanceamento ?? form.linkRebalanceamento ?? ""} onChange={F("link_rebalanceamento")} placeholder="https://…" /></div>
             <div style={{ gridColumn: "1/-1" }}><Tarea label="Planejamento / Metas" value={form.planejamento || ""} onChange={F("planejamento")} /></div>
             <div style={{ gridColumn: "1/-1" }}><Tarea label="Observações" value={form.observacoes || ""} onChange={F("observacoes")} /></div>

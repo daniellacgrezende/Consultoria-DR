@@ -405,7 +405,7 @@ export default function ClientDetail() {
                     return <div style={{ fontSize: 9, color: "#6b7280", marginTop: 2 }}>{label}</div>;
                   })()}
                 </div>
-                {grupoNome && <div style={{ gridColumn: "1/-1" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Grupo (PJ+PF)</div><InlineText value={client.grupo_nome} onSave={(v) => updateField("grupo_nome", v)} /></div>}
+                <div style={{ gridColumn: "1/-1" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Grupo Familiar</div><InlineText value={client.grupo_nome || ""} onSave={(v) => updateField("grupo_nome", v)} placeholder="Ex: Família Dadalto" /></div>
               </div>
             </>
           )}
@@ -484,10 +484,10 @@ export default function ClientDetail() {
         </Card>
 
 
-        {/* Grupo PJ+PF */}
+        {/* Grupo Familiar */}
         {grupoMembers.length > 0 && (
           <Card style={{ gridColumn: "1/-1", background: "#f5f3ff", border: "2px solid #ddd6fe" }}>
-            <div style={{ fontWeight: 700, fontSize: 12, color: "#7c3aed", marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid #ddd6fe" }}>Contas vinculadas — {grupoNome}</div>
+            <div style={{ fontWeight: 700, fontSize: 12, color: "#7c3aed", marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid #ddd6fe" }}>Grupo Familiar — {grupoNome}</div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               {[client, ...grupoMembers].map((c) => (
                 <div key={c.id} onClick={() => c.id !== id && navigate(`/clients/${slugify(c.nome)}`)} style={{ background: "white", border: "1px solid #ddd6fe", borderRadius: 9, padding: "10px 14px", cursor: c.id !== id ? "pointer" : "default", flex: 1, minWidth: 160 }}>
@@ -818,7 +818,7 @@ export default function ClientDetail() {
               placeholder="DD/MM ou DD/MM/AAAA"
               onChange={(e) => { const p = parseBirthday(e.target.value); EF("data_nascimento_parceiro")({ target: { value: p || e.target.value } }); }} />
             <div style={{ gridColumn: "1/-1" }}><Inp label="Hobbies" value={editForm.hobbies || ""} onChange={EF("hobbies")} /></div>
-            <div style={{ gridColumn: "1/-1" }}><Inp label="Grupo (PJ+PF)" value={editForm.grupo_nome ?? editForm.grupoNome ?? ""} onChange={EF("grupo_nome")} placeholder="Nome do grupo" /></div>
+            <div style={{ gridColumn: "1/-1" }}><Inp label="Grupo Familiar" value={editForm.grupo_nome ?? editForm.grupoNome ?? ""} onChange={EF("grupo_nome")} placeholder="Ex: Família Dadalto" /></div>
             <Sel label="Origem do Cliente" value={editForm.origem_cliente || editForm.origemCliente || ""} onChange={EF("origem_cliente")} opts={[{ v: "", l: "—" }, ...LEAD_ORIGENS.map((o) => ({ v: o, l: o }))]} />
             <Inp label="Início Carteira" value={editForm.inicio_carteira ?? editForm.inicioCarteira ?? ""} onChange={EF("inicio_carteira")} type="date" />
 
