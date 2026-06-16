@@ -315,8 +315,8 @@ export default function ClientDetail() {
           </div>
           {dgOpen && (
             <>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10 }}>
-                {/* Linha 1: cidade+uf · nascimento · profissão · estado civil · filhos · cônjuge */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "10px 6px" }}>
+                {/* Linha 1: cidade+uf · nascimento · profissão · estado civil · cônjuge · filhos */}
                 <div>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Cidade / UF</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
@@ -332,7 +332,6 @@ export default function ClientDetail() {
                 </div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Profissão</div><InlineText value={client.profissao} onSave={(v) => updateField("profissao", v)} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Estado Civil</div><InlineSelect value={client.estado_civil || ""} onSave={(v) => updateField("estado_civil", v)} opts={[{ v: "", l: "—" }, { v: "Solteiro", l: "Solteiro" }, { v: "Casado", l: "Casado" }, { v: "Divorciado", l: "Divorciado" }, { v: "Viúvo", l: "Viúvo" }, { v: "União estável", l: "União estável" }]} /></div>
-                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Filhos</div><InlineText value={client.filhos} onSave={(v) => updateField("filhos", v)} /></div>
                 <div>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Cônjuge</div>
                   <InlineText value={client.conjuge} onSave={(v) => updateField("conjuge", v)} />
@@ -343,6 +342,7 @@ export default function ClientDetail() {
                     </div>
                   )}
                 </div>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Filhos</div><InlineText value={client.filhos} onSave={(v) => updateField("filhos", v)} /></div>
                 {/* Linha 2: e-mail · origem · início carteira · seguro/prev · hobbies · pediu indicação */}
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>E-mail</div><InlineText value={client.email} onSave={(v) => updateField("email", v)} placeholder="email@exemplo.com" /></div>
                 <div>
