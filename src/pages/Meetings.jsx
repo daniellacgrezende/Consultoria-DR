@@ -803,7 +803,7 @@ export default function Meetings() {
       {/* ─── Modal Agendar (Retentativa → Sim) ─── */}
       {retAgModal && (() => {
         const c = retAgModal.client;
-        const temParceiro = !!(c.conjuge && retAgForm.emailParceiro);
+        const temParceiro = !!(c.atendimento_casal && retAgForm.emailParceiro);
         const primeiroNome = c.nome.split(" ")[0];
         const nomeConjuge = c.conjuge?.split(" ")[0] || "";
         const tituloReuniao = retAgForm.incluirParceiro && temParceiro
@@ -844,7 +844,7 @@ export default function Meetings() {
               </div>
 
               {/* Toggle incluir parceiro */}
-              {c.conjuge && (
+              {c.atendimento_casal && (
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, padding: "10px 12px", background: retAgForm.incluirParceiro ? "#f5f3ff" : "#f9fafb", border: `1px solid ${retAgForm.incluirParceiro ? "#ddd6fe" : "#e5e7eb"}`, borderRadius: 8 }}>
                   <input type="checkbox" id="incluir-parceiro" checked={!!retAgForm.incluirParceiro}
                     onChange={(e) => setRetAgForm((f) => ({ ...f, incluirParceiro: e.target.checked }))}

@@ -347,9 +347,9 @@ export default function ClientDetail() {
                 <div>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>E-mail</div>
                   <InlineText value={client.email} onSave={(v) => updateField("email", v)} placeholder="email@exemplo.com" />
-                  {client.conjuge && (
+                  {client.atendimento_casal && (
                     <div style={{ marginTop: 4 }}>
-                      <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 2 }}>E-mail {client.conjuge.split(" ")[0]}</div>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", marginBottom: 2 }}>E-mail {client.conjuge ? client.conjuge.split(" ")[0] : "Parceiro(a)"}</div>
                       <InlineText value={client.email_parceiro || ""} onSave={(v) => updateField("email_parceiro", v)} placeholder="email@exemplo.com" />
                     </div>
                   )}
@@ -826,7 +826,13 @@ export default function ClientDetail() {
               value={fmtBirthday(editForm.data_nascimento_parceiro) || ""}
               placeholder="DD/MM ou DD/MM/AAAA"
               onChange={(e) => { const p = parseBirthday(e.target.value); EF("data_nascimento_parceiro")({ target: { value: p || e.target.value } }); }} />
-            <Inp label="E-mail do Parceiro(a)" value={editForm.email_parceiro || ""} onChange={EF("email_parceiro")} placeholder="email@exemplo.com" />
+            <div style={{ gridColumn: "1/-1", display: "flex", alignItems: "center", gap: 8, padding: "8px 0" }}>
+              <input type="checkbox" id="atend-casal" checked={!!editForm.atendimento_casal} onChange={(e) => setEditForm((f) => ({ ...f, atendimento_casal: e.target.checked }))} style={{ width: 15, height: 15, accentColor: "#7c3aed", cursor: "pointer" }} />
+              <label htmlFor="atend-casal" style={{ fontSize: 13, fontWeight: 600, color: editForm.atendimento_casal ? "#7c3aed" : "#6b7280", cursor: "pointer" }}>Atendimento do casal (exibe email e convite para parceiro(a))</label>
+            </div>
+            {editForm.atendimento_casal && (
+              <Inp label="E-mail do Parceiro(a)" value={editForm.email_parceiro || ""} onChange={EF("email_parceiro")} placeholder="email@exemplo.com" />
+            )}
             <div style={{ gridColumn: "1/-1" }}><Inp label="Hobbies" value={editForm.hobbies || ""} onChange={EF("hobbies")} /></div>
             <div style={{ gridColumn: "1/-1" }}><Inp label="Grupo Familiar" value={editForm.grupo_nome ?? editForm.grupoNome ?? ""} onChange={EF("grupo_nome")} placeholder="Ex: Família Dadalto" /></div>
             <Sel label="Origem do Cliente" value={editForm.origem_cliente || editForm.origemCliente || ""} onChange={EF("origem_cliente")} opts={[{ v: "", l: "—" }, ...LEAD_ORIGENS.map((o) => ({ v: o, l: o }))]} />
