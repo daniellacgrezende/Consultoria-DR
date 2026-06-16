@@ -634,7 +634,7 @@ export default function Pipeline() {
         r1.meta_curto ? `Curto prazo (até 2 anos): ${r1.meta_curto}` : "",
         r1.meta_medio ? `Médio prazo (2–5 anos): ${r1.meta_medio}` : "",
         r1.idade_parar ? `Pretende parar/diminuir ritmo aos ${r1.idade_parar} anos${r1.renda_aposentadoria ? ` com renda de R$ ${Number(r1.renda_aposentadoria).toLocaleString("pt-BR")}/mês` : ""}.` : "",
-        r1.carteira_ideal ? `Carteira ideal: ${r1.carteira_ideal}` : "",
+        r1.notas_gerais ? `Notas da R1: ${r1.notas_gerais}` : "",
       ].filter(Boolean).join("\n\n");
       // Monta observações a partir das dores/contexto do R1
       const obsR1 = [
@@ -1094,7 +1094,7 @@ export default function Pipeline() {
                   <div style={{ gridColumn: "1/-1" }}><Tarea label="Metas de Médio Prazo (2–5 anos)" value={r1.meta_medio || ""} onChange={R1("meta_medio")} rows={2} placeholder="Ex: Comprar imóvel, trocar de carro, abrir negócio..." /></div>
                   <Inp label="Idade para parar / diminuir ritmo" type="number" value={r1.idade_parar || ""} onChange={R1("idade_parar")} placeholder="Ex: 55" />
                   <Inp label="Renda desejada na aposentadoria (R$/mês)" type="number" value={r1.renda_aposentadoria || ""} onChange={R1("renda_aposentadoria")} />
-                  <div style={{ gridColumn: "1/-1" }}><Tarea label="Como deve ser a carteira ideal?" value={r1.carteira_ideal || ""} onChange={R1("carteira_ideal")} rows={3} placeholder="Ex: Diversificada, com renda passiva, proteção cambial, etc..." /></div>
+                  <div style={{ gridColumn: "1/-1" }}><Tarea label="Notas Gerais" value={r1.notas_gerais || ""} onChange={R1("notas_gerais")} rows={4} placeholder="Observações livres da reunião..." /></div>
                 </Bloco>
               </div>
             );
