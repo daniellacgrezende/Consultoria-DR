@@ -405,7 +405,7 @@ export default function ClientDetail() {
                     return <div style={{ fontSize: 9, color: "#6b7280", marginTop: 2 }}>{label}</div>;
                   })()}
                 </div>
-                <div style={{ gridColumn: "1/-1" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Grupo Familiar</div><InlineText value={client.grupo_nome || ""} onSave={(v) => updateField("grupo_nome", v)} placeholder="Ex: Família Dadalto" /></div>
+                {grupoNome && <div style={{ gridColumn: "1/-1" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Grupo Familiar</div><InlineText value={client.grupo_nome} onSave={(v) => updateField("grupo_nome", v)} /></div>}
               </div>
             </>
           )}
