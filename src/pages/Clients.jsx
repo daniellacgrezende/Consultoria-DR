@@ -441,7 +441,12 @@ export default function Clients() {
                         <Avatar nome={c.nome} size={32} />
                         <div>
                           <span style={{ fontWeight: 600, color: B.navy }}>{c.nome}</span>
-                          {grupoNome && <div style={{ fontSize: 10, color: "#8b5cf6", fontWeight: 600 }}>{grupoNome}</div>}
+                          <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 2 }}>
+                            {c.atendimento_casal && c.conjuge && (
+                              <span style={{ fontSize: 10, color: "#7c3aed", fontWeight: 600, background: "#f5f3ff", border: "1px solid #ddd6fe", borderRadius: 999, padding: "0px 6px" }}>+ {c.conjuge.split(" ")[0]}</span>
+                            )}
+                            {grupoNome && <span style={{ fontSize: 10, color: "#8b5cf6", fontWeight: 600 }}>{grupoNome}</span>}
+                          </div>
                         </div>
                       </div>
                     </td>
