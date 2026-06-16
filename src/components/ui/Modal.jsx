@@ -1,7 +1,7 @@
-export default function Modal({ open, onClose, children, wide }) {
+export default function Modal({ open, onClose, children, wide, noOverlayClose }) {
   if (!open) return null;
   return (
-    <div onClick={onClose} style={{
+    <div onClick={noOverlayClose ? undefined : onClose} style={{
       position: "fixed", inset: 0, background: "rgba(0,0,0,0.40)",
       display: "flex", alignItems: "center", justifyContent: "center",
       zIndex: 300, backdropFilter: "blur(4px)",

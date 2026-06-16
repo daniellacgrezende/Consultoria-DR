@@ -1004,7 +1004,7 @@ export default function Pipeline() {
       </Modal>
 
       {/* ═══ MODAL LEAD ═══ */}
-      <Modal open={modal} onClose={() => setModal(false)} wide>
+      <Modal open={modal} onClose={() => setModal(false)} wide noOverlayClose>
         <div style={{ padding: "26px 30px" }}>
           {/* Header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
