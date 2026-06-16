@@ -892,7 +892,7 @@ export default function ClientDetail() {
       </Modal>
 
       {/* Modal Reunião */}
-      <Modal open={rhModal} onClose={() => setRhModal(false)} wide>
+      <Modal open={rhModal} onClose={() => setRhModal(false)} wide noOverlayClose>
         <div style={{ padding: "26px 30px" }}>
           <h3 style={{ margin: "0 0 20px", fontSize: 17, fontWeight: 700, color: B.navy }}>{rhEditId ? "Editar Registro" : "Novo Registro"}</h3>
           <Inp label="Data *" type="date" value={rhForm.data} onChange={(e) => setRhForm((f) => ({ ...f, data: e.target.value }))} />
