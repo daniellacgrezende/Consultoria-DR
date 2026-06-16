@@ -344,7 +344,16 @@ export default function ClientDetail() {
                 </div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Filhos</div><InlineText value={client.filhos} onSave={(v) => updateField("filhos", v)} /></div>
                 {/* Linha 2: e-mail · origem · início carteira · seguro/prev · hobbies · pediu indicação */}
-                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>E-mail</div><InlineText value={client.email} onSave={(v) => updateField("email", v)} placeholder="email@exemplo.com" /></div>
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>E-mail</div>
+                  <InlineText value={client.email} onSave={(v) => updateField("email", v)} placeholder="email@exemplo.com" />
+                  {client.conjuge && (
+                    <div style={{ marginTop: 4 }}>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 2 }}>E-mail {client.conjuge.split(" ")[0]}</div>
+                      <InlineText value={client.email_parceiro || ""} onSave={(v) => updateField("email_parceiro", v)} placeholder="email@exemplo.com" />
+                    </div>
+                  )}
+                </div>
                 <div>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Origem</div>
                   <InlineSelect value={client.origem_cliente || ""} onSave={(v) => updateField("origem_cliente", v)} opts={[{ v: "", l: "—" }, ...LEAD_ORIGENS.map((o) => ({ v: o, l: o }))]} />
@@ -817,6 +826,7 @@ export default function ClientDetail() {
               value={fmtBirthday(editForm.data_nascimento_parceiro) || ""}
               placeholder="DD/MM ou DD/MM/AAAA"
               onChange={(e) => { const p = parseBirthday(e.target.value); EF("data_nascimento_parceiro")({ target: { value: p || e.target.value } }); }} />
+            <Inp label="E-mail do Parceiro(a)" value={editForm.email_parceiro || ""} onChange={EF("email_parceiro")} placeholder="email@exemplo.com" />
             <div style={{ gridColumn: "1/-1" }}><Inp label="Hobbies" value={editForm.hobbies || ""} onChange={EF("hobbies")} /></div>
             <div style={{ gridColumn: "1/-1" }}><Inp label="Grupo Familiar" value={editForm.grupo_nome ?? editForm.grupoNome ?? ""} onChange={EF("grupo_nome")} placeholder="Ex: Família Dadalto" /></div>
             <Sel label="Origem do Cliente" value={editForm.origem_cliente || editForm.origemCliente || ""} onChange={EF("origem_cliente")} opts={[{ v: "", l: "—" }, ...LEAD_ORIGENS.map((o) => ({ v: o, l: o }))]} />

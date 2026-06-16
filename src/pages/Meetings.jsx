@@ -97,7 +97,7 @@ export default function Meetings() {
   // Barra de desfazer
   const [undoBar, setUndoBar] = useState(null); // { label, snapshot }
   const [retAgModal, setRetAgModal] = useState(null); // { client } — modal agendar retentativa
-  const [retAgForm, setRetAgForm]   = useState({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: "" });
+  const [retAgForm, setRetAgForm]   = useState({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: "", incluirParceiro: false, emailParceiro: "" });
   const [taskModal, setTaskModal] = useState(null); // { texto, data }
   useEffect(() => {
     if (!undoBar) return;
@@ -329,7 +329,7 @@ export default function Meetings() {
                         <button onClick={() => setTaskModal({ texto: `Enviar mensagem para ${c.nome} — reunião de acompanhamento`, data: today() })}
                           style={{ fontSize: 9.5, fontWeight: 700, background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>+ Tarefa</button>
                       </div>
-                      <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "" }); }}
+                      <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "", incluirParceiro: false, emailParceiro: c.email_parceiro || "" }); }}
                         style={{ fontSize: 9.5, fontWeight: 700, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>✓ Agendou</button>
                     </div>
                   </div>
@@ -365,7 +365,7 @@ export default function Meetings() {
                       <div style={{ display: "flex", gap: 4 }}>
                         <button onClick={() => openAction("chamei", c)}
                           style={{ fontSize: 9.5, fontWeight: 700, background: "#ECFEFF", color: "#0891B2", border: "1px solid #A5F3FC", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>Chamei</button>
-                        <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "" }); }}
+                        <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "", incluirParceiro: false, emailParceiro: c.email_parceiro || "" }); }}
                           style={{ fontSize: 9.5, fontWeight: 700, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>✓ Agendar</button>
                       </div>
                     </div>
@@ -397,7 +397,7 @@ export default function Meetings() {
                           </div>
                           <div style={{ fontSize: 10, color: "#0891B2", fontWeight: 600 }}>Chamei há {dAv}d · {c.periodicidade_reuniao || "Trimestral"}</div>
                         </div>
-                        <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "" }); }}
+                        <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "", incluirParceiro: false, emailParceiro: c.email_parceiro || "" }); }}
                           style={{ fontSize: 9.5, fontWeight: 700, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>✓ Agendou</button>
                       </div>
                     );
@@ -435,7 +435,7 @@ export default function Meetings() {
                         <div style={{ display: "flex", gap: 5, paddingTop: 5, borderTop: "1px solid #EDE9FE" }}>
                           <button onClick={() => openAction("chamei", c)}
                             style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#F5F3FF", color: "#7C3AED", border: "1px solid #DDD6FE", borderRadius: 5, padding: "4px 6px", cursor: "pointer" }}>Chamei de novo</button>
-                          <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "" }); }}
+                          <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "", incluirParceiro: false, emailParceiro: c.email_parceiro || "" }); }}
                             style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 6px", cursor: "pointer" }}>✓ Agendou</button>
                         </div>
                       </div>
@@ -473,7 +473,7 @@ export default function Meetings() {
                         <div style={{ display: "flex", gap: 5, paddingTop: 5, borderTop: "1px solid #FEE0AA" }}>
                           <button onClick={() => openAction("chamei", c)}
                             style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#FFF7ED", color: "#92400E", border: "1px solid #FED7AA", borderRadius: 5, padding: "4px 6px", cursor: "pointer" }}>Tentei novamente</button>
-                          <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "" }); }}
+                          <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "", incluirParceiro: false, emailParceiro: c.email_parceiro || "" }); }}
                             style={{ flex: 1, fontSize: 9, fontWeight: 700, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 6px", cursor: "pointer" }}>✓ Agendou</button>
                         </div>
                       </div>
@@ -503,7 +503,7 @@ export default function Meetings() {
                       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                         <div style={{ display: "flex", gap: 4 }}>
                           <button
-                            onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: c.reuniao_agendada_em || today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "" }); }}
+                            onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: c.reuniao_agendada_em || today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "", incluirParceiro: false, emailParceiro: c.email_parceiro || "" }); }}
                             style={{ fontSize: 9, fontWeight: 700, background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>✏️ Reagendar</button>
                           <button
                             onClick={async () => {
@@ -645,7 +645,7 @@ export default function Meetings() {
                         >Ficha</button>
 
                         <button
-                          onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "" }); }}
+                          onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "", incluirParceiro: false, emailParceiro: c.email_parceiro || "" }); }}
                           style={{ fontSize: 10, fontWeight: 600, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 9px", cursor: "pointer" }}
                         >Agendei</button>
 
@@ -801,71 +801,106 @@ export default function Meetings() {
       )}
 
       {/* ─── Modal Agendar (Retentativa → Sim) ─── */}
-      {retAgModal && (
-        <Modal open={!!retAgModal} onClose={() => setRetAgModal(null)}>
-          <div style={{ padding: "26px 30px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: B.navy }}>Agendar reunião — {retAgModal.client.nome.split(" ")[0]}</h3>
-              <button onClick={() => setRetAgModal(null)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: B.muted }}>×</button>
+      {retAgModal && (() => {
+        const c = retAgModal.client;
+        const temParceiro = !!(c.conjuge && retAgForm.emailParceiro);
+        const primeiroNome = c.nome.split(" ")[0];
+        const nomeConjuge = c.conjuge?.split(" ")[0] || "";
+        const tituloReuniao = retAgForm.incluirParceiro && temParceiro
+          ? `Consultoria Financeira - ${primeiroNome} + ${nomeConjuge}`
+          : `Consultoria Financeira - ${c.nome}`;
+        const textoTarefa = retAgForm.incluirParceiro && temParceiro
+          ? `Reunião com ${primeiroNome} + ${nomeConjuge}`
+          : `Reunião com ${c.nome}`;
+        const emailTo = retAgForm.incluirParceiro && temParceiro
+          ? `${retAgForm.email};${retAgForm.emailParceiro}`
+          : retAgForm.email;
+
+        const saveAndSchedule = async (openOutlook) => {
+          await saveClient({ ...c, reuniao_agendada_em: retAgForm.data, avisado_em: "" }, false);
+          const _ex = todos.find((t) => t.client_id === c.id && !t.done && t.texto?.startsWith("Reunião com"));
+          if (_ex) { await saveTodo({ ..._ex, texto: textoTarefa, vencimento: retAgForm.data, descricao: `Horário: ${retAgForm.horaInicio}–${retAgForm.horaFim}` }, false); }
+          else { await saveTodo({ id: huid(), texto: textoTarefa, vencimento: retAgForm.data, recorrencia: "", descricao: `Horário: ${retAgForm.horaInicio}–${retAgForm.horaFim}`, prioridade: "normal", client_id: c.id, done: false, ordem: 0 }, true); }
+          if (openOutlook) {
+            const start = `${retAgForm.data}T${retAgForm.horaInicio}:00`;
+            const end   = `${retAgForm.data}T${retAgForm.horaFim}:00`;
+            const url = buildOutlookUrl({ title: tituloReuniao, start, end, to: emailTo });
+            window.open(url, "_blank");
+            setToast({ type: "success", text: `Agendado! Outlook aberto.` });
+          } else {
+            setToast({ type: "success", text: `${primeiroNome} movido para Próximas Reuniões.` });
+          }
+          setRetAgModal(null);
+        };
+
+        return (
+          <Modal open={!!retAgModal} onClose={() => setRetAgModal(null)}>
+            <div style={{ padding: "26px 30px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: B.navy }}>
+                  Agendar reunião — {retAgForm.incluirParceiro && temParceiro ? `${primeiroNome} + ${nomeConjuge}` : primeiroNome}
+                </h3>
+                <button onClick={() => setRetAgModal(null)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: B.muted }}>×</button>
+              </div>
+
+              {/* Toggle incluir parceiro */}
+              {c.conjuge && (
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, padding: "10px 12px", background: retAgForm.incluirParceiro ? "#f5f3ff" : "#f9fafb", border: `1px solid ${retAgForm.incluirParceiro ? "#ddd6fe" : "#e5e7eb"}`, borderRadius: 8 }}>
+                  <input type="checkbox" id="incluir-parceiro" checked={!!retAgForm.incluirParceiro}
+                    onChange={(e) => setRetAgForm((f) => ({ ...f, incluirParceiro: e.target.checked }))}
+                    style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#7c3aed" }} />
+                  <label htmlFor="incluir-parceiro" style={{ fontSize: 13, fontWeight: 600, color: retAgForm.incluirParceiro ? "#7c3aed" : B.muted, cursor: "pointer" }}>
+                    Incluir {c.conjuge.split(" ")[0]} na reunião
+                  </label>
+                </div>
+              )}
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0 12px" }}>
+                <div style={{ gridColumn: "1/-1", marginBottom: 12 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>E-mail — {primeiroNome}</div>
+                  <input type="email" value={retAgForm.email || ""} onChange={(e) => setRetAgForm((f) => ({ ...f, email: e.target.value }))}
+                    placeholder="email@exemplo.com"
+                    style={{ width: "100%", border: `1px solid ${retAgForm.email ? "#bfdbfe" : "#d1d5db"}`, background: retAgForm.email ? "#eff6ff" : "white", borderRadius: 7, padding: "8px 10px", fontSize: 13, boxSizing: "border-box" }} />
+                </div>
+
+                {retAgForm.incluirParceiro && c.conjuge && (
+                  <div style={{ gridColumn: "1/-1", marginBottom: 12 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", marginBottom: 4 }}>E-mail — {nomeConjuge}</div>
+                    <input type="email" value={retAgForm.emailParceiro || ""} onChange={(e) => setRetAgForm((f) => ({ ...f, emailParceiro: e.target.value }))}
+                      placeholder="email@exemplo.com"
+                      style={{ width: "100%", border: `1px solid ${retAgForm.emailParceiro ? "#ddd6fe" : "#d1d5db"}`, background: retAgForm.emailParceiro ? "#f5f3ff" : "white", borderRadius: 7, padding: "8px 10px", fontSize: 13, boxSizing: "border-box" }} />
+                  </div>
+                )}
+
+                <div style={{ gridColumn: "1/-1", marginBottom: 12 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Data</div>
+                  <input type="date" value={retAgForm.data} onChange={(e) => setRetAgForm((f) => ({ ...f, data: e.target.value }))}
+                    style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: 7, padding: "8px 10px", fontSize: 13, boxSizing: "border-box" }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Início</div>
+                  <input type="time" value={retAgForm.horaInicio} onChange={(e) => setRetAgForm((f) => ({ ...f, horaInicio: e.target.value }))}
+                    style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: 7, padding: "8px 10px", fontSize: 13, boxSizing: "border-box" }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Fim</div>
+                  <input type="time" value={retAgForm.horaFim} onChange={(e) => setRetAgForm((f) => ({ ...f, horaFim: e.target.value }))}
+                    style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: 7, padding: "8px 10px", fontSize: 13, boxSizing: "border-box" }} />
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+                <button onClick={() => setRetAgModal(null)} style={{ flex: 1, padding: "10px", background: "white", border: "1px solid #d1d5db", borderRadius: 7, cursor: "pointer", fontWeight: 600, color: B.muted }}>Cancelar</button>
+                <button onClick={() => saveAndSchedule(false)}
+                  style={{ flex: 1, padding: "10px", background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}
+                >Agendar sem Outlook</button>
+                <button onClick={() => saveAndSchedule(true)}
+                  style={{ flex: 2, padding: "10px", background: "#7C3AED", color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}
+                >📅 Agendar + Abrir Outlook</button>
+              </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0 12px" }}>
-              <div style={{ gridColumn: "1/-1", marginBottom: 12 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>E-mail do convidado</div>
-                <input type="email" value={retAgForm.email || ""} onChange={(e) => setRetAgForm((f) => ({ ...f, email: e.target.value }))}
-                  placeholder="email@exemplo.com"
-                  style={{ width: "100%", border: `1px solid ${retAgForm.email ? "#bfdbfe" : "#d1d5db"}`, background: retAgForm.email ? "#eff6ff" : "white", borderRadius: 7, padding: "8px 10px", fontSize: 13, boxSizing: "border-box" }} />
-              </div>
-              <div style={{ gridColumn: "1/-1", marginBottom: 12 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Data</div>
-                <input type="date" value={retAgForm.data} onChange={(e) => setRetAgForm((f) => ({ ...f, data: e.target.value }))}
-                  style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: 7, padding: "8px 10px", fontSize: 13, boxSizing: "border-box" }} />
-              </div>
-              <div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Início</div>
-                <input type="time" value={retAgForm.horaInicio} onChange={(e) => setRetAgForm((f) => ({ ...f, horaInicio: e.target.value }))}
-                  style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: 7, padding: "8px 10px", fontSize: 13, boxSizing: "border-box" }} />
-              </div>
-              <div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Fim</div>
-                <input type="time" value={retAgForm.horaFim} onChange={(e) => setRetAgForm((f) => ({ ...f, horaFim: e.target.value }))}
-                  style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: 7, padding: "8px 10px", fontSize: 13, boxSizing: "border-box" }} />
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-              <button onClick={() => setRetAgModal(null)} style={{ flex: 1, padding: "10px", background: "white", border: "1px solid #d1d5db", borderRadius: 7, cursor: "pointer", fontWeight: 600, color: B.muted }}>Cancelar</button>
-              <button
-                onClick={async () => {
-                  const c = retAgModal.client;
-                  await saveClient({ ...c, reuniao_agendada_em: retAgForm.data, avisado_em: "" }, false);
-                  const _ex1 = todos.find((t) => t.client_id === c.id && !t.done && t.texto?.startsWith("Reunião com"));
-                  if (_ex1) { await saveTodo({ ..._ex1, vencimento: retAgForm.data, descricao: `Horário: ${retAgForm.horaInicio}–${retAgForm.horaFim}` }, false); }
-                  else { await saveTodo({ id: huid(), texto: `Reunião com ${c.nome}`, vencimento: retAgForm.data, recorrencia: "", descricao: `Horário: ${retAgForm.horaInicio}–${retAgForm.horaFim}`, prioridade: "normal", client_id: c.id, done: false, ordem: 0 }, true); }
-                  setRetAgModal(null);
-                  setToast({ type: "success", text: `${c.nome.split(" ")[0]} movido para Próximas Reuniões.` });
-                }}
-                style={{ flex: 1, padding: "10px", background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}
-              >Agendar sem Outlook</button>
-              <button
-                onClick={async () => {
-                  const c = retAgModal.client;
-                  const start = `${retAgForm.data}T${retAgForm.horaInicio}:00`;
-                  const end   = `${retAgForm.data}T${retAgForm.horaFim}:00`;
-                  const title = `Consultoria Financeira - ${c.nome}`;
-                  await saveClient({ ...c, reuniao_agendada_em: retAgForm.data, avisado_em: "" }, false);
-                  const _ex2 = todos.find((t) => t.client_id === c.id && !t.done && t.texto?.startsWith("Reunião com"));
-                  if (_ex2) { await saveTodo({ ..._ex2, vencimento: retAgForm.data, descricao: `Horário: ${retAgForm.horaInicio}–${retAgForm.horaFim}` }, false); }
-                  else { await saveTodo({ id: huid(), texto: `Reunião com ${c.nome}`, vencimento: retAgForm.data, recorrencia: "", descricao: `Horário: ${retAgForm.horaInicio}–${retAgForm.horaFim}`, prioridade: "normal", client_id: c.id, done: false, ordem: 0 }, true); }
-                  const url = buildOutlookUrl({ title, start, end, to: retAgForm.email });
-                  window.open(url, "_blank");
-                  setRetAgModal(null);
-                  setToast({ type: "success", text: `Agendado! Outlook aberto.` });
-                }}
-                style={{ flex: 2, padding: "10px", background: "#7C3AED", color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}
-              >📅 Agendar + Abrir Outlook</button>
-            </div>
-          </div>
-        </Modal>
-      )}
+          </Modal>
+        );
+      })()}
 
       {/* ─── Mini modal criar tarefa ─── */}
       {taskModal && (
