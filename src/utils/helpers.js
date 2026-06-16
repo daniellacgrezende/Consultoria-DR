@@ -237,7 +237,7 @@ const LEAD_DB_COLS = new Set([
   "id", "nome", "telefone", "email", "origem", "suborigem", "patrimonio_estimado",
   "etapa", "data_primeira_reuniao", "data_ultima_interacao", "motivo_negativa",
   "notas", "convertido_em", "tipo_reuniao", "valor_estimado", "temperatura", "responsavel",
-  "data_segunda_reuniao", "data_contrato_enviado",
+  "data_segunda_reuniao", "data_contrato_enviado", "r1_dados",
 ]);
 
 // Campos numéricos da tabela leads

@@ -628,14 +628,46 @@ export default function Pipeline() {
     if (etapa === "Cliente") {
       updates.convertido_em = today();
       // Cria cliente automaticamente na lista de Clientes
+      const r1 = lead.r1_dados || {};
+      // Monta planejamento a partir dos objetivos do R1
+      const planejamentoR1 = [
+        r1.meta_curto ? `Curto prazo (até 2 anos): ${r1.meta_curto}` : "",
+        r1.meta_medio ? `Médio prazo (2–5 anos): ${r1.meta_medio}` : "",
+        r1.idade_parar ? `Pretende parar/diminuir ritmo aos ${r1.idade_parar} anos${r1.renda_aposentadoria ? ` com renda de R$ ${Number(r1.renda_aposentadoria).toLocaleString("pt-BR")}/mês` : ""}.` : "",
+        r1.carteira_ideal ? `Carteira ideal: ${r1.carteira_ideal}` : "",
+      ].filter(Boolean).join("\n\n");
+      // Monta observações a partir das dores/contexto do R1
+      const obsR1 = [
+        r1.maior_dor ? `Maior dor: ${r1.maior_dor}` : "",
+        r1.motivo_assessoria ? `Motivo de buscar assessoria: ${r1.motivo_assessoria}` : "",
+        r1.plataforma_atual ? `Plataforma atual: ${r1.plataforma_atual}${r1.motivo_plataforma ? ` — ${r1.motivo_plataforma}` : ""}` : "",
+        r1.carteira_atual ? `Carteira atual: ${r1.carteira_atual}` : "",
+        r1.dividas ? `Dívidas/financiamentos: ${r1.dividas}` : "",
+      ].filter(Boolean).join("\n\n");
       const novoCliente = {
         ...EMPTY_CLIENT,
         id: huid(),
         nome: lead.nome,
         status: "ativo",
         origemCliente: lead.origem || "",
-        plInicial: lead.patrimonio_estimado ? String(lead.patrimonio_estimado) : "",
+        plInicial: r1.pl_financeiro ? String(r1.pl_financeiro) : (lead.patrimonio_estimado ? String(lead.patrimonio_estimado) : ""),
         inicioCarteira: today(),
+        // Dados pessoais do R1
+        data_nascimento: r1.data_nascimento || "",
+        estado_civil: r1.estado_civil || "",
+        conjuge: r1.conjuge || "",
+        filhos: r1.filhos || "",
+        profissao: r1.profissao || "",
+        cidade: r1.cidade || "",
+        // Financeiro do R1
+        receita_mensal: r1.renda_mensal ? Number(r1.renda_mensal) : 0,
+        aporte_mensal: r1.capacidade_poupanca ? Number(r1.capacidade_poupanca) : 0,
+        perfil: r1.perfil_risco || "moderado",
+        patrimonio_imobilizado: r1.pl_imobilizado || "",
+        financiamentos: r1.dividas || "",
+        // Objetivos e observações
+        planejamento: planejamentoR1,
+        observacoes: obsR1,
       };
       const clientId = novoCliente.id;
       await saveClient(novoCliente, true);
@@ -698,9 +730,11 @@ export default function Pipeline() {
     setTimeout(() => window.open(outlookUrl, "_blank"), 400);
   };
 
-  const openNew = () => { setEditId(null); setForm({ ...EMPTY_LEAD, data_ultima_interacao: today() }); setModal(true); };
-  const openEdit = (l) => { setEditId(l.id); setForm({ ...l }); setModal(true); };
+  const [modalTab, setModalTab] = useState("cadastro");
+  const openNew = () => { setEditId(null); setForm({ ...EMPTY_LEAD, data_ultima_interacao: today(), r1_dados: {} }); setModalTab("cadastro"); setModal(true); };
+  const openEdit = (l) => { setEditId(l.id); setForm({ ...l, r1_dados: l.r1_dados || {} }); setModalTab("cadastro"); setModal(true); };
   const F = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const R1 = (k) => (e) => setForm((f) => ({ ...f, r1_dados: { ...(f.r1_dados || {}), [k]: e.target.value } }));
   const fmtPhone = (v) => {
     const d = v.replace(/\D/g, "").slice(0, 11);
     if (d.length <= 2) return d.length ? `(${d}` : "";
@@ -972,32 +1006,101 @@ export default function Pipeline() {
       {/* ═══ MODAL LEAD ═══ */}
       <Modal open={modal} onClose={() => setModal(false)} wide>
         <div style={{ padding: "26px 30px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          {/* Header */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: B.navy }}>{editId ? "Editar Lead" : "Novo Lead"}</h3>
             <button onClick={() => setModal(false)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: B.muted }}>×</button>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
-            <Inp label="Nome *" value={form.nome} onChange={F("nome")} placeholder="Nome do lead" />
-            <Inp label="Telefone" value={form.telefone || ""} onChange={FPhone("telefone")} placeholder="(00)99999-9999" />
-            <Inp label="E-mail" value={form.email || ""} onChange={F("email")} />
-            <Sel label="Origem" value={form.origem || "Indicação"} onChange={F("origem")} opts={LEAD_ORIGENS.map((o) => ({ v: o, l: o }))} />
-            <Inp label="Patrimônio Estimado (R$)" type="number" value={form.patrimonio_estimado || ""} onChange={F("patrimonio_estimado")} />
-            <Sel label="Etapa" value={form.etapa || "Lead"} onChange={F("etapa")} opts={allStageNames.map((e) => ({ v: e, l: e }))} />
-            <Inp label="Data da R1" type="date" value={form.data_primeira_reuniao || ""} onChange={F("data_primeira_reuniao")} />
-            <Inp label="Data da R2" type="date" value={form.data_segunda_reuniao || ""} onChange={F("data_segunda_reuniao")} />
-            <div style={{ gridColumn: "1/-1" }}>
-              <Inp label="Data Contrato Enviado" type="date" value={form.data_contrato_enviado || ""} onChange={F("data_contrato_enviado")} />
-            </div>
-            {form.etapa === "Desqualificado" && (
-              <div style={{ gridColumn: "1/-1" }}>
-                <Tarea label="Motivo da Desqualificação" value={form.motivo_negativa || ""} onChange={F("motivo_negativa")} placeholder="Ex: Residência fiscal fora do país, PL abaixo do atendido, perfil não compatível…" />
-              </div>
-            )}
-            <div style={{ gridColumn: "1/-1" }}>
-              <Tarea label="Notas" value={form.notas || ""} onChange={F("notas")} placeholder="Registre tudo sobre o lead..." />
-            </div>
+
+          {/* Tabs */}
+          <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: `2px solid ${B.border}`, paddingBottom: 0 }}>
+            {[{ id: "cadastro", label: "Cadastro" }, { id: "r1", label: "Roteiro R1" }].map((t) => (
+              <button key={t.id} onClick={() => setModalTab(t.id)} style={{
+                padding: "7px 18px", background: "none", border: "none", cursor: "pointer",
+                fontWeight: 700, fontSize: 13, color: modalTab === t.id ? B.brand : B.muted,
+                borderBottom: modalTab === t.id ? `2px solid ${B.brand}` : "2px solid transparent",
+                marginBottom: -2,
+              }}>{t.label}</button>
+            ))}
           </div>
-          <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+
+          {/* ── ABA CADASTRO ── */}
+          {modalTab === "cadastro" && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
+              <Inp label="Nome *" value={form.nome} onChange={F("nome")} placeholder="Nome do lead" />
+              <Inp label="Telefone" value={form.telefone || ""} onChange={FPhone("telefone")} placeholder="(00)99999-9999" />
+              <Inp label="E-mail" value={form.email || ""} onChange={F("email")} />
+              <Sel label="Origem" value={form.origem || "Indicação"} onChange={F("origem")} opts={LEAD_ORIGENS.map((o) => ({ v: o, l: o }))} />
+              <Inp label="Patrimônio Estimado (R$)" type="number" value={form.patrimonio_estimado || ""} onChange={F("patrimonio_estimado")} />
+              <Sel label="Etapa" value={form.etapa || "Lead"} onChange={F("etapa")} opts={allStageNames.map((e) => ({ v: e, l: e }))} />
+              <Inp label="Data da R1" type="date" value={form.data_primeira_reuniao || ""} onChange={F("data_primeira_reuniao")} />
+              <Inp label="Data da R2" type="date" value={form.data_segunda_reuniao || ""} onChange={F("data_segunda_reuniao")} />
+              <div style={{ gridColumn: "1/-1" }}>
+                <Inp label="Data Contrato Enviado" type="date" value={form.data_contrato_enviado || ""} onChange={F("data_contrato_enviado")} />
+              </div>
+              {form.etapa === "Desqualificado" && (
+                <div style={{ gridColumn: "1/-1" }}>
+                  <Tarea label="Motivo da Desqualificação" value={form.motivo_negativa || ""} onChange={F("motivo_negativa")} placeholder="Ex: Residência fiscal fora do país, PL abaixo do atendido, perfil não compatível…" />
+                </div>
+              )}
+              <div style={{ gridColumn: "1/-1" }}>
+                <Tarea label="Notas" value={form.notas || ""} onChange={F("notas")} placeholder="Registre tudo sobre o lead..." />
+              </div>
+            </div>
+          )}
+
+          {/* ── ABA ROTEIRO R1 ── */}
+          {modalTab === "r1" && (() => {
+            const r1 = form.r1_dados || {};
+            const Bloco = ({ title, color, children }) => (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color, textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: `2px solid ${color}22` }}>{title}</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>{children}</div>
+              </div>
+            );
+            return (
+              <div style={{ maxHeight: "60vh", overflowY: "auto", paddingRight: 4 }}>
+                <Bloco title="Dados Pessoais" color="#1e3a5f">
+                  <Inp label="Data de Nascimento" type="date" value={r1.data_nascimento || ""} onChange={R1("data_nascimento")} />
+                  <Sel label="Estado Civil" value={r1.estado_civil || ""} onChange={R1("estado_civil")} opts={[{ v: "", l: "—" }, { v: "solteiro", l: "Solteiro(a)" }, { v: "casado", l: "Casado(a)" }, { v: "uniao_estavel", l: "União Estável" }, { v: "divorciado", l: "Divorciado(a)" }, { v: "viuvo", l: "Viúvo(a)" }]} />
+                  <Inp label="Nome do Cônjuge / Parceiro(a)" value={r1.conjuge || ""} onChange={R1("conjuge")} />
+                  <Inp label="Filhos / Dependentes" value={r1.filhos || ""} onChange={R1("filhos")} placeholder="Ex: 2 filhos — João 10a, Maria 8a" />
+                  <Inp label="Ocupação / Profissão" value={r1.profissao || ""} onChange={R1("profissao")} />
+                  <Inp label="Cidade" value={r1.cidade || ""} onChange={R1("cidade")} />
+                </Bloco>
+
+                <Bloco title="Situação Financeira Atual" color="#059669">
+                  <Sel label="Já investe hoje?" value={r1.ja_investe || ""} onChange={R1("ja_investe")} opts={[{ v: "", l: "—" }, { v: "sim", l: "Sim" }, { v: "nao", l: "Não" }, { v: "pouco", l: "Pouco / Informalmente" }]} />
+                  <Inp label="Plataforma atual (banco, corretora...)" value={r1.plataforma_atual || ""} onChange={R1("plataforma_atual")} placeholder="Ex: Itaú, Santander, XP..." />
+                  <div style={{ gridColumn: "1/-1" }}><Tarea label="Por que essa plataforma? O que levou a escolha?" value={r1.motivo_plataforma || ""} onChange={R1("motivo_plataforma")} rows={2} /></div>
+                  <Inp label="Renda Mensal Bruta (R$)" type="number" value={r1.renda_mensal || ""} onChange={R1("renda_mensal")} />
+                  <Inp label="Custo de Vida Mensal (R$)" type="number" value={r1.custo_vida_mensal || ""} onChange={R1("custo_vida_mensal")} />
+                  <Inp label="Capacidade de Poupança/mês (R$)" type="number" value={r1.capacidade_poupanca || ""} onChange={R1("capacidade_poupanca")} />
+                  <Inp label="PL Financeiro Estimado (R$)" type="number" value={r1.pl_financeiro || ""} onChange={R1("pl_financeiro")} />
+                  <div style={{ gridColumn: "1/-1" }}><Tarea label="PL Imobilizado (imóveis, empresa, outros)" value={r1.pl_imobilizado || ""} onChange={R1("pl_imobilizado")} rows={2} placeholder="Ex: Casa própria quitada, 30% de empresa, fazenda..." /></div>
+                  <div style={{ gridColumn: "1/-1" }}><Tarea label="Dívidas / Financiamentos" value={r1.dividas || ""} onChange={R1("dividas")} rows={2} placeholder="Ex: Financiamento imóvel R$800k, carro R$40k..." /></div>
+                  <div style={{ gridColumn: "1/-1" }}><Tarea label="Como é a carteira atual? Como estruturou?" value={r1.carteira_atual || ""} onChange={R1("carteira_atual")} rows={3} placeholder="Ex: Tudo em CDB do banco, LCA vencendo em junho, nunca investiu em RV..." /></div>
+                </Bloco>
+
+                <Bloco title="Perfil e Dores" color="#7c3aed">
+                  <Sel label="Perfil de Risco" value={r1.perfil_risco || ""} onChange={R1("perfil_risco")} opts={[{ v: "", l: "—" }, { v: "conservador", l: "Conservador" }, { v: "moderado", l: "Moderado" }, { v: "arrojado", l: "Arrojado" }, { v: "agressivo", l: "Agressivo" }]} />
+                  <div />
+                  <div style={{ gridColumn: "1/-1" }}><Tarea label="Maior dor financeira hoje" value={r1.maior_dor || ""} onChange={R1("maior_dor")} rows={2} placeholder="Ex: Dinheiro parado no banco rendendo pouco, não sabe onde investir, medo de perder..." /></div>
+                  <div style={{ gridColumn: "1/-1" }}><Tarea label="Por que busca assessoria agora?" value={r1.motivo_assessoria || ""} onChange={R1("motivo_assessoria")} rows={2} placeholder="Ex: Indicação de amigo, insatisfação com banco, momento de vida..." /></div>
+                </Bloco>
+
+                <Bloco title="Objetivos e Planejamento" color="#d97706">
+                  <div style={{ gridColumn: "1/-1" }}><Tarea label="Metas de Curto Prazo (até 2 anos)" value={r1.meta_curto || ""} onChange={R1("meta_curto")} rows={2} placeholder="Ex: Quitar financiamento, viajar, reserva de emergência..." /></div>
+                  <div style={{ gridColumn: "1/-1" }}><Tarea label="Metas de Médio Prazo (2–5 anos)" value={r1.meta_medio || ""} onChange={R1("meta_medio")} rows={2} placeholder="Ex: Comprar imóvel, trocar de carro, abrir negócio..." /></div>
+                  <Inp label="Idade para parar / diminuir ritmo" type="number" value={r1.idade_parar || ""} onChange={R1("idade_parar")} placeholder="Ex: 55" />
+                  <Inp label="Renda desejada na aposentadoria (R$/mês)" type="number" value={r1.renda_aposentadoria || ""} onChange={R1("renda_aposentadoria")} />
+                  <div style={{ gridColumn: "1/-1" }}><Tarea label="Como deve ser a carteira ideal?" value={r1.carteira_ideal || ""} onChange={R1("carteira_ideal")} rows={3} placeholder="Ex: Diversificada, com renda passiva, proteção cambial, etc..." /></div>
+                </Bloco>
+              </div>
+            );
+          })()}
+
+          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
             <button onClick={() => setModal(false)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.muted, borderRadius: 7, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
             {editId && <button onClick={() => { remove(editId); setModal(false); }} style={{ padding: "10px 16px", background: "#FFF1F2", color: "#BE123C", border: "1px solid #FECDD3", borderRadius: 7, cursor: "pointer", fontWeight: 600 }}>Excluir</button>}
             <button onClick={save} style={{ flex: 2, padding: "10px", background: B.brand, color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
