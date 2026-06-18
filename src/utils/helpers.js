@@ -229,6 +229,8 @@ export const mapClientToDB = (c) => {
     financiamentos: c.financiamentos ?? "",
     benchmark: c.benchmark ?? "",
     data_nascimento_parceiro: toDate(c.data_nascimento_parceiro ?? c.dataNascimentoParceiro),
+    email_parceiro: c.email_parceiro ?? "",
+    atendimento_casal: !!(c.atendimento_casal ?? false),
   };
 
   return db;
