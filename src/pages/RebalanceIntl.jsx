@@ -230,6 +230,22 @@ export default function RebalanceIntl() {
     setToast({ type: "success", text: "ETF removido." });
   };
 
+  const handleConfirmarAporte = async (items) => {
+    if (!items.length) return;
+    // Para cada item sugerido, encontra o produto pelo ticker e soma o valor
+    for (const item of items) {
+      for (const cls of (portfolio?.classes || [])) {
+        const prod = (cls.products || []).find((p) => p.ticker === item.ticker);
+        if (prod) {
+          await saveIntlProduct({ ...prod, valor_atual: Number(prod.valor_atual || 0) + item.valor }, false);
+        }
+      }
+    }
+    await load();
+    setAporte("");
+    setToast({ type: "success", text: "Aporte confirmado! Valores atualizados na carteira." });
+  };
+
   /* --- Calculos --- */
   const classesComValor = (portfolio?.classes || [])
     .map((c) => ({
@@ -442,6 +458,12 @@ export default function RebalanceIntl() {
                             Nao alocado: <strong>$ {naoAlocado.toLocaleString("en-US")}</strong> — valor restante apos arredondamentos.
                           </div>
                         )}
+                        <div style={{ margin: "14px 16px 0", display: "flex", justifyContent: "flex-end" }}>
+                          <button onClick={() => handleConfirmarAporte(items)}
+                            style={{ background: "#16a34a", color: "white", border: "none", borderRadius: 8, padding: "10px 24px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                            Confirmar Aporte → Atualizar Carteira
+                          </button>
+                        </div>
                       </>
                     )}
                   </div>
