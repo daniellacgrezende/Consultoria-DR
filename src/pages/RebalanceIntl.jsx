@@ -44,7 +44,6 @@ function calcSuggestion(classes, aporte, min = 100) {
   const totalAtual = classes.reduce((s, c) => s + c.totalValor, 0);
   const totalApos = totalAtual + aporte;
 
-  // Shortfall por classe, ordenado do maior para o menor
   const ranked = classes
     .map((c) => ({ ...c, shortfall: Math.max(0, (c.target_pct / 100) * totalApos - c.totalValor) }))
     .filter((c) => c.shortfall > 1)
@@ -54,25 +53,18 @@ function calcSuggestion(classes, aporte, min = 100) {
 
   const totalShortfall = ranked.reduce((s, c) => s + c.shortfall, 0);
 
-  // Alocar por classe: todos arredondados exceto o último, que absorve o restante exato
-  let restante = aporte;
-  const classAllocs = [];
-  for (let i = 0; i < ranked.length; i++) {
-    const cls = ranked[i];
-    const isLast = i === ranked.length - 1;
-    if (isLast) {
-      if (restante >= min) classAllocs.push({ ...cls, aporteClass: restante });
-    } else {
-      const raw = aporte * (cls.shortfall / totalShortfall);
-      const rounded = roundMin(raw);
-      if (rounded >= min && rounded < restante) {
-        classAllocs.push({ ...cls, aporteClass: rounded });
-        restante -= rounded;
-      }
-    }
-  }
+  // Passo 1: aloca proporcionalmente e arredonda para todos
+  const classAllocs = ranked
+    .map((cls) => ({ ...cls, aporteClass: roundMin(aporte * (cls.shortfall / totalShortfall)) }))
+    .filter((c) => c.aporteClass >= min);
 
-  // Expandir para produtos: mesmo princípio — último produto absorve restante exato da classe
+  if (!classAllocs.length) return { items: [], totalSugerido: 0 };
+
+  // Passo 2: ajusta a diferença no último item para garantir total == aporte
+  const soma = classAllocs.reduce((s, c) => s + c.aporteClass, 0);
+  classAllocs[classAllocs.length - 1].aporteClass += aporte - soma;
+
+  // Passo 3: expande para produtos — último produto absorve o restante exato da classe
   const items = [];
   for (const cls of classAllocs) {
     const prods = cls.products || [];
@@ -86,7 +78,7 @@ function calcSuggestion(classes, aporte, min = 100) {
     prods.forEach((p, pi) => {
       const isLastP = pi === prods.length - 1;
       if (isLastP) {
-        if (restProd >= min) items.push({ ticker: p.ticker, classe: cls.nome, valor: restProd });
+        if (restProd > 0) items.push({ ticker: p.ticker, classe: cls.nome, valor: restProd });
       } else {
         const peso = totalProdVal > 0 ? Number(p.valor_atual || 0) / totalProdVal : 1 / prods.length;
         const rounded = roundMin(cls.aporteClass * peso);
