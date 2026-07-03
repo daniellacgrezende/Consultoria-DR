@@ -36,7 +36,7 @@ const CLASSES_PRESET = [
   "USA - Value",
 ];
 
-/* --- Sugestao de aporte: foca nas classes mais defasadas, minimo configuravel, numeros redondos --- */
+/* --- Sugestao de aporte: total sugerido sempre igual ao aporte digitado --- */
 function calcSuggestion(classes, aporte, min = 100) {
   if (aporte <= 0) return { items: [], totalSugerido: 0 };
   const roundMin = (v) => Math.round(v / min) * min;
@@ -54,28 +54,25 @@ function calcSuggestion(classes, aporte, min = 100) {
 
   const totalShortfall = ranked.reduce((s, c) => s + c.shortfall, 0);
 
-  // Alocar por classe proporcional ao shortfall, arredondado no minimo configuravel
+  // Alocar por classe: todos arredondados exceto o último, que absorve o restante exato
   let restante = aporte;
   const classAllocs = [];
   for (let i = 0; i < ranked.length; i++) {
     const cls = ranked[i];
     const isLast = i === ranked.length - 1;
-    const raw = isLast ? restante : aporte * (cls.shortfall / totalShortfall);
-    const rounded = roundMin(raw);
-    if (rounded < min) continue;
-    classAllocs.push({ ...cls, aporteClass: rounded });
-    restante -= rounded;
-    if (restante < min) break;
+    if (isLast) {
+      if (restante >= min) classAllocs.push({ ...cls, aporteClass: restante });
+    } else {
+      const raw = aporte * (cls.shortfall / totalShortfall);
+      const rounded = roundMin(raw);
+      if (rounded >= min && rounded < restante) {
+        classAllocs.push({ ...cls, aporteClass: rounded });
+        restante -= rounded;
+      }
+    }
   }
 
-  // Ajusta eventuais sobras de arredondamento na classe mais defasada
-  if (classAllocs.length > 0) {
-    const soma = classAllocs.reduce((s, c) => s + c.aporteClass, 0);
-    const diff = roundMin(aporte - soma);
-    if (Math.abs(diff) >= min) classAllocs[0].aporteClass += diff;
-  }
-
-  // Expandir para produtos dentro de cada classe
+  // Expandir para produtos: mesmo princípio — último produto absorve restante exato da classe
   const items = [];
   for (const cls of classAllocs) {
     const prods = cls.products || [];
@@ -88,14 +85,15 @@ function calcSuggestion(classes, aporte, min = 100) {
     let restProd = cls.aporteClass;
     prods.forEach((p, pi) => {
       const isLastP = pi === prods.length - 1;
-      const peso = totalProdVal > 0 ? Number(p.valor_atual || 0) / totalProdVal : 1 / prods.length;
-      const raw = isLastP ? restProd : cls.aporteClass * peso;
-      const rounded = roundMin(raw);
-      if (rounded >= min) {
-        items.push({ ticker: p.ticker, classe: cls.nome, valor: rounded });
-        restProd -= rounded;
-      } else if (isLastP && restProd >= min) {
-        items.push({ ticker: p.ticker, classe: cls.nome, valor: roundMin(restProd) });
+      if (isLastP) {
+        if (restProd >= min) items.push({ ticker: p.ticker, classe: cls.nome, valor: restProd });
+      } else {
+        const peso = totalProdVal > 0 ? Number(p.valor_atual || 0) / totalProdVal : 1 / prods.length;
+        const rounded = roundMin(cls.aporteClass * peso);
+        if (rounded >= min && rounded < restProd) {
+          items.push({ ticker: p.ticker, classe: cls.nome, valor: rounded });
+          restProd -= rounded;
+        }
       }
     });
   }
