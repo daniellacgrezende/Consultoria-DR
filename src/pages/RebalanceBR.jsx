@@ -172,6 +172,30 @@ export default function RebalanceBR() {
     setToast({ type: "success", text: "Acao removida." });
   };
 
+  const handleConfirmarAporte = async () => {
+    if (!suggestion.items.length) return;
+    for (const item of suggestion.items) {
+      if (item.ticker.includes("/")) {
+        const memberTickers = item.ticker.split("/");
+        const members = allTickers.filter((t) => memberTickers.includes(t.ticker));
+        if (!members.length) continue;
+        const totalMemberVal = members.reduce((s, m) => s + Number(m.valor_atual || 0), 0);
+        for (const m of members) {
+          const peso = totalMemberVal > 0 ? Number(m.valor_atual || 0) / totalMemberVal : 1 / members.length;
+          const add = Math.round(item.valor * peso);
+          await saveBrProduct({ ...m, valor_atual: Number(m.valor_atual || 0) + add }, false);
+        }
+      } else {
+        const prod = allTickers.find((t) => t.ticker === item.ticker);
+        if (!prod) continue;
+        await saveBrProduct({ ...prod, valor_atual: Number(prod.valor_atual || 0) + item.valor }, false);
+      }
+    }
+    await load();
+    setAporte("");
+    setToast({ type: "success", text: "Aporte confirmado! Carteira atualizada." });
+  };
+
   /* --- Calculos --- */
   const classesOrdenadas = (portfolio?.classes || []).slice().sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
@@ -471,6 +495,12 @@ export default function RebalanceBR() {
                             Nao alocado: <strong>R$ {naoAlocado.toLocaleString("pt-BR")}</strong> — valor restante apos arredondamentos.
                           </div>
                         )}
+                        <div style={{ padding: "14px 16px 0" }}>
+                          <button onClick={handleConfirmarAporte}
+                            style={{ background: "#16a34a", color: "white", border: "none", borderRadius: 8, padding: "10px 22px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                            Confirmar Aporte → Atualizar Carteira
+                          </button>
+                        </div>
                       </>
                     )}
                   </div>
