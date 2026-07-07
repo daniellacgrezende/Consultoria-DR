@@ -124,6 +124,7 @@ export default function RebalanceIntl() {
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [aporte, setAporte] = useState("");
+  const [aporteOverrides, setAporteOverrides] = useState({});
   const [minAlocacao, setMinAlocacao] = useState("100");
 
   const [classModal, setClassModal] = useState(false);
@@ -144,6 +145,7 @@ export default function RebalanceIntl() {
   }, [client?.id]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { setAporteOverrides({}); }, [aporte]);
 
   if (!client) return <div style={{ padding: 40, color: B.gray }}>Cliente nao encontrado.</div>;
 
@@ -222,12 +224,13 @@ export default function RebalanceIntl() {
 
   const handleConfirmarAporte = async (items) => {
     if (!items.length) return;
-    // Para cada item sugerido, encontra o produto pelo ticker e soma o valor
     for (const item of items) {
+      const valor = aporteOverrides[item.ticker] ?? item.valor;
+      if (!valor) continue;
       for (const cls of (portfolio?.classes || [])) {
         const prod = (cls.products || []).find((p) => p.ticker === item.ticker);
         if (prod) {
-          await saveIntlProduct({ ...prod, valor_atual: Number(prod.valor_atual || 0) + item.valor }, false);
+          await saveIntlProduct({ ...prod, valor_atual: Number(prod.valor_atual || 0) + valor }, false);
         }
       }
     }
@@ -406,8 +409,9 @@ export default function RebalanceIntl() {
               )}
 
               {aporteNum > 0 && (() => {
-                const { items, totalSugerido } = suggestion;
-                const naoAlocado = aporteNum - totalSugerido;
+                const { items } = suggestion;
+                const effectiveTotal = items.reduce((s, item) => s + (aporteOverrides[item.ticker] ?? item.valor), 0);
+                const naoAlocado = aporteNum - effectiveTotal;
                 return (
                   <div style={{ padding: "0 0 16px" }}>
                     {items.length === 0 ? (
@@ -429,7 +433,11 @@ export default function RebalanceIntl() {
                               {items.map((item, i) => (
                                 <tr key={`${item.ticker}-${i}`} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
                                   <td style={{ padding: "8px 12px", fontWeight: 800, fontSize: 13, color: B.navy, letterSpacing: "0.03em", whiteSpace: "nowrap" }}>{item.ticker}</td>
-                                  <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, fontSize: 13, color: "#16a34a", whiteSpace: "nowrap" }}>$ {item.valor.toLocaleString("en-US")}</td>
+                                  <td style={{ padding: "8px 12px", textAlign: "right" }}>
+                                    <input type="number" value={aporteOverrides[item.ticker] ?? item.valor}
+                                      onChange={(e) => setAporteOverrides((prev) => ({ ...prev, [item.ticker]: Number(e.target.value) }))}
+                                      style={{ width: 100, textAlign: "right", border: "1px solid #86efac", borderRadius: 5, padding: "4px 8px", fontSize: 13, fontWeight: 700, color: "#16a34a", fontFamily: "inherit", background: "#f0fdf4", outline: "none" }} />
+                                  </td>
                                   <td style={{ padding: "8px 12px", color: "#6b7280", fontSize: 12, whiteSpace: "nowrap" }}>{item.classe}</td>
                                 </tr>
                               ))}
@@ -437,7 +445,7 @@ export default function RebalanceIntl() {
                             <tfoot>
                               <tr style={{ background: "#f0fdf4", borderTop: `2px solid #86efac` }}>
                                 <td style={{ padding: "8px 12px", fontWeight: 800, fontSize: 12, color: B.navy }}>Total Sugerido</td>
-                                <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 800, fontSize: 14, color: "#16a34a", whiteSpace: "nowrap" }}>$ {totalSugerido.toLocaleString("en-US")}</td>
+                                <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 800, fontSize: 14, color: "#16a34a", whiteSpace: "nowrap" }}>$ {effectiveTotal.toLocaleString("en-US")}</td>
                                 <td />
                               </tr>
                             </tfoot>

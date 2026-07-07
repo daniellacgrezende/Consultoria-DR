@@ -79,6 +79,7 @@ export default function RebalanceBR() {
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [aporte, setAporte] = useState("");
+  const [aporteOverrides, setAporteOverrides] = useState({});
   const [minAlocacao, setMinAlocacao] = useState("100");
   const [sortTicker, setSortTicker] = useState(false);
 
@@ -100,6 +101,7 @@ export default function RebalanceBR() {
   }, [client?.id]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { setAporteOverrides({}); }, [aporte]);
 
   if (!client) return <div style={{ padding: 40, color: B.gray }}>Cliente nao encontrado.</div>;
 
@@ -175,6 +177,8 @@ export default function RebalanceBR() {
   const handleConfirmarAporte = async () => {
     if (!suggestion.items.length) return;
     for (const item of suggestion.items) {
+      const valor = aporteOverrides[item.ticker] ?? item.valor;
+      if (!valor) continue;
       if (item.ticker.includes("/")) {
         const memberTickers = item.ticker.split("/");
         const members = allTickers.filter((t) => memberTickers.includes(t.ticker));
@@ -182,13 +186,13 @@ export default function RebalanceBR() {
         const totalMemberVal = members.reduce((s, m) => s + Number(m.valor_atual || 0), 0);
         for (const m of members) {
           const peso = totalMemberVal > 0 ? Number(m.valor_atual || 0) / totalMemberVal : 1 / members.length;
-          const add = Math.round(item.valor * peso);
+          const add = Math.round(valor * peso);
           await saveBrProduct({ ...m, valor_atual: Number(m.valor_atual || 0) + add }, false);
         }
       } else {
         const prod = allTickers.find((t) => t.ticker === item.ticker);
         if (!prod) continue;
-        await saveBrProduct({ ...prod, valor_atual: Number(prod.valor_atual || 0) + item.valor }, false);
+        await saveBrProduct({ ...prod, valor_atual: Number(prod.valor_atual || 0) + valor }, false);
       }
     }
     await load();
@@ -454,8 +458,9 @@ export default function RebalanceBR() {
               )}
 
               {aporteNum > 0 && (() => {
-                const { items, totalSugerido } = suggestion;
-                const naoAlocado = aporteNum - totalSugerido;
+                const { items } = suggestion;
+                const effectiveTotal = items.reduce((s, item) => s + (aporteOverrides[item.ticker] ?? item.valor), 0);
+                const naoAlocado = aporteNum - effectiveTotal;
                 return (
                   <div style={{ padding: "0 0 16px" }}>
                     {items.length === 0 ? (
@@ -478,14 +483,18 @@ export default function RebalanceBR() {
                                 <tr key={`${item.ticker}-${i}`} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
                                   <td style={{ padding: "8px 12px", fontWeight: 800, fontSize: 13, color: B.navy, whiteSpace: "nowrap" }}>{item.ticker}</td>
                                   <td style={{ padding: "8px 12px", color: "#6b7280", fontSize: 12, whiteSpace: "nowrap" }}>{item.classe}</td>
-                                  <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, fontSize: 13, color: "#16a34a", whiteSpace: "nowrap" }}>R$ {item.valor.toLocaleString("pt-BR")}</td>
+                                  <td style={{ padding: "8px 12px", textAlign: "right" }}>
+                                    <input type="number" value={aporteOverrides[item.ticker] ?? item.valor}
+                                      onChange={(e) => setAporteOverrides((prev) => ({ ...prev, [item.ticker]: Number(e.target.value) }))}
+                                      style={{ width: 100, textAlign: "right", border: "1px solid #86efac", borderRadius: 5, padding: "4px 8px", fontSize: 13, fontWeight: 700, color: "#16a34a", fontFamily: "inherit", background: "#f0fdf4", outline: "none" }} />
+                                  </td>
                                 </tr>
                               ))}
                             </tbody>
                             <tfoot>
                               <tr style={{ background: "#f0fdf4", borderTop: `2px solid #86efac` }}>
                                 <td style={{ padding: "8px 12px", fontWeight: 800, fontSize: 12, color: B.navy }} colSpan={2}>Total Sugerido</td>
-                                <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 800, fontSize: 14, color: "#16a34a", whiteSpace: "nowrap" }}>R$ {totalSugerido.toLocaleString("pt-BR")}</td>
+                                <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 800, fontSize: 14, color: "#16a34a", whiteSpace: "nowrap" }}>R$ {effectiveTotal.toLocaleString("pt-BR")}</td>
                               </tr>
                             </tfoot>
                           </table>
