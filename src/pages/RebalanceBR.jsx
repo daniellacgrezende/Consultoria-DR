@@ -43,10 +43,12 @@ function calcSuggestion(tickers, aporte, min = 100) {
   if (allocs.length > 0) {
     const soma = allocs.reduce((s, t) => s + t.valor, 0);
     const diff = roundMin(aporte - soma);
-    if (Math.abs(diff) >= min) allocs[0].valor += diff;
+    if (Math.abs(diff) >= min) allocs[0].valor = Math.max(0, allocs[0].valor + diff);
   }
-  const totalSugerido = allocs.reduce((s, t) => s + t.valor, 0);
-  return { items: allocs, totalSugerido };
+  // Remove itens com valor zero ou negativo (pode ocorrer por arredondamento)
+  const filtered = allocs.filter((t) => t.valor > 0);
+  const totalSugerido = filtered.reduce((s, t) => s + t.valor, 0);
+  return { items: filtered, totalSugerido };
 }
 
 function ModalBox({ open, onClose, children }) {

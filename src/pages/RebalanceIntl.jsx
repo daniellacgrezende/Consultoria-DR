@@ -60,9 +60,9 @@ function calcSuggestion(classes, aporte, min = 100) {
 
   if (!classAllocs.length) return { items: [], totalSugerido: 0 };
 
-  // Passo 2: ajusta a diferença no último item para garantir total == aporte
+  // Passo 2: ajusta a diferença no último item (sem deixar negativo)
   const soma = classAllocs.reduce((s, c) => s + c.aporteClass, 0);
-  classAllocs[classAllocs.length - 1].aporteClass += aporte - soma;
+  classAllocs[classAllocs.length - 1].aporteClass = Math.max(0, classAllocs[classAllocs.length - 1].aporteClass + aporte - soma);
 
   // Passo 3: expande para produtos — último produto absorve o restante exato da classe
   const items = [];
@@ -70,7 +70,7 @@ function calcSuggestion(classes, aporte, min = 100) {
     const prods = cls.products || [];
     if (!prods.length) continue;
     if (prods.length === 1) {
-      items.push({ ticker: prods[0].ticker, classe: cls.nome, valor: cls.aporteClass });
+      if (cls.aporteClass > 0) items.push({ ticker: prods[0].ticker, classe: cls.nome, valor: cls.aporteClass });
       continue;
     }
     const totalProdVal = prods.reduce((s, p) => s + Number(p.valor_atual || 0), 0);
