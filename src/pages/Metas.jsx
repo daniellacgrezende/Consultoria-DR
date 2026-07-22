@@ -11,7 +11,7 @@ import { huid } from "../utils/helpers";
 
 function fM(v) {
   const n = Number(v || 0);
-  return "R$ " + (n / 1e6).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "M";
+  return "R$ " + (n / 1e6).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "M";
 }
 
 function fR(v) {
