@@ -445,7 +445,7 @@ export default function Relatorios() {
                       Último envio: {fmtDate(c.ultimo_relatorio || c.ultimoRelatorio) || "—"}
                     </div>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <div style={{ display: "flex", flexDirection: "row", gap: 4 }}>
                     <button onClick={() => marcarEnviado(c)}
                       style={{ fontSize: 9.5, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
                       ✓ Enviado
