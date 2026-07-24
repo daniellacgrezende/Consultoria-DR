@@ -327,6 +327,8 @@ export default function Relatorios() {
                         <div style={{ fontSize: 10, color: B.gray }}>{c.profissao || "—"}</div>
                       </div>
                       <CBadge curva={curva} />
+                      <button onClick={(e) => { e.stopPropagation(); toggleCheck(c.id); }}
+                        style={{ background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>✓ Enviado</button>
                       <button onClick={(e) => { e.stopPropagation(); navigate(`/clients/${slugify(c.nome)}`); }}
                         style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 600, cursor: "pointer" }}>Ficha</button>
                       <button onClick={(e) => { e.stopPropagation(); setTaskModal({ texto: `Enviar relatório mensal para ${c.nome}`, data: today(), client_id: c.id }); }}
