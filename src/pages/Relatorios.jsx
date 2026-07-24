@@ -101,7 +101,7 @@ export default function Relatorios() {
 
   // Se todos os clientes mensais estão marcados no mês base, avança para o futuro
   const allBaseChecked = checklistLoaded && monthlyClients.length > 0
-    && monthlyClients.every((c) => baseCheckedMap[c.id]?.checked || baseCheckedMap[c.id]?.skipped);
+    && monthlyClients.every((c) => baseCheckedMap[c.id]?.checked);
 
   const nextMonthDate = allBaseChecked ? futureMonthDate : baseMonthDate;
   const nextMonth     = allBaseChecked ? futureMonth     : baseMonth;
