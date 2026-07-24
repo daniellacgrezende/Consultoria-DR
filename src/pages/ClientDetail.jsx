@@ -759,8 +759,8 @@ export default function ClientDetail() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 4, overflowY: "auto" }}>
                   {clientReunioes.map((r) => (
                     <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", borderRadius: 7, background: "#f0f4ff", border: `1px solid ${B.border}` }}>
-                      <span style={{ fontSize: 10, color: B.muted, whiteSpace: "nowrap", flexShrink: 0 }}>{fmtDate(r.data)}</span>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: B.navy, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.titulo || "Reunião"}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", flexShrink: 0, background: "white", border: `1px solid ${B.border}`, borderRadius: 5, padding: "2px 7px" }}>{fmtDate(r.data)}</span>
+                      <span style={{ fontSize: 12, fontWeight: 500, color: B.navy, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.titulo || "Reunião"}</span>
                     </div>
                   ))}
                 </div>
