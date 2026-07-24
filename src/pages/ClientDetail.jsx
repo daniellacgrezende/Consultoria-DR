@@ -745,38 +745,69 @@ export default function ClientDetail() {
         </Card>
       </div>
 
-      {/* Histórico de Relatórios */}
-      {relHistorico.length > 0 && (
-        <Card style={{ marginBottom: 12 }}>
-          <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 6, borderBottom: `1px solid ${B.border}` }}>
-            Histórico de Relatórios
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {relHistorico.map((r) => {
-              const [y, m] = (r.month || "").split("-");
-              const label = y && m ? new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" }) : r.month;
-              const isSent    = r.checked && !r.skipped;
-              const isSkipped = r.skipped;
-              const dateAt = isSent ? r.checked_at : isSkipped ? r.skipped_at : null;
-              return (
-                <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 10px", borderRadius: 7, background: isSent ? "#f0fdf4" : isSkipped ? "#f9fafb" : "#fafbff", border: `1px solid ${isSent ? "#bbf7d0" : isSkipped ? "#e5e7eb" : B.border}` }}>
-                  <span style={{ fontSize: 14, flexShrink: 0 }}>{isSent ? "✓" : isSkipped ? "⊘" : "?"}</span>
-                  <div style={{ flex: 1 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: isSent ? "#16a34a" : isSkipped ? "#6b7280" : B.navy, textTransform: "capitalize" }}>{label}</span>
-                  </div>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: isSent ? "#16a34a" : "#9ca3af", background: isSent ? "#dcfce7" : "#f3f4f6", borderRadius: 999, padding: "2px 8px" }}>
-                    {isSent ? "Enviado" : isSkipped ? "Não enviado" : "—"}
-                  </span>
-                  {dateAt && (
-                    <span style={{ fontSize: 10, color: "#9ca3af", whiteSpace: "nowrap" }}>
-                      {new Date(dateAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" })}
-                    </span>
-                  )}
+      {/* Histórico de Reuniões + Relatórios lado a lado */}
+      {(clientReunioes.length > 0 || relHistorico.length > 0) && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+          {/* Reuniões */}
+          <Card style={{ maxHeight: 340, display: "flex", flexDirection: "column" }}>
+            <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, flexShrink: 0 }}>
+              Reuniões ({clientReunioes.length})
+            </div>
+            {clientReunioes.length === 0
+              ? <div style={{ fontSize: 12, color: B.gray, textAlign: "center", padding: "16px 0" }}>Nenhuma reunião registrada.</div>
+              : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, overflowY: "auto" }}>
+                  {clientReunioes.map((r) => (
+                    <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 7, background: "#f0f4ff", border: `1px solid ${B.border}` }}>
+                      <span style={{ fontSize: 13, flexShrink: 0 }}>📅</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.titulo || "Reunião"}</div>
+                        <div style={{ fontSize: 10, color: B.muted }}>{fmtDate(r.data)}</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              );
-            })}
-          </div>
-        </Card>
+              )
+            }
+          </Card>
+
+          {/* Relatórios */}
+          <Card style={{ maxHeight: 340, display: "flex", flexDirection: "column" }}>
+            <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 10, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, flexShrink: 0 }}>
+              Relatórios ({relHistorico.length})
+            </div>
+            {relHistorico.length === 0
+              ? <div style={{ fontSize: 12, color: B.gray, textAlign: "center", padding: "16px 0" }}>Nenhum relatório registrado.</div>
+              : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, overflowY: "auto" }}>
+                  {relHistorico.map((r) => {
+                    const [y, m] = (r.month || "").split("-");
+                    const label = y && m ? new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" }) : r.month;
+                    const isSent    = r.checked && !r.skipped;
+                    const isSkipped = r.skipped;
+                    const dateAt = isSent ? r.checked_at : isSkipped ? r.skipped_at : null;
+                    return (
+                      <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 7, background: isSent ? "#f0fdf4" : "#f9fafb", border: `1px solid ${isSent ? "#bbf7d0" : "#e5e7eb"}` }}>
+                        <span style={{ fontSize: 13, flexShrink: 0 }}>{isSent ? "✓" : "⊘"}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: isSent ? "#16a34a" : "#6b7280", textTransform: "capitalize" }}>{label}</span>
+                        </div>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: isSent ? "#16a34a" : "#9ca3af", background: isSent ? "#dcfce7" : "#f3f4f6", borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>
+                          {isSent ? "Enviado" : isSkipped ? "Não enviado" : "—"}
+                        </span>
+                        {dateAt && (
+                          <span style={{ fontSize: 10, color: "#9ca3af", whiteSpace: "nowrap" }}>
+                            {new Date(dateAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" })}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            }
+          </Card>
+        </div>
       )}
 
       {/* Notas Gerais — abaixo de Aportes */}
