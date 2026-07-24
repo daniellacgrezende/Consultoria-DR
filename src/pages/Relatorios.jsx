@@ -52,13 +52,13 @@ export default function Relatorios() {
   const [atrasadoOpen, setAtrasadoOpen] = useState(true);
   const [taskModal, setTaskModal] = useState(null); // { texto, data }
 
-  // ─── Checklist: começa no próximo mês, avança automaticamente quando tudo enviado ───
+  // ─── Checklist: mês atual, avança automaticamente quando tudo enviado ───
   const now = new Date();
-  // Mês base (próximo mês calendário) — nunca muda
-  const baseMonthDate  = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  // Mês base = mês corrente
+  const baseMonthDate  = new Date(now.getFullYear(), now.getMonth(), 1);
   const baseMonth      = `${baseMonthDate.getFullYear()}-${String(baseMonthDate.getMonth() + 1).padStart(2, "0")}`;
-  // Mês futuro (dois meses à frente)
-  const futureMonthDate = new Date(now.getFullYear(), now.getMonth() + 2, 1);
+  // Mês futuro = próximo mês
+  const futureMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   const futureMonth     = `${futureMonthDate.getFullYear()}-${String(futureMonthDate.getMonth() + 1).padStart(2, "0")}`;
 
   // ─── Checklist state ───
