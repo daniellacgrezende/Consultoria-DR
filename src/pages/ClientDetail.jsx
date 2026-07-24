@@ -758,12 +758,9 @@ export default function ClientDetail() {
               : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 4, overflowY: "auto" }}>
                   {clientReunioes.map((r) => (
-                    <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 7, background: "#f0f4ff", border: `1px solid ${B.border}` }}>
-                      <span style={{ fontSize: 13, flexShrink: 0 }}>📅</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.titulo || "Reunião"}</div>
-                        <div style={{ fontSize: 10, color: B.muted }}>{fmtDate(r.data)}</div>
-                      </div>
+                    <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", borderRadius: 7, background: "#f0f4ff", border: `1px solid ${B.border}` }}>
+                      <span style={{ fontSize: 10, color: B.muted, whiteSpace: "nowrap", flexShrink: 0 }}>{fmtDate(r.data)}</span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: B.navy, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.titulo || "Reunião"}</span>
                     </div>
                   ))}
                 </div>
