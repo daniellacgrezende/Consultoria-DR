@@ -101,7 +101,7 @@ export default function Relatorios() {
 
   // Se todos os clientes mensais estão marcados no mês base, avança para o futuro
   const allBaseChecked = checklistLoaded && monthlyClients.length > 0
-    && monthlyClients.every((c) => baseCheckedMap[c.id]?.checked);
+    && monthlyClients.every((c) => baseCheckedMap[c.id]?.checked || baseCheckedMap[c.id]?.skipped);
 
   const nextMonthDate = allBaseChecked ? futureMonthDate : baseMonthDate;
   const nextMonth     = allBaseChecked ? futureMonth     : baseMonth;
@@ -116,31 +116,57 @@ export default function Relatorios() {
   }, [checklist, nextMonth]);
 
   // Clientes não marcados ainda (para mostrar na lista)
-  const pendingMonthly   = monthlyClients.filter((c) => !checkedMap[c.id]?.checked);
+  const pendingMonthly   = monthlyClients.filter((c) => !checkedMap[c.id]?.checked && !checkedMap[c.id]?.skipped);
   const completedMonthly = monthlyClients.filter((c) =>  checkedMap[c.id]?.checked);
-  const checkedCount     = completedMonthly.length;
+  const skippedMonthly   = monthlyClients.filter((c) =>  checkedMap[c.id]?.skipped);
+  const checkedCount     = completedMonthly.length + skippedMonthly.length;
 
   const toggleCheck = async (clientId) => {
     const existing = checkedMap[clientId];
     if (existing) {
       const newChecked = !existing.checked;
       await supabase.from("report_checklist")
-        .update({ checked: newChecked, checked_at: newChecked ? new Date().toISOString() : null })
+        .update({ checked: newChecked, checked_at: newChecked ? new Date().toISOString() : null, skipped: false, skipped_at: null })
         .eq("id", existing.id);
       setChecklist((p) => p.map((r) => r.id === existing.id
-        ? { ...r, checked: newChecked, checked_at: newChecked ? new Date().toISOString() : null }
+        ? { ...r, checked: newChecked, checked_at: newChecked ? new Date().toISOString() : null, skipped: false, skipped_at: null }
         : r));
       if (newChecked) {
         const cl = clients.find((c) => c.id === clientId);
         if (cl) await saveClient({ ...cl, ultimo_relatorio: today() }, false);
       }
     } else {
-      const entry = { id: huid(), client_id: clientId, month: nextMonth, checked: true, checked_at: new Date().toISOString() };
+      const entry = { id: huid(), client_id: clientId, month: nextMonth, checked: true, checked_at: new Date().toISOString(), skipped: false, skipped_at: null };
       const { data } = await supabase.from("report_checklist").insert(entry).select();
       if (data) setChecklist((p) => [...p, data[0]]);
       const cl = clients.find((c) => c.id === clientId);
       if (cl) await saveClient({ ...cl, ultimo_relatorio: today() }, false);
     }
+  };
+
+  const skipCheck = async (clientId, month) => {
+    const m = month || nextMonth;
+    const existing = checklist.find((r) => r.client_id === clientId && r.month === m);
+    if (existing) {
+      const nowSkipped = !existing.skipped;
+      await supabase.from("report_checklist")
+        .update({ skipped: nowSkipped, skipped_at: nowSkipped ? new Date().toISOString() : null, checked: false, checked_at: null })
+        .eq("id", existing.id);
+      setChecklist((p) => p.map((r) => r.id === existing.id
+        ? { ...r, skipped: nowSkipped, skipped_at: nowSkipped ? new Date().toISOString() : null, checked: false, checked_at: null }
+        : r));
+    } else {
+      const entry = { id: huid(), client_id: clientId, month: m, checked: false, checked_at: null, skipped: true, skipped_at: new Date().toISOString() };
+      const { data } = await supabase.from("report_checklist").insert(entry).select();
+      if (data) setChecklist((p) => [...p, data[0]]);
+    }
+  };
+
+  const naoEnviarCliente = async (c) => {
+    const m = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    await skipCheck(c.id, m);
+    await saveClient({ ...c, ultimo_relatorio: today() }, false);
+    setToast({ type: "success", text: `${c.nome.split(" ")[0]} marcado como "não enviado" este período.` });
   };
 
   const naoAplicaRel = (c) => (c.periodicidade_relatorio || c.periodicidadeRelatorio || "").toLowerCase() === "não se aplica";
@@ -305,9 +331,44 @@ export default function Relatorios() {
                         style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 600, cursor: "pointer" }}>Ficha</button>
                       <button onClick={(e) => { e.stopPropagation(); setTaskModal({ texto: `Enviar relatório mensal para ${c.nome}`, data: today(), client_id: c.id }); }}
                         style={{ background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>+ Tarefa</button>
+                      <button onClick={(e) => { e.stopPropagation(); skipCheck(c.id); }}
+                        style={{ background: "#f9fafb", color: "#6b7280", border: "1px solid #e5e7eb", borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>⊘ Não enviar</button>
                     </div>
                   );})}
                 </div>
+              )}
+
+              {/* Pulados — não enviados este mês */}
+              {skippedMonthly.length > 0 && (
+                <>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", marginBottom: 4, marginTop: completedMonthly.length > 0 || pendingMonthly.length > 0 ? 8 : 0 }}>Não enviados ⊘</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {skippedMonthly.map((c) => {
+                      const skippedAt = checkedMap[c.id]?.skipped_at;
+                      return (
+                        <div key={c.id}
+                          style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, border: "1px solid #e5e7eb", background: "#f9fafb", opacity: 0.75 }}
+                        >
+                          <div style={{ width: 22, height: 22, borderRadius: 6, border: "2px solid #9ca3af", background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <span style={{ color: "#9ca3af", fontSize: 12, fontWeight: 700, lineHeight: 1 }}>⊘</span>
+                          </div>
+                          <Avatar nome={c.nome} size={28} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
+                            <div style={{ fontSize: 10, color: "#9ca3af" }}>{c.profissao || "—"}</div>
+                          </div>
+                          {skippedAt && (
+                            <span style={{ fontSize: 10, color: "#9ca3af", fontWeight: 600, whiteSpace: "nowrap" }}>
+                              Pulado {new Date(skippedAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
+                            </span>
+                          )}
+                          <button onClick={() => skipCheck(c.id)}
+                            style={{ background: "white", color: "#6b7280", border: "1px solid #e5e7eb", borderRadius: 6, padding: "4px 8px", fontSize: 10, cursor: "pointer" }}>desfazer</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
 
               {/* Já enviados — ficam visíveis até virar o mês */}
@@ -393,6 +454,10 @@ export default function Relatorios() {
                       style={{ fontSize: 9.5, fontWeight: 700, background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
                       + Tarefa
                     </button>
+                    <button onClick={() => naoEnviarCliente(c)}
+                      style={{ fontSize: 9.5, fontWeight: 700, background: "#f9fafb", color: "#6b7280", border: "1px solid #e5e7eb", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
+                      ⊘ Não enviar
+                    </button>
                   </div>
                 </div>
               );})}
@@ -441,6 +506,10 @@ export default function Relatorios() {
                     <button onClick={() => setTaskModal({ texto: `Enviar relatório para ${c.nome}`, data: today(), client_id: c.id })}
                       style={{ fontSize: 9.5, fontWeight: 700, background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
                       + Tarefa
+                    </button>
+                    <button onClick={() => naoEnviarCliente(c)}
+                      style={{ fontSize: 9.5, fontWeight: 700, background: "#f9fafb", color: "#6b7280", border: "1px solid #e5e7eb", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
+                      ⊘ Não enviar
                     </button>
                   </div>
                 </div>
