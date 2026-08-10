@@ -30,8 +30,10 @@ export default function Clients() {
   const [showStats, setShowStats] = useState(false);
   const [showPL, setShowPL] = useState(false);
   const [atrasoPanel, setAtrasoPanel] = useState(null); // null | "precisaChamar" | "jaChamei"
+  const [archiveOpen, setArchiveOpen] = useState(false);
 
-  const active = useMemo(() => clients.filter((c) => c.status === "ativo"), [clients]);
+  const active   = useMemo(() => clients.filter((c) => c.status === "ativo"),   [clients]);
+  const archived = useMemo(() => clients.filter((c) => c.status === "inativo"), [clients]);
   const getPL = (c) => getCurrentPL(c, history);
   const totalAUM = useMemo(() => active.reduce((s, c) => s + getPL(c), 0), [active, history]);
   const PDAYS = { mensal: 30, bimestral: 60, trimestral: 90, quadrimestral: 120, semestral: 180, anual: 365 };
@@ -469,7 +471,7 @@ export default function Clients() {
                     <td style={{ padding: "10px 12px" }}><CBadge curva={c._curva} /></td>
                     <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
                       <button onClick={(e) => { e.stopPropagation(); openEdit(c); }} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Editar</button>
-                      <button onClick={async (e) => { e.stopPropagation(); if (window.confirm(`Excluir "${c.nome}"?\n\nEsta ação não pode ser desfeita.`)) { await deleteClient(c.id); setToast({ type: "success", text: `${c.nome} excluído.` }); } }} style={{ marginLeft: 6, background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Excluir</button>
+                      <button onClick={async (e) => { e.stopPropagation(); if (window.confirm(`Arquivar "${c.nome}"?\n\nO cliente será movido para o arquivo e poderá ser restaurado depois.`)) { await saveClient({ ...c, status: "inativo" }, false); setToast({ type: "success", text: `${c.nome} arquivado.` }); } }} style={{ marginLeft: 6, background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Arquivar</button>
                     </td>
                   </tr>
                 );
@@ -478,6 +480,48 @@ export default function Clients() {
           </table>
         </div>
       </Card>
+
+      {/* ═══ ARQUIVADOS ═══ */}
+      {archived.length > 0 && (
+        <div style={{ marginTop: 12 }}>
+          <button onClick={() => setArchiveOpen((v) => !v)} style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", padding: "6px 0", color: B.muted, fontSize: 13, fontWeight: 600 }}>
+            <span style={{ fontSize: 16 }}>{archiveOpen ? "▾" : "▸"}</span>
+            Arquivados ({archived.length})
+          </button>
+          {archiveOpen && (
+            <Card style={{ marginTop: 6 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={{ padding: "8px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}` }}>Cliente</th>
+                    <th style={{ padding: "8px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}` }}>Profissão</th>
+                    <th style={{ padding: "8px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.border}` }}>Cidade/UF</th>
+                    <th style={{ padding: "8px 12px", borderBottom: `1px solid ${B.border}` }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {archived.sort((a, b) => a.nome.localeCompare(b.nome)).map((c) => (
+                    <tr key={c.id} style={{ borderBottom: `1px solid ${B.border}`, opacity: 0.75 }}>
+                      <td style={{ padding: "10px 12px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <Avatar name={c.nome} size={30} />
+                          <span style={{ fontSize: 13, fontWeight: 600, color: B.navy }}>{c.nome}</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: "10px 12px", fontSize: 12, color: B.gray }}>{c.profissao || "—"}</td>
+                      <td style={{ padding: "10px 12px", fontSize: 12, color: B.gray }}>{c.cidade && c.uf ? `${c.cidade}/${c.uf}` : c.cidade || "—"}</td>
+                      <td style={{ padding: "10px 12px", whiteSpace: "nowrap", textAlign: "right" }}>
+                        <button onClick={async () => { await saveClient({ ...c, status: "ativo" }, false); setToast({ type: "success", text: `${c.nome} restaurado.` }); }} style={{ background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 6, padding: "5px 12px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Restaurar</button>
+                        <button onClick={async () => { if (window.confirm(`Excluir definitivamente "${c.nome}"?\n\nEsta ação não pode ser desfeita.`)) { await deleteClient(c.id); setToast({ type: "success", text: `${c.nome} excluído.` }); } }} style={{ marginLeft: 6, background: "#fff5f5", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Excluir definitivamente</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* ═══ MODAL CADASTRO ═══ */}
       <Modal open={modal} onClose={() => setModal(false)} wide>
