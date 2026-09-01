@@ -125,6 +125,7 @@ export default function Meetings() {
       if (sortCol === "status")  return dir * (STATUS_ORDER[a.st.key] - STATUS_ORDER[b.st.key]);
       if (sortCol === "diasSem") return dir * ((b.diasSem ?? -1) - (a.diasSem ?? -1));
       if (sortCol === "diasAte") return dir * ((a.diasAte ?? 99999) - (b.diasAte ?? 99999));
+      if (sortCol === "nome")    return dir * a.nome.localeCompare(b.nome);
       return 0;
     });
     return enriched;
@@ -397,8 +398,12 @@ export default function Meetings() {
                           </div>
                           <div style={{ fontSize: 10, color: "#0891B2", fontWeight: 600 }}>Chamei há {dAv}d · {c.periodicidade_reuniao || "Trimestral"}</div>
                         </div>
-                        <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "", incluirParceiro: false, emailParceiro: c.email_parceiro || "" }); }}
-                          style={{ fontSize: 9.5, fontWeight: 700, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>✓ Agendou</button>
+                        <div style={{ display: "flex", gap: 4 }}>
+                          <button onClick={() => openAction("chamei", c)}
+                            style={{ fontSize: 9.5, fontWeight: 700, background: "#ECFEFF", color: "#0891B2", border: "1px solid #A5F3FC", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>Chamei de novo</button>
+                          <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "", incluirParceiro: false, emailParceiro: c.email_parceiro || "" }); }}
+                            style={{ fontSize: 9.5, fontWeight: 700, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>✓ Agendou</button>
+                        </div>
                       </div>
                     );
                   })}
@@ -557,7 +562,7 @@ export default function Meetings() {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <thead>
               <tr>
-                <Th>Cliente</Th>
+                <Th col="nome">Cliente</Th>
                 <Th col="diasSem">Última Reunião</Th>
                 <Th>Periodicidade</Th>
                 <Th col="diasAte">Próxima</Th>
@@ -654,14 +659,14 @@ export default function Meetings() {
                           style={{ fontSize: 10, fontWeight: 600, background: "#F0FDF4", color: "#16A34A", border: "1px solid #BBF7D0", borderRadius: 5, padding: "4px 9px", cursor: "pointer" }}
                         >Realizada</button>
 
-                        {!chameiRecentemente && (
+                        {c.st.key !== "emdia" && c.st.key !== "nao_aplica" && (
                           <button
                             onClick={() => openAction("chamei", c)}
                             style={{ fontSize: 10, fontWeight: 600, background: "#ECFEFF", color: "#0891B2", border: "1px solid #A5F3FC", borderRadius: 5, padding: "4px 9px", cursor: "pointer" }}
                           >Chamei</button>
                         )}
 
-                        {chameiRecentemente && c.st.key !== "emdia" && (
+                        {chameiRecentemente && c.st.key !== "emdia" && c.st.key !== "nao_aplica" && (
                           <button
                             onClick={() => openAction("recusou", c)}
                             style={{ fontSize: 10, fontWeight: 600, background: "#FFF1F2", color: "#BE123C", border: "1px solid #FECDD3", borderRadius: 5, padding: "4px 9px", cursor: "pointer" }}
