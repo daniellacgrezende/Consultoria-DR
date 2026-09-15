@@ -84,6 +84,7 @@ export const NAV_ITEMS = [
   { id: "pipeline", label: "Leads", icon: "Target" },
   { id: "tasks", label: "Tarefas", icon: "CheckSquare" },
   { id: "meetings", label: "Reuniões", icon: "ClipboardList" },
+  { id: "contatos", label: "Contatos", icon: "Phone" },
   { id: "relatorios", label: "Relatórios", icon: "FileText" },
   { id: "clients", label: "Clientes", icon: "Users" },
   { id: "allocation", label: "Alocação", icon: "PieChart" },

@@ -152,7 +152,7 @@ const CLIENT_DB_COLS = new Set([
   "corretoras", "origem_cliente", "proximo_relatorio", "indicado_por", "aporte_mensal_max", "data_pedido_indicacao",
   "email", "patrimonio_imobilizado", "financiamentos", "benchmark",
   "seguro_nao_aplica", "ips_nao_aplica", "prev_nao_aplica", "reuniao_agendada_em",
-  "data_nascimento_parceiro", "email_parceiro", "atendimento_casal",
+  "data_nascimento_parceiro", "email_parceiro", "atendimento_casal", "ultima_interacao",
 ]);
 
 // Converte valor para número, retornando 0 se vazio/inválido
@@ -231,6 +231,7 @@ export const mapClientToDB = (c) => {
     data_nascimento_parceiro: toDate(c.data_nascimento_parceiro ?? c.dataNascimentoParceiro),
     email_parceiro: c.email_parceiro ?? "",
     atendimento_casal: !!(c.atendimento_casal ?? false),
+    ultima_interacao: toDate(c.ultima_interacao),
   };
 
   return db;

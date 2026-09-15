@@ -21,6 +21,7 @@ import Relatorios from "./pages/Relatorios";
 import RebalanceIntl from "./pages/RebalanceIntl";
 import RebalanceBR from "./pages/RebalanceBR";
 import Metas from "./pages/Metas";
+import Contatos from "./pages/Contatos";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -49,6 +50,7 @@ function AppRoutes() {
         <Route path="clients/:slug/rebalanceamento" element={<RebalanceIntl />} />
         <Route path="clients/:slug/rebalanceamento-br" element={<RebalanceBR />} />
         <Route path="meetings" element={<Meetings />} />
+        <Route path="contatos" element={<Contatos />} />
         <Route path="relatorios" element={<Relatorios />} />
         <Route path="allocation" element={<AssetAllocation />} />
         <Route path="repasse" element={<Repasse />} />
