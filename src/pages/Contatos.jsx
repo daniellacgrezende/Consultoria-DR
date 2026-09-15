@@ -23,7 +23,9 @@ export default function Contatos() {
   const navigate = useNavigate();
   const { clients, history, saveClient, setToast } = useData();
   const [search, setSearch] = useState("");
-  const [justSaved, setJustSaved] = useState(null); // id do cliente que acabou de ser salvo
+  const [justSaved, setJustSaved] = useState(null);
+  const [picking, setPicking] = useState(null); // id do cliente com date picker aberto
+  const [pickDate, setPickDate] = useState(today());
 
   const active = useMemo(() => clients.filter((c) => c.status === "ativo"), [clients]);
 
@@ -48,11 +50,17 @@ export default function Contatos() {
   const atencao      = rows.filter((c) => c.dias !== null && c.dias > 14 && c.dias <= 30).length;
   const ok           = rows.filter((c) => c.dias !== null && c.dias <= 14).length;
 
-  const registrar = async (c) => {
-    await saveClient({ ...c, ultima_interacao: today() }, false);
+  const abrirPicker = (c) => {
+    setPicking(c.id);
+    setPickDate(today());
+  };
+
+  const registrar = async (c, data) => {
+    await saveClient({ ...c, ultima_interacao: data }, false);
+    setPicking(null);
     setJustSaved(c.id);
-    setTimeout(() => setJustSaved(null), 2000);
-    setToast({ type: "success", text: `Interação com ${c.nome.split(" ")[0]} registrada.` });
+    setTimeout(() => setJustSaved(null), 2500);
+    setToast({ type: "success", text: `Interação com ${c.nome.split(" ")[0]} registrada em ${fmtDate(data)}.` });
   };
 
   return (
@@ -142,17 +150,31 @@ export default function Contatos() {
 
                   {/* Ação */}
                   <td style={{ padding: "10px 16px", textAlign: "right", whiteSpace: "nowrap" }}>
-                    <button
-                      onClick={() => registrar(c)}
-                      style={{
-                        fontSize: 11, fontWeight: 700, cursor: "pointer", borderRadius: 6,
-                        padding: "6px 14px", border: "none", transition: "all 0.15s",
-                        background: saved ? "#16A34A" : "#061841",
-                        color: "white",
-                      }}
-                    >
-                      {saved ? "✓ Registrado!" : "Interagi hoje"}
-                    </button>
+                    {saved ? (
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#16A34A" }}>✓ Registrado!</span>
+                    ) : picking === c.id ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "flex-end" }}>
+                        <input
+                          type="date"
+                          value={pickDate}
+                          max={today()}
+                          onChange={(e) => setPickDate(e.target.value)}
+                          style={{ fontSize: 12, padding: "5px 8px", border: `1.5px solid ${B.navy}`, borderRadius: 6, outline: "none", fontFamily: "inherit", color: B.navy }}
+                        />
+                        <button
+                          onClick={() => registrar(c, pickDate)}
+                          style={{ fontSize: 11, fontWeight: 700, background: "#16A34A", color: "white", border: "none", borderRadius: 6, padding: "6px 12px", cursor: "pointer" }}
+                        >Salvar</button>
+                        <button
+                          onClick={() => setPicking(null)}
+                          style={{ fontSize: 11, fontWeight: 600, background: "white", color: B.muted, border: `1px solid ${B.border}`, borderRadius: 6, padding: "6px 10px", cursor: "pointer" }}>✕</button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => abrirPicker(c)}
+                        style={{ fontSize: 11, fontWeight: 700, cursor: "pointer", borderRadius: 6, padding: "6px 14px", border: "none", background: "#061841", color: "white" }}
+                      >Registrar interação</button>
+                    )}
                   </td>
                 </tr>
               );
