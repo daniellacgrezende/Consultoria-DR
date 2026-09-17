@@ -51,6 +51,7 @@ export default function Relatorios() {
   const [atencaoOpen, setAtencaoOpen] = useState(false);
   const [atrasadoOpen, setAtrasadoOpen] = useState(true);
   const [taskModal, setTaskModal] = useState(null); // { texto, data }
+  const [reuniaoModal, setReuniaoModal] = useState(null); // { client, date } — date picker "reunião contou"
 
   // ─── Checklist: mês atual, avança automaticamente quando tudo enviado ───
   const now = new Date();
@@ -179,6 +180,28 @@ export default function Relatorios() {
     const proximo = calcProximoRelatorio(c);
     await saveClient({ ...c, ultimo_relatorio: today(), ...(proximo ? { proximo_relatorio: proximo } : {}) }, false);
     setToast({ type: "success", text: `${c.nome.split(" ")[0]} marcado como "não enviado" este período.` });
+  };
+
+  const reuniaoContou = async (c, dataReuniao) => {
+    const m = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const existing = checklist.find((r) => r.client_id === c.id && r.month === m);
+    if (existing) {
+      await supabase.from("report_checklist")
+        .update({ skipped: true, skipped_at: new Date().toISOString(), checked: false, checked_at: null, reuniao_contou: true, reuniao_data: dataReuniao })
+        .eq("id", existing.id);
+      setChecklist((p) => p.map((r) => r.id === existing.id
+        ? { ...r, skipped: true, checked: false, checked_at: null, reuniao_contou: true, reuniao_data: dataReuniao }
+        : r));
+    } else {
+      const entry = { id: huid(), client_id: c.id, month: m, checked: false, checked_at: null, skipped: true, skipped_at: new Date().toISOString(), reuniao_contou: true, reuniao_data: dataReuniao };
+      const { data } = await supabase.from("report_checklist").insert(entry).select();
+      if (data) setChecklist((p) => [...p, data[0]]);
+    }
+    const pd = getPeriodDays(c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal");
+    const proximo = isFinite(pd) ? addDays(dataReuniao, pd) : null;
+    await saveClient({ ...c, ultimo_relatorio: dataReuniao, ...(proximo ? { proximo_relatorio: proximo } : {}) }, false);
+    setReuniaoModal(null);
+    setToast({ type: "success", text: `Reunião de ${c.nome.split(" ")[0]} contou como relatório. Próximo: ${proximo ? proximo.split("-").reverse().join("/") : "—"}` });
   };
 
   const naoAplicaRel = (c) => (c.periodicidade_relatorio || c.periodicidadeRelatorio || "").toLowerCase() === "não se aplica";
@@ -345,6 +368,8 @@ export default function Relatorios() {
                         style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 600, cursor: "pointer" }}>Ficha</button>
                       <button onClick={(e) => { e.stopPropagation(); setTaskModal({ texto: `Enviar relatório mensal para ${c.nome}`, data: today(), client_id: c.id }); }}
                         style={{ background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>+ Tarefa</button>
+                      <button onClick={(e) => { e.stopPropagation(); setReuniaoModal({ client: c, date: c.ultima_reuniao || c.ultimaReuniao || today() }); }}
+                        style={{ background: "#f5f3ff", color: "#7c3aed", border: "1px solid #ddd6fe", borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>🤝 Reunião</button>
                       <button onClick={(e) => { e.stopPropagation(); skipCheck(c.id); }}
                         style={{ background: "#f9fafb", color: "#6b7280", border: "1px solid #e5e7eb", borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>⊘ Não enviar</button>
                     </div>
@@ -358,24 +383,26 @@ export default function Relatorios() {
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", marginBottom: 4, marginTop: completedMonthly.length > 0 || pendingMonthly.length > 0 ? 8 : 0 }}>Não enviados ⊘</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     {skippedMonthly.map((c) => {
-                      const skippedAt = checkedMap[c.id]?.skipped_at;
+                      const entry = checkedMap[c.id];
+                      const isReuniaoContou = entry?.reuniao_contou;
+                      const skippedAt = entry?.skipped_at;
+                      const reuniaoData = entry?.reuniao_data;
                       return (
                         <div key={c.id}
-                          style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, border: "1px solid #e5e7eb", background: "#f9fafb", opacity: 0.75 }}
+                          style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, border: `1px solid ${isReuniaoContou ? "#ddd6fe" : "#e5e7eb"}`, background: isReuniaoContou ? "#f5f3ff" : "#f9fafb", opacity: 0.85 }}
                         >
-                          <div style={{ width: 22, height: 22, borderRadius: 6, border: "2px solid #9ca3af", background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                            <span style={{ color: "#9ca3af", fontSize: 12, fontWeight: 700, lineHeight: 1 }}>⊘</span>
+                          <div style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${isReuniaoContou ? "#7c3aed" : "#9ca3af"}`, background: isReuniaoContou ? "#ede9fe" : "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, lineHeight: 1 }}>{isReuniaoContou ? "🤝" : "⊘"}</span>
                           </div>
                           <Avatar nome={c.nome} size={28} />
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
-                            <div style={{ fontSize: 10, color: "#9ca3af" }}>{c.profissao || "—"}</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: isReuniaoContou ? "#6d28d9" : "#6b7280", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
+                            <div style={{ fontSize: 10, color: isReuniaoContou ? "#7c3aed" : "#9ca3af" }}>
+                              {isReuniaoContou
+                                ? `Reunião contou · ${reuniaoData ? fmtDate(reuniaoData) : skippedAt ? new Date(skippedAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) : ""}`
+                                : `Não enviado · ${skippedAt ? new Date(skippedAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) : ""}`}
+                            </div>
                           </div>
-                          {skippedAt && (
-                            <span style={{ fontSize: 10, color: "#9ca3af", fontWeight: 600, whiteSpace: "nowrap" }}>
-                              Pulado {new Date(skippedAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
-                            </span>
-                          )}
                           <button onClick={() => skipCheck(c.id)}
                             style={{ background: "white", color: "#6b7280", border: "1px solid #e5e7eb", borderRadius: 6, padding: "4px 8px", fontSize: 10, cursor: "pointer" }}>desfazer</button>
                         </div>
@@ -468,6 +495,10 @@ export default function Relatorios() {
                       style={{ fontSize: 9.5, fontWeight: 700, background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
                       + Tarefa
                     </button>
+                    <button onClick={() => setReuniaoModal({ client: c, date: c.ultima_reuniao || c.ultimaReuniao || today() })}
+                      style={{ fontSize: 9.5, fontWeight: 700, background: "#f5f3ff", color: "#7c3aed", border: "1px solid #ddd6fe", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
+                      🤝 Reunião
+                    </button>
                     <button onClick={() => naoEnviarCliente(c)}
                       style={{ fontSize: 9.5, fontWeight: 700, background: "#f9fafb", color: "#6b7280", border: "1px solid #e5e7eb", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
                       ⊘ Não enviar
@@ -520,6 +551,10 @@ export default function Relatorios() {
                     <button onClick={() => setTaskModal({ texto: `Enviar relatório para ${c.nome}`, data: today(), client_id: c.id })}
                       style={{ fontSize: 9.5, fontWeight: 700, background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
                       + Tarefa
+                    </button>
+                    <button onClick={() => setReuniaoModal({ client: c, date: c.ultima_reuniao || c.ultimaReuniao || today() })}
+                      style={{ fontSize: 9.5, fontWeight: 700, background: "#f5f3ff", color: "#7c3aed", border: "1px solid #ddd6fe", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
+                      🤝 Reunião
                     </button>
                     <button onClick={() => naoEnviarCliente(c)}
                       style={{ fontSize: 9.5, fontWeight: 700, background: "#f9fafb", color: "#6b7280", border: "1px solid #e5e7eb", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>
@@ -630,6 +665,29 @@ export default function Relatorios() {
           </table>
         </div>
       </Card>
+
+      {/* ─── Modal "Reunião contou" ─── */}
+      <Modal open={!!reuniaoModal} onClose={() => setReuniaoModal(null)}>
+        <div style={{ padding: "24px 28px", minWidth: 320 }}>
+          <h3 style={{ margin: "0 0 6px", fontSize: 15, fontWeight: 700, color: B.navy }}>🤝 Reunião contou como relatório</h3>
+          <p style={{ margin: "0 0 16px", fontSize: 12, color: "#6b7280" }}>
+            A reunião substituirá o relatório deste mês. O cronômetro será zerado a partir da data informada.
+          </p>
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: "#8899bb", textTransform: "uppercase" }}>Data da reunião</label>
+            <input type="date"
+              value={reuniaoModal?.date || today()}
+              max={today()}
+              onChange={(e) => setReuniaoModal((m) => ({ ...m, date: e.target.value }))}
+              style={{ display: "block", width: "100%", marginTop: 4, padding: "8px 10px", border: "1px solid #ddd6fe", borderRadius: 7, fontSize: 13, boxSizing: "border-box" }} />
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={() => setReuniaoModal(null)} style={{ flex: 1, padding: "9px", background: "white", border: "1px solid #d1d5db", borderRadius: 7, cursor: "pointer", color: "#6b7280", fontWeight: 600 }}>Cancelar</button>
+            <button onClick={() => reuniaoContou(reuniaoModal.client, reuniaoModal.date)}
+              style={{ flex: 2, padding: "9px", background: "#7c3aed", color: "white", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>Confirmar</button>
+          </div>
+        </div>
+      </Modal>
 
       {/* ─── Mini modal criar tarefa ─── */}
       <Modal open={!!taskModal} onClose={() => setTaskModal(null)}>

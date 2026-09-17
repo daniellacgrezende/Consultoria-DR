@@ -780,17 +780,22 @@ export default function ClientDetail() {
                   {relHistorico.map((r) => {
                     const [y, m] = (r.month || "").split("-");
                     const label = y && m ? new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" }) : r.month;
-                    const isSent    = r.checked && !r.skipped;
-                    const isSkipped = r.skipped;
-                    const dateAt = isSent ? r.checked_at : isSkipped ? r.skipped_at : null;
+                    const isSent       = r.checked && !r.skipped;
+                    const isReuniaoContou = r.skipped && r.reuniao_contou;
+                    const isSkipped    = r.skipped && !r.reuniao_contou;
+                    const dateAt = isSent ? r.checked_at : (isSkipped || isReuniaoContou) ? r.skipped_at : null;
+                    const bg     = isSent ? "#f0fdf4" : isReuniaoContou ? "#f5f3ff" : "#f9fafb";
+                    const border = isSent ? "#bbf7d0" : isReuniaoContou ? "#ddd6fe" : "#e5e7eb";
+                    const color  = isSent ? "#16a34a" : isReuniaoContou ? "#7c3aed" : "#6b7280";
+                    const badgeBg = isSent ? "#dcfce7" : isReuniaoContou ? "#ede9fe" : "#f3f4f6";
                     return (
-                      <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 7, background: isSent ? "#f0fdf4" : "#f9fafb", border: `1px solid ${isSent ? "#bbf7d0" : "#e5e7eb"}` }}>
-                        <span style={{ fontSize: 13, flexShrink: 0 }}>{isSent ? "✓" : "⊘"}</span>
+                      <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 7, background: bg, border: `1px solid ${border}` }}>
+                        <span style={{ fontSize: 13, flexShrink: 0 }}>{isSent ? "✓" : isReuniaoContou ? "🤝" : "⊘"}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: isSent ? "#16a34a" : "#6b7280", textTransform: "capitalize" }}>{label}</span>
+                          <span style={{ fontSize: 12, fontWeight: 600, color, textTransform: "capitalize" }}>{label}</span>
                         </div>
-                        <span style={{ fontSize: 10, fontWeight: 700, color: isSent ? "#16a34a" : "#9ca3af", background: isSent ? "#dcfce7" : "#f3f4f6", borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>
-                          {isSent ? "Enviado" : isSkipped ? "Não enviado" : "—"}
+                        <span style={{ fontSize: 10, fontWeight: 700, color, background: badgeBg, borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>
+                          {isSent ? "Enviado" : isReuniaoContou ? "Reunião contou" : isSkipped ? "Não enviado" : "—"}
                         </span>
                         {dateAt && (
                           <span style={{ fontSize: 10, color: "#9ca3af", whiteSpace: "nowrap" }}>
