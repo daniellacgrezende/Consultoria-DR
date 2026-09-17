@@ -70,6 +70,15 @@ export default function ClientDetail() {
     supabase.from("report_checklist").select("*").eq("client_id", id).order("month", { ascending: false })
       .then(({ data }) => setRelHistorico(data || []));
   }, [id]);
+
+  const desfazerRelatorio = async (r) => {
+    await supabase.from("report_checklist")
+      .update({ checked: false, checked_at: null, skipped: false, skipped_at: null, reuniao_contou: false, reuniao_data: null })
+      .eq("id", r.id);
+    setRelHistorico((prev) => prev.map((x) => x.id === r.id
+      ? { ...x, checked: false, checked_at: null, skipped: false, skipped_at: null, reuniao_contou: false, reuniao_data: null }
+      : x));
+  };
   const toggleRhExpand = (rid) => {
     setRhExpandedIds((prev) => { const n = new Set(prev); n.has(rid) ? n.delete(rid) : n.add(rid); return n; });
     setRhInline((prev) => {
@@ -788,6 +797,7 @@ export default function ClientDetail() {
                     const border = isSent ? "#bbf7d0" : isReuniaoContou ? "#ddd6fe" : "#e5e7eb";
                     const color  = isSent ? "#16a34a" : isReuniaoContou ? "#7c3aed" : "#6b7280";
                     const badgeBg = isSent ? "#dcfce7" : isReuniaoContou ? "#ede9fe" : "#f3f4f6";
+                    const isMarked = isSent || isSkipped || isReuniaoContou;
                     return (
                       <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 7, background: bg, border: `1px solid ${border}` }}>
                         <span style={{ fontSize: 13, flexShrink: 0 }}>{isSent ? "✓" : isReuniaoContou ? "🤝" : "⊘"}</span>
@@ -801,6 +811,13 @@ export default function ClientDetail() {
                           <span style={{ fontSize: 10, color: "#9ca3af", whiteSpace: "nowrap" }}>
                             {new Date(dateAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" })}
                           </span>
+                        )}
+                        {isMarked && (
+                          <button
+                            onClick={() => { if (window.confirm("Desfazer este lançamento?")) desfazerRelatorio(r); }}
+                            style={{ fontSize: 9, fontWeight: 600, background: "white", color: "#9ca3af", border: "1px solid #e5e7eb", borderRadius: 5, padding: "2px 7px", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+                            desfazer
+                          </button>
                         )}
                       </div>
                     );

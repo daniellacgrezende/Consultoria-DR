@@ -161,12 +161,11 @@ export default function Relatorios() {
     const existing = checklist.find((r) => r.client_id === clientId && r.month === m);
     if (existing) {
       const nowSkipped = !existing.skipped;
-      await supabase.from("report_checklist")
-        .update({ skipped: nowSkipped, skipped_at: nowSkipped ? new Date().toISOString() : null, checked: false, checked_at: null })
-        .eq("id", existing.id);
-      setChecklist((p) => p.map((r) => r.id === existing.id
-        ? { ...r, skipped: nowSkipped, skipped_at: nowSkipped ? new Date().toISOString() : null, checked: false, checked_at: null }
-        : r));
+      const patch = nowSkipped
+        ? { skipped: true, skipped_at: new Date().toISOString(), checked: false, checked_at: null }
+        : { skipped: false, skipped_at: null, checked: false, checked_at: null, reuniao_contou: false, reuniao_data: null };
+      await supabase.from("report_checklist").update(patch).eq("id", existing.id);
+      setChecklist((p) => p.map((r) => r.id === existing.id ? { ...r, ...patch } : r));
     } else {
       const entry = { id: huid(), client_id: clientId, month: m, checked: false, checked_at: null, skipped: true, skipped_at: new Date().toISOString() };
       const { data } = await supabase.from("report_checklist").insert(entry).select();
