@@ -555,9 +555,14 @@ export default function Pipeline() {
   const { leads, saveLead, deleteLead, pipelineStages, saveClient, saveReuniao, setToast } = useData();
 
   // Derived stage lists from DB (fallback to constants if not yet loaded)
+  const stagesProspeccao = pipelineStages.filter((s) => s.tipo === "prospeccao");
+  const prospeccaoNames  = stagesProspeccao.map((s) => s.nome);
   const stagesMain = pipelineStages.filter((s) => s.tipo === "main");
   const stagesExit = pipelineStages.filter((s) => s.tipo === "exit");
   const allStages = [...stagesMain, ...stagesExit];
+  // Leads do funil (excluindo prospecção) e leads de prospecção
+  const funnelLeads     = leads.filter((l) => !prospeccaoNames.includes(l.etapa));
+  const prospeccaoLeads = leads.filter((l) =>  prospeccaoNames.includes(l.etapa));
   const allStageNames = allStages.map((s) => s.nome);
   // Build color map merging DB colors with hardcoded fallbacks
   const stageColorMap = allStages.reduce((acc, s) => ({
@@ -569,6 +574,7 @@ export default function Pipeline() {
   const [form, setForm] = useState(EMPTY_LEAD);
   const [view, setView] = useState("pipeline");
   const [etapaFilter, setEtapaFilter] = useState("todas");
+  const [prospeccaoOpen, setProspeccaoOpen] = useState(true);
   const [activeDragLead, setActiveDragLead] = useState(null);
 
   // ─── Modal Agendamento ───
@@ -732,6 +738,7 @@ export default function Pipeline() {
 
   const [modalTab, setModalTab] = useState("cadastro");
   const openNew = () => { setEditId(null); setForm({ ...EMPTY_LEAD, data_ultima_interacao: today(), r1_dados: {} }); setModalTab("cadastro"); setModal(true); };
+  const openNewProspecto = () => { setEditId(null); setForm({ ...EMPTY_LEAD, etapa: stagesProspeccao[0]?.nome || "Prospecção", data_ultima_interacao: today(), r1_dados: {} }); setModalTab("cadastro"); setModal(true); };
   const openEdit = (l) => { setEditId(l.id); setForm({ ...l, r1_dados: l.r1_dados || {} }); setModalTab("cadastro"); setModal(true); };
   const F = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const R1 = (k) => (e) => setForm((f) => ({ ...f, r1_dados: { ...(f.r1_dados || {}), [k]: e.target.value } }));
@@ -744,7 +751,7 @@ export default function Pipeline() {
   };
   const FPhone = (k) => (e) => setForm((f) => ({ ...f, [k]: fmtPhone(e.target.value) }));
 
-  const filtered = etapaFilter === "todas" ? leads : leads.filter((l) => l.etapa === etapaFilter);
+  const filtered = etapaFilter === "todas" ? funnelLeads : funnelLeads.filter((l) => l.etapa === etapaFilter);
 
   return (
     <>
@@ -761,6 +768,12 @@ export default function Pipeline() {
             </button>
           ))}
           <button
+            onClick={openNewProspecto}
+            style={{ padding: "8px 14px", background: "#0369a1", color: "white", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+          >
+            + Prospecção
+          </button>
+          <button
             onClick={openNew}
             style={{ padding: "8px 18px", background: B.brand, color: "white", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
           >
@@ -769,12 +782,67 @@ export default function Pipeline() {
         </div>
       </div>
 
+      {/* ═══ PAINEL DE PROSPECÇÃO ═══ */}
+      {(prospeccaoLeads.length > 0 || true) && (
+        <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 10, marginBottom: 14, overflow: "hidden" }}>
+          <div
+            onClick={() => setProspeccaoOpen((v) => !v)}
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 16px", cursor: "pointer", userSelect: "none" }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 13, display: "inline-block", transition: "transform 0.2s", transform: prospeccaoOpen ? "rotate(90deg)" : "rotate(0deg)", color: "#0369a1" }}>▶</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: "#0369a1", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                📋 Lista de Prospecção ({prospeccaoLeads.length}) — nunca abordados
+              </span>
+            </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); openNewProspecto(); }}
+              style={{ fontSize: 11, fontWeight: 700, background: "#0369a1", color: "white", border: "none", borderRadius: 6, padding: "5px 12px", cursor: "pointer" }}
+            >
+              + Adicionar
+            </button>
+          </div>
+          {prospeccaoOpen && (
+            <div style={{ padding: "0 16px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
+              {prospeccaoLeads.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "20px 0", fontSize: 12, color: "#0369a1", opacity: 0.7 }}>
+                  Nenhum prospecto ainda. Clique em "+ Adicionar" para cadastrar alguém que você ainda vai abordar.
+                </div>
+              ) : prospeccaoLeads.map((l) => (
+                <div key={l.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, background: "white", border: "1px solid #bae6fd" }}>
+                  <Avatar nome={l.nome} size={30} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{l.nome}</div>
+                    <div style={{ fontSize: 11, color: B.muted }}>
+                      {[l.origem, l.patrimonio_estimado ? `~${money(l.patrimonio_estimado)}` : null].filter(Boolean).join(" · ")}
+                      {l.notas ? ` · ${l.notas.slice(0, 60)}${l.notas.length > 60 ? "…" : ""}` : ""}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => openEdit(l)}
+                    style={{ fontSize: 10, fontWeight: 600, background: "#f0f9ff", color: "#0369a1", border: "1px solid #bae6fd", borderRadius: 6, padding: "5px 10px", cursor: "pointer", whiteSpace: "nowrap" }}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => moveEtapa(l.id, stagesMain[0]?.nome || "Tentativa de Contato")}
+                    style={{ fontSize: 10, fontWeight: 700, background: B.navy, color: "white", border: "none", borderRadius: 6, padding: "5px 12px", cursor: "pointer", whiteSpace: "nowrap" }}
+                  >
+                    → Abordar
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ─── Summary bar (slim, no cards) ─── */}
-      <PipelineSummaryBar leads={leads} openEdit={openEdit} />
+      <PipelineSummaryBar leads={funnelLeads} openEdit={openEdit} />
 
       {/* ═══ ANALYTICS VIEW ═══ */}
       {view === "analytics" && (
-        <PipelineAnalytics leads={leads} stagesExit={stagesExit} />
+        <PipelineAnalytics leads={funnelLeads} stagesExit={stagesExit} />
       )}
 
       {/* ─── Filter (list view only) ─── */}
@@ -783,8 +851,8 @@ export default function Pipeline() {
           <span style={{ fontSize: 11, color: B.muted, fontWeight: 700, textTransform: "uppercase" }}>Etapa:</span>
           <select value={etapaFilter} onChange={(e) => setEtapaFilter(e.target.value)}
             style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 600, color: B.navy, outline: "none", cursor: "pointer" }}>
-            <option value="todas">Todas ({leads.length})</option>
-            {allStageNames.map((e) => (<option key={e} value={e}>{e} ({leads.filter((l) => l.etapa === e).length})</option>))}
+            <option value="todas">Todas ({funnelLeads.length})</option>
+            {allStageNames.map((e) => (<option key={e} value={e}>{e} ({funnelLeads.filter((l) => l.etapa === e).length})</option>))}
           </select>
         </div>
       )}
@@ -806,7 +874,7 @@ export default function Pipeline() {
                 <PipelineColumn
                   key={etapa}
                   etapa={etapa}
-                  leads={leads.filter((l) => l.etapa === etapa)}
+                  leads={funnelLeads.filter((l) => l.etapa === etapa)}
                   openEdit={openEdit}
                   moveEtapa={moveEtapa}
                   colorMap={stageColorMap}
@@ -821,7 +889,7 @@ export default function Pipeline() {
                 <ExitColumn
                   key={etapa}
                   etapa={etapa}
-                  leads={leads.filter((l) => l.etapa === etapa)}
+                  leads={funnelLeads.filter((l) => l.etapa === etapa)}
                   openEdit={openEdit}
                   moveEtapa={moveEtapa}
                   colorMap={stageColorMap}
