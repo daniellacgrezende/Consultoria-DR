@@ -91,9 +91,12 @@ export default function Dashboard() {
   }, [aportes]);
 
   const n = aportesMonthly.length || 1;
-  const avgAporte = aportesMonthly.reduce((s, m) => s + m.aporte, 0) / n;
-  const avgResgate = aportesMonthly.reduce((s, m) => s + m.resgate, 0) / n;
-  const avgLiquido = aportesMonthly.reduce((s, m) => s + m.liquido, 0) / n;
+  const totalAporte  = aportesMonthly.reduce((s, m) => s + m.aporte,  0);
+  const totalResgate = aportesMonthly.reduce((s, m) => s + m.resgate, 0);
+  const totalLiquido = aportesMonthly.reduce((s, m) => s + m.liquido, 0);
+  const avgAporte  = totalAporte  / n;
+  const avgResgate = totalResgate / n;
+  const avgLiquido = totalLiquido / n;
 
   const mesDetail = useMemo(() => {
     if (!selectedMes) return [];
@@ -408,7 +411,14 @@ export default function Dashboard() {
                 })()}
               </tbody>
               <tfoot>
-                <tr style={{ background: "#f0f4ff", borderTop: `2px solid ${B.border}` }}>
+                <tr style={{ background: "#f5f7ff", borderTop: `2px solid ${B.border}` }}>
+                  <td style={{ padding: "8px 12px", fontWeight: 800, color: B.navy, fontSize: 11 }}>Total do ano</td>
+                  <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 800, color: "#16a34a", fontSize: 11 }}>{money(totalAporte)}</td>
+                  <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 800, color: "#dc2626", fontSize: 11 }}>{money(totalResgate)}</td>
+                  <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 800, color: totalLiquido >= 0 ? "#16a34a" : "#dc2626", fontSize: 11 }}>{totalLiquido >= 0 ? "+" : ""}{money(totalLiquido)}</td>
+                  <td></td>
+                </tr>
+                <tr style={{ background: "#f0f4ff" }}>
                   <td style={{ padding: "8px 12px", fontWeight: 700, color: B.navy, fontSize: 11 }}>Média mensal</td>
                   <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, color: "#16a34a", fontSize: 11 }}>{money(avgAporte)}</td>
                   <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, color: "#dc2626", fontSize: 11 }}>{money(avgResgate)}</td>
