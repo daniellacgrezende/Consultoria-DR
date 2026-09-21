@@ -1100,7 +1100,10 @@ export default function Pipeline() {
               <Inp label="E-mail" value={form.email || ""} onChange={F("email")} />
               <Sel label="Origem" value={form.origem || "Indicação"} onChange={F("origem")} opts={LEAD_ORIGENS.map((o) => ({ v: o, l: o }))} />
               <Inp label="Patrimônio Estimado (R$)" type="number" value={form.patrimonio_estimado || ""} onChange={F("patrimonio_estimado")} />
-              <Sel label="Etapa" value={form.etapa || "Lead"} onChange={F("etapa")} opts={allStageNames.map((e) => ({ v: e, l: e }))} />
+              <Sel label="Etapa" value={form.etapa || "Lead"} onChange={F("etapa")} opts={[
+                ...prospeccaoNames.map((e) => ({ v: e, l: `📋 ${e}` })),
+                ...allStageNames.map((e) => ({ v: e, l: e })),
+              ]} />
               <Inp label="Data da R1" type="date" value={form.data_primeira_reuniao || ""} onChange={F("data_primeira_reuniao")} />
               <Inp label="Data da R2" type="date" value={form.data_segunda_reuniao || ""} onChange={F("data_segunda_reuniao")} />
               <div style={{ gridColumn: "1/-1" }}>
