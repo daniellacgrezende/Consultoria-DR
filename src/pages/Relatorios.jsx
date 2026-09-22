@@ -122,13 +122,14 @@ export default function Relatorios() {
   const skippedMonthly   = monthlyClients.filter((c) =>  checkedMap[c.id]?.skipped);
   const checkedCount     = completedMonthly.length + skippedMonthly.length;
 
-  const calcProximoRelatorio = (cl) => {
+  const calcProximoRelatorio = (cl, baseDate) => {
     const pd = getPeriodDays(cl.periodicidade_relatorio || cl.periodicidadeRelatorio || "Mensal");
-    return isFinite(pd) ? addDays(today(), pd) : null;
+    return isFinite(pd) ? addDays(baseDate, pd) : null;
   };
 
   const toggleCheck = async (clientId) => {
     const existing = checkedMap[clientId];
+    const reportDate = today();
     if (existing) {
       const newChecked = !existing.checked;
       await supabase.from("report_checklist")
@@ -140,8 +141,8 @@ export default function Relatorios() {
       if (newChecked) {
         const cl = clients.find((c) => c.id === clientId);
         if (cl) {
-          const proximo = calcProximoRelatorio(cl);
-          await saveClient({ ...cl, ultimo_relatorio: today(), ...(proximo ? { proximo_relatorio: proximo } : {}) }, false);
+          const proximo = calcProximoRelatorio(cl, reportDate);
+          await saveClient({ ...cl, ultimo_relatorio: reportDate, ...(proximo ? { proximo_relatorio: proximo } : {}) }, false);
         }
       }
     } else {
@@ -150,8 +151,8 @@ export default function Relatorios() {
       if (data) setChecklist((p) => [...p, data[0]]);
       const cl = clients.find((c) => c.id === clientId);
       if (cl) {
-        const proximo = calcProximoRelatorio(cl);
-        await saveClient({ ...cl, ultimo_relatorio: today(), ...(proximo ? { proximo_relatorio: proximo } : {}) }, false);
+        const proximo = calcProximoRelatorio(cl, reportDate);
+        await saveClient({ ...cl, ultimo_relatorio: reportDate, ...(proximo ? { proximo_relatorio: proximo } : {}) }, false);
       }
     }
   };
@@ -176,8 +177,9 @@ export default function Relatorios() {
   const naoEnviarCliente = async (c) => {
     const m = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     await skipCheck(c.id, m);
-    const proximo = calcProximoRelatorio(c);
-    await saveClient({ ...c, ultimo_relatorio: today(), ...(proximo ? { proximo_relatorio: proximo } : {}) }, false);
+    const reportDate = today();
+    const proximo = calcProximoRelatorio(c, reportDate);
+    await saveClient({ ...c, ultimo_relatorio: reportDate, ...(proximo ? { proximo_relatorio: proximo } : {}) }, false);
     setToast({ type: "success", text: `${c.nome.split(" ")[0]} marcado como "não enviado" este período.` });
   };
 
