@@ -456,8 +456,9 @@ export default function ClientDetail() {
           </div>
           {finOpen && (
             <>
-              {/* Linha 1: Perfil+Benchmark / PL / Liq. Desejada / Liq. Atual / Aporte / Receita / Custo de Vida */}
+              {/* Grid unificado 7 colunas — linhas alinhadas */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8, marginBottom: 8 }}>
+                {/* Linha 1: Perfil+Benchmark / PL / Liq.Desejada / Liq.Atual / Aporte / Receita / Custo de Vida */}
                 <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                   <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Perfil</div><InlineSelect value={client.perfil || "moderado"} onSave={(v) => {
                     const benchmarkPorPerfil = { conservador: "IPCA+4%", moderado: "IPCA+5%", arrojado: "IPCA+6%", agressivo: "IPCA+8%" };
@@ -486,32 +487,29 @@ export default function ClientDetail() {
                 </div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Receita Mensal</div><InlineMoney value={client.receita_mensal} onSave={(v) => updateField("receita_mensal", v)} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Custo de Vida</div><InlineMoney value={client.custo_vida} onSave={(v) => updateField("custo_vida", v)} /></div>
-                {hasPgbl && (
-                <div>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>
-                    Renda Bruta Tributável/Ano
-                    {rendaBrutaTributavel === 0 && rendaMensal > 0 && <span style={{ fontWeight: 400, color: B.muted, textTransform: "none" }}> (calculado)</span>}
-                  </div>
-                  <InlineMoney value={rendaBrutaTributavel > 0 ? client.renda_bruta_tributavel : rendaBrutaAnual} onSave={(v) => updateField("renda_bruta_tributavel", v)} />
-                  {rendaBrutaTributavel === 0 && rendaMensal > 0 && (
-                    <div style={{ fontSize: 9, color: B.muted, marginTop: 2 }}>da Receita Mensal · 12% = {money(pgblLimite)}</div>
-                  )}
-                  {rendaBrutaTributavel > 0 && (
-                    <div style={{ fontSize: 9, color: B.muted, marginTop: 2 }}>manual · 12% = {money(pgblLimite)}</div>
-                  )}
-                </div>
-                )}
-              </div>
-              {/* Linha 2: IR / Corretoras / Pagamento / Produtos de Reserva / Taxa / Mínimo + Financiamentos abaixo de Corretoras */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, marginBottom: 8 }}>
+
+                {/* Linha 2: IR / Corretoras / Pagamento / Produtos de Reserva / Taxa / Mínimo / Renda Bruta (se PGBL) */}
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>IR</div><InlineSelect value={client.declaracao_ir || ""} onSave={(v) => updateField("declaracao_ir", v)} opts={[{ v: "", l: "—" }, { v: "Simplificada", l: "Simplificada" }, { v: "Completa", l: "Completa" }]} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Corretoras</div><InlineText value={client.corretoras} onSave={(v) => updateField("corretoras", v)} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Pagamento</div><InlineSelect value={client.forma_pagamento || ""} onSave={(v) => updateField("forma_pagamento", v)} opts={[{ v: "", l: "—" }, { v: "BTG", l: "BTG" }, { v: "XP", l: "XP" }, { v: "Boleto", l: "Boleto" }]} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Produtos de Reserva</div><InlineText value={client.liquidez_produtos} onSave={(v) => updateField("liquidez_produtos", v)} placeholder="Tesouro Selic, CDB..." /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Taxa (%)</div><InlineSelect value={client.taxa_contratada || ""} onSave={(v) => updateField("taxa_contratada", v)} opts={[{ v: "", l: "—" }, { v: "1", l: "1%" }, { v: "0.95", l: "0,95%" }, { v: "0.9", l: "0,9%" }, { v: "0.8", l: "0,8%" }, { v: "0.7", l: "0,7%" }]} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Mínimo Contrato</div><InlineMoney value={client.valor_minimo_contrato} onSave={(v) => updateField("valor_minimo_contrato", v)} /></div>
-                <div style={{ gridColumn: "1" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Patrimônio Imobilizado</div><InlineText value={client.patrimonio_imobilizado} onSave={(v) => updateField("patrimonio_imobilizado", v)} placeholder="Ex: Imóvel SP, Carro 2023…" /></div>
-                <div style={{ gridColumn: "2" }}><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Financiamentos</div><InlineText value={client.financiamentos} onSave={(v) => updateField("financiamentos", v)} placeholder="Ex: Financiamento imóvel, Leasing…" /></div>
+                {hasPgbl ? (
+                  <div>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>
+                      Renda Bruta/Ano
+                      {rendaBrutaTributavel === 0 && rendaMensal > 0 && <span style={{ fontWeight: 400, color: B.muted, textTransform: "none" }}> (calc.)</span>}
+                    </div>
+                    <InlineMoney value={rendaBrutaTributavel > 0 ? client.renda_bruta_tributavel : rendaBrutaAnual} onSave={(v) => updateField("renda_bruta_tributavel", v)} />
+                    {rendaBrutaTributavel === 0 && rendaMensal > 0 && <div style={{ fontSize: 9, color: B.muted, marginTop: 2 }}>12% = {money(pgblLimite)}</div>}
+                    {rendaBrutaTributavel > 0 && <div style={{ fontSize: 9, color: B.muted, marginTop: 2 }}>manual · 12% = {money(pgblLimite)}</div>}
+                  </div>
+                ) : <div />}
+
+                {/* Linha 3: Patrimônio Imobilizado / Financiamentos */}
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Patrimônio Imobilizado</div><InlineText value={client.patrimonio_imobilizado} onSave={(v) => updateField("patrimonio_imobilizado", v)} placeholder="Ex: Imóvel SP, Carro 2023…" /></div>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Financiamentos</div><InlineText value={client.financiamentos} onSave={(v) => updateField("financiamentos", v)} placeholder="Ex: Financiamento imóvel, Leasing…" /></div>
               </div>
               <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${B.border}` }}>
                 <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Planejamento / Metas</div>
