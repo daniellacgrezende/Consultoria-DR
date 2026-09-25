@@ -102,7 +102,7 @@ export const EMPTY_CLIENT = {
   nome: "", dataNascimento: "", cidade: "", uf: "", estadoCivil: "", filhos: "", conjuge: "",
   profissao: "", hobbies: "", status: "ativo", perfil: "moderado", plInicial: "", aporteMensal: "",
   metaPatrimonio: "", liquidezDesejada: "", taxaContratada: "", valorMinimoContrato: "",
-  receitaMensal: "", formaPagamento: "XP", declaracaoIR: "Simplificada", planejamento: "",
+  receitaMensal: "", custoVida: "", formaPagamento: "XP", declaracaoIR: "Simplificada", planejamento: "",
   seguroVida: false, valorSeguro: "", seguroObservacao: "", sucessao: false,
   clienteDesbalanceado: false, inicioCarteira: "", ultimaReuniao: "", proximaReuniao: "",
   avisadoEm: "", ultimoRelatorio: "", envioIps: false, observacoes: "", grupoId: "", grupoNome: "",

@@ -93,6 +93,7 @@ export const mapClientFromDB = (c) => ({
   taxaContratada: c.taxa_contratada,
   valorMinimoContrato: c.valor_minimo_contrato,
   receitaMensal: c.receita_mensal,
+  custoVida: c.custo_vida,
   formaPagamento: c.forma_pagamento,
   declaracaoIR: c.declaracao_ir,
   // snake_case sobrescritos para refletir estado N/A (o ...c acima traz false do DB)
@@ -142,7 +143,7 @@ export const mapClientFromDB = (c) => ({
 const CLIENT_DB_COLS = new Set([
   "id", "nome", "data_nascimento", "cidade", "uf", "estado_civil", "filhos", "conjuge",
   "profissao", "hobbies", "status", "perfil", "pl_inicial", "aporte_mensal", "meta_patrimonio",
-  "liquidez_desejada", "liquidez_atual", "liquidez_produtos", "taxa_contratada", "valor_minimo_contrato", "receita_mensal",
+  "liquidez_desejada", "liquidez_atual", "liquidez_produtos", "taxa_contratada", "valor_minimo_contrato", "receita_mensal", "custo_vida",
   "forma_pagamento", "declaracao_ir", "planejamento", "seguro_vida", "valor_seguro",
   "seguro_observacao", "sucessao", "cliente_desbalanceado", "inicio_carteira", "ultima_reuniao",
   "proxima_reuniao", "avisado_em", "ultimo_relatorio", "envio_ips", "observacoes",
@@ -187,6 +188,7 @@ export const mapClientToDB = (c) => {
     taxa_contratada: c.taxa_contratada ?? c.taxaContratada ?? "",
     valor_minimo_contrato: toNum(c.valor_minimo_contrato ?? c.valorMinimoContrato),
     receita_mensal: toNum(c.receita_mensal ?? c.receitaMensal),
+    custo_vida: toNum(c.custo_vida ?? c.custoVida),
     forma_pagamento: c.forma_pagamento ?? c.formaPagamento ?? "XP",
     declaracao_ir: c.declaracao_ir ?? c.declaracaoIR ?? "Simplificada",
     planejamento: c.planejamento ?? "",

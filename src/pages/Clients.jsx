@@ -559,6 +559,7 @@ export default function Clients() {
             <Inp label="Liquidez Desejada (R$)" value={form.liquidez_desejada ?? form.liquidezDesejada ?? ""} onChange={F("liquidez_desejada")} type="number" />
             <Inp label="Taxa Contratada" value={form.taxa_contratada ?? form.taxaContratada ?? ""} onChange={F("taxa_contratada")} />
             <Inp label="Receita Mensal (R$)" value={form.receita_mensal ?? form.receitaMensal ?? ""} onChange={F("receita_mensal")} type="number" />
+            <Inp label="Custo de Vida (R$)" value={form.custo_vida ?? form.custoVida ?? ""} onChange={F("custo_vida")} type="number" />
             <Sel label="Forma Pagamento" value={form.forma_pagamento ?? form.formaPagamento ?? "XP"} onChange={F("forma_pagamento")} opts={["XP", "BTG", "Boleto", "Outros"].map((v) => ({ v, l: v }))} />
             <Sel label="Declaração IR" value={form.declaracao_ir ?? form.declaracaoIR ?? "Simplificada"} onChange={F("declaracao_ir")} opts={["Simplificada", "Completa"].map((v) => ({ v, l: v }))} />
             <div style={{ gridColumn: "1/-1" }}><Inp label="Corretoras" value={form.corretoras || ""} onChange={F("corretoras")} placeholder="XP, BTG, Avenue…" /></div>
