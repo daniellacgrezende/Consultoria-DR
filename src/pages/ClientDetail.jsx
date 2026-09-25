@@ -358,7 +358,19 @@ export default function ClientDetail() {
                     </div>
                   )}
                 </div>
-                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Filhos</div><InlineText value={client.filhos} onSave={(v) => updateField("filhos", v)} /></div>
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Filhos</div>
+                  <InlineText value={client.filhos} onSave={(v) => updateField("filhos", v)} />
+                  {client.data_nascimento_filho && client.data_nascimento_filho.slice(0, 4) !== "1900" && (() => {
+                    const hoje = new Date(); const nasc = new Date(client.data_nascimento_filho);
+                    let idade = hoje.getFullYear() - nasc.getFullYear();
+                    if (hoje.getMonth() < nasc.getMonth() || (hoje.getMonth() === nasc.getMonth() && hoje.getDate() < nasc.getDate())) idade--;
+                    return <div style={{ fontSize: 10, color: "#7c3aed", fontWeight: 600, marginTop: 2 }}>{fmtBirthday(client.data_nascimento_filho)} · {idade} anos</div>;
+                  })()}
+                  {client.data_nascimento_filho && client.data_nascimento_filho.slice(0, 4) === "1900" && (
+                    <div style={{ fontSize: 10, color: B.muted, marginTop: 2 }}>{fmtBirthday(client.data_nascimento_filho)}</div>
+                  )}
+                </div>
                 {/* Linha 2: e-mail · origem · início carteira · seguro/prev · hobbies · pediu indicação */}
                 <div>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>E-mail</div>
@@ -473,6 +485,9 @@ export default function ClientDetail() {
                   }
                 </div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Receita Mensal</div><InlineMoney value={client.receita_mensal} onSave={(v) => updateField("receita_mensal", v)} /></div>
+                {Number(client.custo_vida) > 0 && (
+                  <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Custo de Vida</div><InlineMoney value={client.custo_vida} onSave={(v) => updateField("custo_vida", v)} /></div>
+                )}
                 {hasPgbl && (
                 <div>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>
@@ -908,6 +923,20 @@ export default function ClientDetail() {
             <Inp label="Profissão" value={editForm.profissao || ""} onChange={EF("profissao")} />
             <Sel label="Estado Civil" value={editForm.estado_civil || editForm.estadoCivil || ""} onChange={EF("estado_civil")} opts={[{ v: "", l: "—" }, { v: "Solteiro", l: "Solteiro" }, { v: "Casado", l: "Casado" }, { v: "Divorciado", l: "Divorciado" }, { v: "Viúvo", l: "Viúvo" }, { v: "União estável", l: "União estável" }]} />
             <Inp label="Filhos" value={editForm.filhos || ""} onChange={EF("filhos")} />
+            <div>
+              <Inp label="Nasc. Filho(a) (DD/MM ou DD/MM/AAAA)" type="text"
+                value={fmtBirthday(editForm.data_nascimento_filho) || ""}
+                placeholder="DD/MM ou DD/MM/AAAA"
+                onChange={(e) => { const p = parseBirthday(e.target.value); EF("data_nascimento_filho")({ target: { value: p || e.target.value } }); }} />
+              {(() => {
+                const d = editForm.data_nascimento_filho;
+                if (!d || d.slice(0, 4) === "1900") return null;
+                const hoje = new Date(); const nasc = new Date(d);
+                let idade = hoje.getFullYear() - nasc.getFullYear();
+                if (hoje.getMonth() < nasc.getMonth() || (hoje.getMonth() === nasc.getMonth() && hoje.getDate() < nasc.getDate())) idade--;
+                return <div style={{ fontSize: 11, color: "#7c3aed", fontWeight: 600, marginTop: 3 }}>{idade} anos</div>;
+              })()}
+            </div>
             <Inp label="Cônjuge" value={editForm.conjuge || ""} onChange={EF("conjuge")} />
             <Inp label="Data Nascimento (DD/MM ou DD/MM/AAAA)" type="text"
               value={fmtBirthday(editForm.data_nascimento || editForm.dataNascimento) || ""}
@@ -944,6 +973,7 @@ export default function ClientDetail() {
             <Inp label="Liquidez Atual (R$)" value={editForm.liquidez_atual ?? ""} onChange={EF("liquidez_atual")} type="number" />
             <Inp label="Taxa Contratada" value={editForm.taxa_contratada ?? editForm.taxaContratada ?? ""} onChange={EF("taxa_contratada")} />
             <Inp label="Receita Mensal (R$)" value={editForm.receita_mensal ?? editForm.receitaMensal ?? ""} onChange={EF("receita_mensal")} type="number" />
+            <Inp label="Custo de Vida (R$)" value={editForm.custo_vida ?? editForm.custoVida ?? ""} onChange={EF("custo_vida")} type="number" />
             <div>
               <Inp label="Renda Bruta Tributável/Ano (R$)" value={editForm.renda_bruta_tributavel ?? editForm.rendaBrutaTributavel ?? ""} onChange={EF("renda_bruta_tributavel")} type="number" placeholder="Se vazio, calculado da Receita Mensal" />
               {(() => {

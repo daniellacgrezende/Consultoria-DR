@@ -537,6 +537,20 @@ export default function Clients() {
             <Inp label="Profissão" value={form.profissao} onChange={F("profissao")} />
             <Sel label="Estado Civil" value={form.estado_civil || form.estadoCivil || ""} onChange={F("estado_civil")} opts={[{ v: "", l: "—" }, { v: "Solteiro", l: "Solteiro" }, { v: "Casado", l: "Casado" }, { v: "Divorciado", l: "Divorciado" }, { v: "Viúvo", l: "Viúvo" }, { v: "União estável", l: "União estável" }]} />
             <Inp label="Filhos" value={form.filhos} onChange={F("filhos")} />
+            <div>
+              <Inp label="Nasc. Filho(a) (DD/MM ou DD/MM/AAAA)" type="text"
+                value={fmtBirthday(form.data_nascimento_filho ?? form.dataNascimentoFilho) || ""}
+                placeholder="DD/MM ou DD/MM/AAAA"
+                onChange={(e) => { const p = parseBirthday(e.target.value); F("data_nascimento_filho")({ target: { value: p || e.target.value } }); }} />
+              {(() => {
+                const d = form.data_nascimento_filho ?? form.dataNascimentoFilho;
+                if (!d || d.slice(0, 4) === "1900") return null;
+                const hoje = new Date(); const nasc = new Date(d);
+                let idade = hoje.getFullYear() - nasc.getFullYear();
+                if (hoje.getMonth() < nasc.getMonth() || (hoje.getMonth() === nasc.getMonth() && hoje.getDate() < nasc.getDate())) idade--;
+                return <div style={{ fontSize: 11, color: "#7c3aed", fontWeight: 600, marginTop: 3 }}>{idade} anos</div>;
+              })()}
+            </div>
             <Inp label="Cônjuge" value={form.conjuge} onChange={F("conjuge")} />
             <Inp label="Data Nascimento (DD/MM ou DD/MM/AAAA)" type="text"
               value={fmtBirthday(form.data_nascimento || form.dataNascimento) || ""}
