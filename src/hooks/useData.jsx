@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, createContext, useContext } from "react";
 import { supabase } from "../lib/supabase";
-import { mapClientFromDB, mapClientToDB, mapLeadToDB, huid, cuid } from "../utils/helpers";
+import { mapClientFromDB, mapClientToDB, mapLeadToDB, huid, cuid, today } from "../utils/helpers";
+import { EMPTY_CLIENT } from "../utils/constants";
 
 const DataContext = createContext({});
 
@@ -225,6 +226,59 @@ export function DataProvider({ children }) {
   }, []);
 
   const saveLead = useCallback(async (entry, isNew = false) => {
+    // Auto-criar cliente ao converter lead para "Cliente"
+    if (entry.etapa === "Cliente") {
+      const { data: existing } = await supabase.from("clients").select("id").ilike("nome", entry.nome).limit(1);
+      if (!existing?.length) {
+        const r1 = entry.r1_dados || {};
+        const planejamentoR1 = [
+          r1.meta_curto ? `Curto prazo (até 2 anos): ${r1.meta_curto}` : "",
+          r1.meta_medio ? `Médio prazo (2–5 anos): ${r1.meta_medio}` : "",
+          r1.idade_parar ? `Pretende parar/diminuir ritmo aos ${r1.idade_parar} anos${r1.renda_aposentadoria ? ` com renda de R$ ${Number(r1.renda_aposentadoria).toLocaleString("pt-BR")}/mês` : ""}.` : "",
+          r1.notas_gerais ? `Notas da R1: ${r1.notas_gerais}` : "",
+        ].filter(Boolean).join("\n\n");
+        const obsR1 = [
+          r1.maior_dor ? `Maior dor: ${r1.maior_dor}` : "",
+          r1.motivo_assessoria ? `Motivo de buscar assessoria: ${r1.motivo_assessoria}` : "",
+          r1.plataforma_atual ? `Plataforma atual: ${r1.plataforma_atual}${r1.motivo_plataforma ? ` — ${r1.motivo_plataforma}` : ""}` : "",
+          r1.carteira_atual ? `Carteira atual: ${r1.carteira_atual}` : "",
+          r1.dividas ? `Dívidas/financiamentos: ${r1.dividas}` : "",
+        ].filter(Boolean).join("\n\n");
+        const clientId = huid();
+        const novoCliente = {
+          ...EMPTY_CLIENT,
+          id: clientId,
+          nome: entry.nome,
+          status: "ativo",
+          origemCliente: entry.origem || "",
+          plInicial: r1.pl_financeiro ? String(r1.pl_financeiro) : (entry.patrimonio_estimado ? String(entry.patrimonio_estimado) : ""),
+          inicioCarteira: today(),
+          data_nascimento: r1.data_nascimento || "",
+          estado_civil: r1.estado_civil || "",
+          conjuge: r1.conjuge || "",
+          filhos: r1.filhos || "",
+          profissao: r1.profissao || "",
+          cidade: r1.cidade || "",
+          receita_mensal: r1.renda_mensal ? Number(r1.renda_mensal) : 0,
+          aporte_mensal: r1.capacidade_poupanca ? Number(r1.capacidade_poupanca) : 0,
+          perfil: r1.perfil_risco || "moderado",
+          patrimonio_imobilizado: r1.pl_imobilizado || "",
+          financiamentos: r1.dividas || "",
+          planejamento: planejamentoR1,
+          observacoes: obsR1,
+        };
+        const dbCliente = mapClientToDB(novoCliente);
+        const { data: cData } = await supabase.from("clients").insert(dbCliente).select();
+        if (cData) setClientsRaw((p) => [mapClientFromDB(cData[0]), ...p]);
+        if (entry.notas?.trim()) {
+          const reuniaoId = huid();
+          const reuniaoRow = { id: reuniaoId, client_id: clientId, data: entry.notas_data || today(), titulo: "Kick Off", texto: entry.notas };
+          const { data: rData } = await supabase.from("reunioes_hist").insert(reuniaoRow).select();
+          if (rData) setReunioesRaw((p) => [...p, rData[0]]);
+        }
+        if (!entry.convertido_em) entry = { ...entry, convertido_em: today() };
+      }
+    }
     const dbData = mapLeadToDB(entry);
     if (isNew) {
       dbData.id = dbData.id || huid();
