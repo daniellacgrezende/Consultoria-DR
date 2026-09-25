@@ -552,7 +552,7 @@ function PipelineSummaryBar({ leads, openEdit }) {
 
 /* ═══════════════════════════════════════════ */
 export default function Pipeline() {
-  const { leads, saveLead, deleteLead, pipelineStages, saveClient, saveReuniao, setToast } = useData();
+  const { leads, clients, saveLead, deleteLead, pipelineStages, saveClient, saveReuniao, setToast } = useData();
 
   // Derived stage lists from DB (fallback to constants if not yet loaded)
   const stagesProspeccao = pipelineStages.filter((s) => s.tipo === "prospeccao");
@@ -605,6 +605,58 @@ export default function Pipeline() {
     if (!form.nome?.trim()) { setToast({ type: "error", text: "Informe o nome." }); return; }
     const isNew = !editId;
     const entry = { ...form, id: editId || huid() };
+    // Se etapa mudou para "Cliente" e ainda não existe na lista de clientes, cria automaticamente
+    if (form.etapa === "Cliente") {
+      const jaExiste = clients.some((c) => c.nome?.toLowerCase().trim() === form.nome?.toLowerCase().trim());
+      if (!jaExiste) {
+        const r1 = form.r1_dados || {};
+        const planejamentoR1 = [
+          r1.meta_curto ? `Curto prazo (até 2 anos): ${r1.meta_curto}` : "",
+          r1.meta_medio ? `Médio prazo (2–5 anos): ${r1.meta_medio}` : "",
+          r1.idade_parar ? `Pretende parar/diminuir ritmo aos ${r1.idade_parar} anos${r1.renda_aposentadoria ? ` com renda de R$ ${Number(r1.renda_aposentadoria).toLocaleString("pt-BR")}/mês` : ""}.` : "",
+          r1.notas_gerais ? `Notas da R1: ${r1.notas_gerais}` : "",
+        ].filter(Boolean).join("\n\n");
+        const obsR1 = [
+          r1.maior_dor ? `Maior dor: ${r1.maior_dor}` : "",
+          r1.motivo_assessoria ? `Motivo de buscar assessoria: ${r1.motivo_assessoria}` : "",
+          r1.plataforma_atual ? `Plataforma atual: ${r1.plataforma_atual}${r1.motivo_plataforma ? ` — ${r1.motivo_plataforma}` : ""}` : "",
+          r1.carteira_atual ? `Carteira atual: ${r1.carteira_atual}` : "",
+          r1.dividas ? `Dívidas/financiamentos: ${r1.dividas}` : "",
+        ].filter(Boolean).join("\n\n");
+        const clientId = huid();
+        const novoCliente = {
+          ...EMPTY_CLIENT,
+          id: clientId,
+          nome: form.nome,
+          status: "ativo",
+          origemCliente: form.origem || "",
+          plInicial: r1.pl_financeiro ? String(r1.pl_financeiro) : (form.patrimonio_estimado ? String(form.patrimonio_estimado) : ""),
+          inicioCarteira: today(),
+          data_nascimento: r1.data_nascimento || "",
+          estado_civil: r1.estado_civil || "",
+          conjuge: r1.conjuge || "",
+          filhos: r1.filhos || "",
+          profissao: r1.profissao || "",
+          cidade: r1.cidade || "",
+          receita_mensal: r1.renda_mensal ? Number(r1.renda_mensal) : 0,
+          aporte_mensal: r1.capacidade_poupanca ? Number(r1.capacidade_poupanca) : 0,
+          perfil: r1.perfil_risco || "moderado",
+          patrimonio_imobilizado: r1.pl_imobilizado || "",
+          financiamentos: r1.dividas || "",
+          planejamento: planejamentoR1,
+          observacoes: obsR1,
+        };
+        await saveClient(novoCliente, true);
+        if (form.notas?.trim()) {
+          await saveReuniao({ client_id: clientId, data: form.notas_data || today(), titulo: "Kick Off", texto: form.notas }, true);
+        }
+        entry.convertido_em = entry.convertido_em || today();
+        setToast({ type: "success", text: `✅ ${form.nome} convertido! Cliente criado na lista de Clientes.` });
+        await saveLead(entry, isNew);
+        setModal(false);
+        return;
+      }
+    }
     await saveLead(entry, isNew);
     setModal(false);
     setToast({ type: "success", text: isNew ? "Lead cadastrado." : "Atualizado." });
