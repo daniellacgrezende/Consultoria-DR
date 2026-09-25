@@ -456,8 +456,8 @@ export default function ClientDetail() {
           </div>
           {finOpen && (
             <>
-              {/* Linha 1: Perfil+Benchmark / PL / Liq. Desejada / Liq. Atual / Aporte / Receita */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, marginBottom: 8 }}>
+              {/* Linha 1: Perfil+Benchmark / PL / Liq. Desejada / Liq. Atual / Aporte / Receita / Custo de Vida */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8, marginBottom: 8 }}>
                 <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                   <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Perfil</div><InlineSelect value={client.perfil || "moderado"} onSave={(v) => {
                     const benchmarkPorPerfil = { conservador: "IPCA+4%", moderado: "IPCA+5%", arrojado: "IPCA+6%", agressivo: "IPCA+8%" };
@@ -485,9 +485,7 @@ export default function ClientDetail() {
                   }
                 </div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Receita Mensal</div><InlineMoney value={client.receita_mensal} onSave={(v) => updateField("receita_mensal", v)} /></div>
-                {Number(client.custo_vida) > 0 && (
-                  <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Custo de Vida</div><InlineMoney value={client.custo_vida} onSave={(v) => updateField("custo_vida", v)} /></div>
-                )}
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Custo de Vida</div><InlineMoney value={client.custo_vida} onSave={(v) => updateField("custo_vida", v)} /></div>
                 {hasPgbl && (
                 <div>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>
