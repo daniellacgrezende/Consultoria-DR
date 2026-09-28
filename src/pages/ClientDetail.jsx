@@ -12,6 +12,16 @@ import { SBadge, PBadge, CBadge } from "../components/ui/Badge";
 import { InlineText, InlineDate, InlineSelect, InlineMoney, InlineBirthday } from "../components/ui/InlineEdit";
 import { SecH, Inp, Sel, Tarea } from "../components/ui/FormFields";
 
+// Campo de nascimento em formulário: mantém o texto digitado localmente,
+// só reformata quando o modal reabre (mudar via fmtBirthday a cada tecla trava a digitação)
+function BirthdayInp({ label, value, onChange }) {
+  const [text, setText] = useState(fmtBirthday(value) || "");
+  return (
+    <Inp label={label} type="text" placeholder="DD/MM ou DD/MM/AAAA" value={text}
+      onChange={(e) => { setText(e.target.value); const p = parseBirthday(e.target.value); onChange(p || e.target.value); }} />
+  );
+}
+
 export default function ClientDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -920,10 +930,8 @@ export default function ClientDetail() {
             <Sel label="Estado Civil" value={editForm.estado_civil || editForm.estadoCivil || ""} onChange={EF("estado_civil")} opts={[{ v: "", l: "—" }, { v: "Solteiro", l: "Solteiro" }, { v: "Casado", l: "Casado" }, { v: "Divorciado", l: "Divorciado" }, { v: "Viúvo", l: "Viúvo" }, { v: "União estável", l: "União estável" }]} />
             <Inp label="Filhos" value={editForm.filhos || ""} onChange={EF("filhos")} />
             <div>
-              <Inp label="Nasc. Filho(a) (DD/MM ou DD/MM/AAAA)" type="text"
-                value={fmtBirthday(editForm.data_nascimento_filho) || ""}
-                placeholder="DD/MM ou DD/MM/AAAA"
-                onChange={(e) => { const p = parseBirthday(e.target.value); EF("data_nascimento_filho")({ target: { value: p || e.target.value } }); }} />
+              <BirthdayInp label="Nasc. Filho(a) (DD/MM ou DD/MM/AAAA)" value={editForm.data_nascimento_filho}
+                onChange={(v) => setEditForm((f) => ({ ...f, data_nascimento_filho: v }))} />
               {(() => {
                 const d = editForm.data_nascimento_filho;
                 if (!d || d.slice(0, 4) === "1900") return null;
@@ -934,14 +942,10 @@ export default function ClientDetail() {
               })()}
             </div>
             <Inp label="Cônjuge" value={editForm.conjuge || ""} onChange={EF("conjuge")} />
-            <Inp label="Data Nascimento (DD/MM ou DD/MM/AAAA)" type="text"
-              value={fmtBirthday(editForm.data_nascimento || editForm.dataNascimento) || ""}
-              placeholder="DD/MM ou DD/MM/AAAA"
-              onChange={(e) => { const p = parseBirthday(e.target.value); EF("data_nascimento")({ target: { value: p || e.target.value } }); }} />
-            <Inp label="Nasc. Parceiro(a) (DD/MM ou DD/MM/AAAA)" type="text"
-              value={fmtBirthday(editForm.data_nascimento_parceiro) || ""}
-              placeholder="DD/MM ou DD/MM/AAAA"
-              onChange={(e) => { const p = parseBirthday(e.target.value); EF("data_nascimento_parceiro")({ target: { value: p || e.target.value } }); }} />
+            <BirthdayInp label="Data Nascimento (DD/MM ou DD/MM/AAAA)" value={editForm.data_nascimento || editForm.dataNascimento}
+              onChange={(v) => setEditForm((f) => ({ ...f, data_nascimento: v }))} />
+            <BirthdayInp label="Nasc. Parceiro(a) (DD/MM ou DD/MM/AAAA)" value={editForm.data_nascimento_parceiro}
+              onChange={(v) => setEditForm((f) => ({ ...f, data_nascimento_parceiro: v }))} />
             <div style={{ gridColumn: "1/-1", display: "flex", alignItems: "center", gap: 8, padding: "8px 0" }}>
               <input type="checkbox" id="atend-casal" checked={!!editForm.atendimento_casal} onChange={(e) => setEditForm((f) => ({ ...f, atendimento_casal: e.target.checked }))} style={{ width: 15, height: 15, accentColor: "#7c3aed", cursor: "pointer" }} />
               <label htmlFor="atend-casal" style={{ fontSize: 13, fontWeight: 600, color: editForm.atendimento_casal ? "#7c3aed" : "#6b7280", cursor: "pointer" }}>Atendimento do casal (exibe email e convite para parceiro(a))</label>
