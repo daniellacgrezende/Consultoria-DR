@@ -119,6 +119,24 @@ export default function Metas() {
     setToast({ type: "success", text: "Mês removido." });
   };
 
+  // Crescimento acumulado do AuC no ano: último AuC Real do ano corrente vs. dezembro do ano anterior
+  // (ou, sem dezembro lançado, vs. o primeiro mês do ano com AuC Real)
+  const aucAno = useMemo(() => {
+    const ano = currentMes.slice(0, 4);
+    const doAno = sorted.filter((m) => m.mes.startsWith(ano) && m.auc_real != null);
+    if (!doAno.length) return null;
+    const ultimo = doAno[doAno.length - 1];
+    const dezAnterior = sorted.find((m) => m.mes === `${Number(ano) - 1}-12` && m.auc_real != null);
+    const base = dezAnterior || doAno[0];
+    if (base.mes === ultimo.mes || !Number(base.auc_real)) return null;
+    return {
+      pct: ((Number(ultimo.auc_real) - Number(base.auc_real)) / Number(base.auc_real)) * 100,
+      val: Number(ultimo.auc_real) - Number(base.auc_real),
+      de: base.mes,
+      ate: ultimo.mes,
+    };
+  }, [sorted, currentMes]);
+
   const pMeta = current ? pctOf(current.auc_real, current.auc_meta) : null;
   const pSuper = current ? pctOf(current.auc_real, current.auc_supermeta) : null;
   const pReceita = current ? pctOf(current.receita_real, current.receita_planejada) : null;
@@ -135,7 +153,7 @@ export default function Metas() {
 
       {/* Cards de resumo do mes atual */}
       {current && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginBottom: 20 }}>
           {[
             {
               label: `AuC Real · ${mesLabel(current.mes)}`,
@@ -179,6 +197,18 @@ export default function Metas() {
               )}
             </div>
           ))}
+
+          {/* Crescimento AuC acumulado no ano */}
+          <div style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${aucAno ? (aucAno.pct >= 0 ? "#16a34a" : "#dc2626") : B.navy}` }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5 }}>Crescimento AuC no Ano</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: aucAno ? (aucAno.pct >= 0 ? "#16a34a" : "#dc2626") : B.navy }}>
+              {aucAno ? `${aucAno.pct >= 0 ? "+" : ""}${aucAno.pct.toFixed(1)}%` : "—"}
+            </div>
+            {aucAno && <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>{mesLabel(aucAno.ate)} vs {mesLabel(aucAno.de)}</div>}
+            {aucAno && (
+              <div style={{ fontSize: 10, color: "#9baabf", marginTop: 4 }}>{aucAno.val >= 0 ? "+" : "-"}{fM(Math.abs(aucAno.val))}</div>
+            )}
+          </div>
 
           {/* Crescimento MoM */}
           <div style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${momReceita != null && momReceita >= 0 ? "#16a34a" : momReceita != null ? "#dc2626" : B.navy}` }}>
