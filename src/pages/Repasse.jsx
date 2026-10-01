@@ -62,6 +62,18 @@ export default function Repasse() {
     return { pct: ((curr - prev) / prev) * 100, val: curr - prev };
   }, [filtrado]);
 
+  // Variação % de cada mês vs. lançamento anterior (usa a lista completa, então jan compara com dez do ano anterior)
+  const variacaoPorId = useMemo(() => {
+    const m = {};
+    sorted.forEach((r, i) => {
+      if (i === 0) return;
+      const prev = totalRow(sorted[i - 1]);
+      if (!prev) return;
+      m[r.id] = ((totalRow(r) - prev) / prev) * 100;
+    });
+    return m;
+  }, [sorted]);
+
   // Totais por categoria (período filtrado)
   const catTotals = useMemo(() => CATS.map((c) => ({
     ...c,
@@ -188,12 +200,14 @@ export default function Repasse() {
                     <th key={c.key} style={{ padding: "8px 8px", textAlign: "right", fontSize: 10, fontWeight: 700, color: c.color, textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, whiteSpace: "nowrap" }}>{c.label}</th>
                   ))}
                   <th style={{ padding: "8px 12px", textAlign: "right", fontSize: 10, fontWeight: 700, color: "#2563eb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, whiteSpace: "nowrap" }}>Repasse Final</th>
+                  <th style={{ padding: "8px 12px", textAlign: "right", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", borderBottom: `1px solid ${B.border}`, whiteSpace: "nowrap" }}>Var. Mês Ant.</th>
                   <th style={{ borderBottom: `1px solid ${B.border}` }}></th>
                 </tr>
               </thead>
               <tbody>
                 {[...filtrado].reverse().map((r, i) => {
                   const total = totalRow(r) || Number(r.receita_bruta || 0);
+                  const var_ = variacaoPorId[r.id];
                   return (
                     <tr key={r.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>
                       <td style={{ padding: "8px 12px", fontWeight: 700, color: B.navy, whiteSpace: "nowrap" }}>{fmtComp(r.competencia)}</td>
@@ -203,6 +217,9 @@ export default function Repasse() {
                         </td>
                       ))}
                       <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 800, fontSize: 14, color: "#2563eb", whiteSpace: "nowrap" }}>{total > 0 ? money(total) : "—"}</td>
+                      <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, whiteSpace: "nowrap", color: var_ == null ? "#d1d5db" : var_ >= 0 ? "#16a34a" : "#dc2626" }}>
+                        {var_ == null ? "—" : `${var_ >= 0 ? "+" : ""}${var_.toFixed(1)}%`}
+                      </td>
                       <td style={{ padding: "8px 10px" }}>
                         <div style={{ display: "flex", gap: 4 }}>
                           <button onClick={() => openEdit(r)} style={{ background: "#f0f4ff", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 6, padding: "3px 9px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Editar</button>
@@ -222,6 +239,7 @@ export default function Repasse() {
                       return <td key={c.key} style={{ padding: "8px 8px", textAlign: "right", fontWeight: 700, color: t > 0 ? c.color : "#d1d5db", fontSize: 13, whiteSpace: "nowrap" }}>{t > 0 ? money(t) : "—"}</td>;
                     })}
                     <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 800, color: "#2563eb", fontSize: 14 }}>{money(acumulado)}</td>
+                    <td></td>
                     <td></td>
                   </tr>
                 </tfoot>
