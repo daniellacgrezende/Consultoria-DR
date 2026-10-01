@@ -62,6 +62,19 @@ export default function Repasse() {
     return { pct: ((curr - prev) / prev) * 100, val: curr - prev };
   }, [filtrado]);
 
+  // Último mês do período vs. primeiro lançamento do mesmo ano
+  const crescInicioAno = useMemo(() => {
+    if (!filtrado.length) return null;
+    const ultimo = filtrado[filtrado.length - 1];
+    const ano = ultimo.competencia?.slice(0, 4);
+    const primeiro = sorted.find((r) => r.competencia?.startsWith(ano));
+    if (!primeiro || primeiro.id === ultimo.id) return null;
+    const curr = totalRow(ultimo);
+    const base = totalRow(primeiro);
+    if (!base) return null;
+    return { pct: ((curr - base) / base) * 100, val: curr - base, de: primeiro.competencia, ate: ultimo.competencia };
+  }, [filtrado, sorted]);
+
   // Variação % de cada mês vs. lançamento anterior (usa a lista completa, então jan compara com dez do ano anterior)
   const variacaoPorId = useMemo(() => {
     const m = {};
@@ -127,7 +140,7 @@ export default function Repasse() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginBottom: 20 }}>
         <div style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: "3px solid #b45309" }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 5 }}>Maior Repasse</div>
           <div style={{ fontSize: 20, fontWeight: 700, color: "#b45309" }}>{maiorRep ? money(totalRow(maiorRep) || maiorRep.receita_bruta) : "—"}</div>
@@ -137,6 +150,11 @@ export default function Repasse() {
           <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 5 }}>vs. Mês Anterior</div>
           <div style={{ fontSize: 20, fontWeight: 700, color: crescUltimoMes ? (crescUltimoMes.pct >= 0 ? "#16a34a" : "#dc2626") : B.navy }}>{crescUltimoMes ? `${crescUltimoMes.pct >= 0 ? "+" : ""}${crescUltimoMes.pct.toFixed(1)}%` : "—"}</div>
           {crescUltimoMes && <div style={{ fontSize: 11, color: crescUltimoMes.pct >= 0 ? "#16a34a" : "#dc2626", fontWeight: 600, marginTop: 2 }}>{crescUltimoMes.val >= 0 ? "+" : ""}{money(crescUltimoMes.val)}</div>}
+        </div>
+        <div style={{ background: "white", border: `1px solid ${crescInicioAno ? (crescInicioAno.pct >= 0 ? "#bbf7d0" : "#fecaca") : B.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${crescInicioAno ? (crescInicioAno.pct >= 0 ? "#16a34a" : "#dc2626") : B.navy}` }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 5 }}>vs. Início do Ano</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: crescInicioAno ? (crescInicioAno.pct >= 0 ? "#16a34a" : "#dc2626") : B.navy }}>{crescInicioAno ? `${crescInicioAno.pct >= 0 ? "+" : ""}${crescInicioAno.pct.toFixed(1)}%` : "—"}</div>
+          {crescInicioAno && <div style={{ fontSize: 11, color: crescInicioAno.pct >= 0 ? "#16a34a" : "#dc2626", fontWeight: 600, marginTop: 2 }}>{crescInicioAno.val >= 0 ? "+" : ""}{money(crescInicioAno.val)} <span style={{ color: "#9baabf", fontWeight: 400 }}>· {fmtComp(crescInicioAno.ate)} vs {fmtComp(crescInicioAno.de)}</span></div>}
         </div>
         <MiniStat label="Média Mensal" value={money(filtrado.length ? acumulado / filtrado.length : 0)} sub="por mês" />
         <MiniStat label={`Acumulado ${anoFilter === "todos" ? "(Todos)" : anoFilter}`} value={money(acumulado)} sub="total" />
