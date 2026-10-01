@@ -267,8 +267,8 @@ export default function Metas() {
                   const pm = pctOf(row.auc_real, row.auc_meta);
                   const ps = pctOf(row.auc_real, row.auc_supermeta);
                   const prevRow = sorted[idx - 1];
-                  const mom = row.receita_real != null && prevRow?.receita_real != null
-                    ? ((Number(row.receita_real) - Number(prevRow.receita_real)) / Number(prevRow.receita_real)) * 100
+                  const mom = row.auc_real != null && prevRow?.auc_real != null
+                    ? ((Number(row.auc_real) - Number(prevRow.auc_real)) / Number(prevRow.auc_real)) * 100
                     : null;
                   const isCurrent = row.mes === currentMes;
                   const metaC = statusColor(pm);
