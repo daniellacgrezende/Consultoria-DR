@@ -66,10 +66,17 @@ export default function Metas() {
   const currentMes = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const currentIdx = sorted.findIndex((m) => m.mes === currentMes);
   const current = sorted[currentIdx] || sorted[sorted.length - 1];
-  const prev = currentIdx > 0 ? sorted[currentIdx - 1] : sorted.length > 1 ? sorted[sorted.length - 2] : null;
 
-  const momReceita = current?.receita_real != null && prev?.receita_real != null
-    ? ((Number(current.receita_real) - Number(prev.receita_real)) / Number(prev.receita_real)) * 100
+  // Cards usam o último mês (até o atual) com valor preenchido, para não ficarem vazios no início do mês
+  const ateAtual = sorted.filter((m) => m.mes <= currentMes);
+  const comAuc = ateAtual.filter((m) => m.auc_real != null);
+  const refAuc = comAuc[comAuc.length - 1] || current;
+  const comReceita = ateAtual.filter((m) => m.receita_real != null);
+  const refRec = comReceita[comReceita.length - 1] || current;
+  const prevRec = comReceita.length > 1 ? comReceita[comReceita.length - 2] : null;
+
+  const momReceita = refRec?.receita_real != null && prevRec && Number(prevRec.receita_real)
+    ? ((Number(refRec.receita_real) - Number(prevRec.receita_real)) / Number(prevRec.receita_real)) * 100
     : null;
 
   const chartData = sorted.map((m) => ({
@@ -137,9 +144,9 @@ export default function Metas() {
     };
   }, [sorted, currentMes]);
 
-  const pMeta = current ? pctOf(current.auc_real, current.auc_meta) : null;
-  const pSuper = current ? pctOf(current.auc_real, current.auc_supermeta) : null;
-  const pReceita = current ? pctOf(current.receita_real, current.receita_planejada) : null;
+  const pMeta = refAuc ? pctOf(refAuc.auc_real, refAuc.auc_meta) : null;
+  const pSuper = refAuc ? pctOf(refAuc.auc_real, refAuc.auc_supermeta) : null;
+  const pReceita = refRec ? pctOf(refRec.receita_real, refRec.receita_planejada) : null;
 
   return (
     <div>
@@ -156,25 +163,25 @@ export default function Metas() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginBottom: 20 }}>
           {[
             {
-              label: `AuC Real · ${mesLabel(current.mes)}`,
-              value: current.auc_real != null ? fM(current.auc_real) : "—",
-              sub: current.auc_meta ? `Meta: ${fM(current.auc_meta)}` : null,
+              label: `AuC Real · ${mesLabel(refAuc.mes)}`,
+              value: refAuc.auc_real != null ? fM(refAuc.auc_real) : "—",
+              sub: refAuc.auc_meta ? `Meta: ${fM(refAuc.auc_meta)}` : null,
               pct: pMeta,
               hint: "da meta",
               topColor: pMeta == null ? B.navy : Number(pMeta) >= 100 ? "#16a34a" : Number(pMeta) >= 80 ? "#f59e0b" : "#dc2626",
             },
             {
-              label: "vs Supermeta",
-              value: current.auc_supermeta ? fM(current.auc_supermeta) : "—",
-              sub: current.auc_real != null ? `Real: ${fM(current.auc_real)}` : null,
+              label: `vs Supermeta · ${mesLabel(refAuc.mes)}`,
+              value: refAuc.auc_supermeta ? fM(refAuc.auc_supermeta) : "—",
+              sub: refAuc.auc_real != null ? `Real: ${fM(refAuc.auc_real)}` : null,
               pct: pSuper,
               hint: "da supermeta",
               topColor: "#7c3aed",
             },
             {
-              label: "Receita do Mes",
-              value: current.receita_real != null ? fR(current.receita_real) : "—",
-              sub: current.receita_planejada ? `Planejada: ${fR(current.receita_planejada)}` : null,
+              label: `Receita do Mes · ${mesLabel(refRec.mes)}`,
+              value: refRec.receita_real != null ? fR(refRec.receita_real) : "—",
+              sub: refRec.receita_planejada ? `Planejada: ${fR(refRec.receita_planejada)}` : null,
               pct: pReceita,
               hint: "do planejado",
               topColor: "#0891b2",
@@ -216,9 +223,9 @@ export default function Metas() {
             <div style={{ fontSize: 18, fontWeight: 800, color: momReceita != null ? (momReceita >= 0 ? "#16a34a" : "#dc2626") : B.navy }}>
               {momReceita != null ? `${momReceita >= 0 ? "+" : ""}${momReceita.toFixed(1)}%` : "—"}
             </div>
-            <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>vs mes anterior</div>
-            {prev?.receita_real != null && (
-              <div style={{ fontSize: 10, color: "#9baabf", marginTop: 4 }}>Anterior: {fR(prev.receita_real)}</div>
+            <div style={{ fontSize: 11, color: "#9baabf", marginTop: 2 }}>{prevRec ? `${mesLabel(refRec.mes)} vs ${mesLabel(prevRec.mes)}` : "vs mes anterior"}</div>
+            {prevRec && (
+              <div style={{ fontSize: 10, color: "#9baabf", marginTop: 4 }}>Anterior: {fR(prevRec.receita_real)}</div>
             )}
           </div>
         </div>
