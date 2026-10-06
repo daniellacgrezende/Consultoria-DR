@@ -9,33 +9,46 @@ const fmt = (v) => Number(v || 0).toLocaleString("en-US", { minimumFractionDigit
 const pct = (v) => Number(v || 0).toFixed(2) + "%";
 
 const UCITS_PRESET = {
-  "Ex EUA - High Profitability": ["IWFQ"],
-  "Ex EUA - Value":              ["IWVL"],
-  "Emerging Markets":            ["EMIM", "VFEM"],
-  "RV Global (Core)":            ["IWDA", "VWRL"],
-  "USA - High Profitability":    ["IUHP"],
-  "USA - Quality":               ["IQLT"],
-  "USA - REITs (Ativos Reais)":  ["IQQR"],
-  "USA - RF (High Yield)":       ["IHYG"],
-  "USA - RF Global Aggregate":   ["AGGH"],
-  "USA - S&P 500":               ["CSPX", "VUSD"],
-  "USA - Tech":                  ["IITU"],
-  "USA - Value":                 ["IUVF"],
+  "RV Global (Core)":         ["VWRA"],
+  "USA - S&P 500":            ["VUAA"],
+  "USA - Tech":               ["EQQB"],
+  "USA - Quality":            ["IUQA"],
+  "USA - Value":              ["IUVL"],
+  "Global Quality":           ["IWQU"],
+  "Global Value":             ["IWVL"],
+  "Renda Variável Global":    ["AVGS"],
+  "RF - Global Aggregate":    ["AGGU"],
+  "RF - Curto Prazo":         ["IB01"],
+  "RF - Dividend / Income":   ["SDHA"],
 };
 
 const CLASSES_PRESET = [
-  "Ex EUA - High Profitability",
-  "Ex EUA - Value",
-  "Emerging Markets",
   "RV Global (Core)",
-  "USA - High Profitability",
-  "USA - Quality",
-  "USA - REITs (Ativos Reais)",
-  "USA - RF (High Yield)",
-  "USA - RF Global Aggregate",
   "USA - S&P 500",
   "USA - Tech",
+  "USA - Quality",
   "USA - Value",
+  "Global Quality",
+  "Global Value",
+  "Renda Variável Global",
+  "RF - Global Aggregate",
+  "RF - Curto Prazo",
+  "RF - Dividend / Income",
+];
+
+// Template padrão com tickers e alocações-alvo
+const TEMPLATE_PADRAO = [
+  { nome: "RV Global (Core)",      ticker: "VWRA", target_pct: 30   },
+  { nome: "USA - S&P 500",         ticker: "VUAA", target_pct: 12   },
+  { nome: "USA - Tech",            ticker: "EQQB", target_pct: 9    },
+  { nome: "USA - Quality",         ticker: "IUQA", target_pct: 15   },
+  { nome: "USA - Value",           ticker: "IUVL", target_pct: 12   },
+  { nome: "Global Quality",        ticker: "IWQU", target_pct: 8    },
+  { nome: "Global Value",          ticker: "IWVL", target_pct: 6    },
+  { nome: "Renda Variável Global", ticker: "AVGS", target_pct: 6    },
+  { nome: "RF - Global Aggregate", ticker: "AGGU", target_pct: 1    },
+  { nome: "RF - Curto Prazo",      ticker: "IB01", target_pct: 0.5  },
+  { nome: "RF - Dividend / Income",ticker: "SDHA", target_pct: 0.5  },
 ];
 
 function calcSuggestion(classes, aporte, min = 100) {
@@ -154,6 +167,19 @@ export default function RebalanceUCITS() {
   const handleCreatePortfolio = async () => {
     await saveIntlPortfolio(client.id, "Carteira UCITS", "ucits");
     await load();
+  };
+
+  const handleCarregarTemplate = async () => {
+    if (!portfolio) return;
+    if (!confirm("Isso vai adicionar as 11 classes do template padrão. Continuar?")) return;
+    for (let i = 0; i < TEMPLATE_PADRAO.length; i++) {
+      const t = TEMPLATE_PADRAO[i];
+      const classId = huid();
+      await saveIntlClass({ id: classId, portfolio_id: portfolio.id, nome: t.nome, target_pct: t.target_pct, ordem: (portfolio.classes?.length || 0) + i }, true);
+      await saveIntlProduct({ id: huid(), class_id: classId, ticker: t.ticker, valor_atual: 0 }, true);
+    }
+    await load();
+    setToast({ type: "success", text: "Template padrão carregado!" });
   };
 
   const handleSaveClass = async () => {
@@ -306,10 +332,18 @@ export default function RebalanceUCITS() {
           <div style={{ background: "white", border: `1px solid ${B.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 16 }}>
             <div style={{ padding: "12px 16px", borderBottom: `1px solid ${B.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ fontWeight: 700, fontSize: 13, color: B.navy }}>Carteira Atual <span style={{ ...UCITS_BADGE, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, marginLeft: 4 }}>UCITS</span></div>
-              <button onClick={() => { setEditingClass(null); setClassForm({ nome: "", target_pct: "" }); setClassModal(true); }}
-                style={{ background: "#7c3aed", color: "white", border: "none", borderRadius: 6, padding: "5px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                + Classe
-              </button>
+              <div style={{ display: "flex", gap: 6 }}>
+                {!portfolio.classes?.length && (
+                  <button onClick={handleCarregarTemplate}
+                    style={{ background: "#f5f3ff", color: "#7c3aed", border: "1px solid #ddd6fe", borderRadius: 6, padding: "5px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                    ⚡ Carregar Template
+                  </button>
+                )}
+                <button onClick={() => { setEditingClass(null); setClassForm({ nome: "", target_pct: "" }); setClassModal(true); }}
+                  style={{ background: "#7c3aed", color: "white", border: "none", borderRadius: 6, padding: "5px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                  + Classe
+                </button>
+              </div>
             </div>
 
             {!portfolio.classes?.length && (
