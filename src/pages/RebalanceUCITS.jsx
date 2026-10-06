@@ -11,7 +11,6 @@ const pct = (v) => Number(v || 0).toFixed(2) + "%";
 const UCITS_PRESET = {
   "RV Global (Core)":         ["VWRA"],
   "USA - S&P 500":            ["VUAA"],
-  "USA - Tech":               ["EQQB"],
   "USA - Quality":            ["IUQA"],
   "USA - Value":              ["IUVL"],
   "Global Quality":           ["IWQU"],
@@ -25,7 +24,6 @@ const UCITS_PRESET = {
 const CLASSES_PRESET = [
   "RV Global (Core)",
   "USA - S&P 500",
-  "USA - Tech",
   "USA - Quality",
   "USA - Value",
   "Global Quality",
@@ -39,9 +37,8 @@ const CLASSES_PRESET = [
 // Template padrão com tickers e alocações-alvo
 const TEMPLATE_PADRAO = [
   { nome: "RV Global (Core)",      ticker: "VWRA", target_pct: 30   },
-  { nome: "USA - S&P 500",         ticker: "VUAA", target_pct: 12   },
-  { nome: "USA - Tech",            ticker: "EQQB", target_pct: 9    },
-  { nome: "USA - Quality",         ticker: "IUQA", target_pct: 15   },
+  { nome: "USA - S&P 500",         ticker: "VUAA", target_pct: 17   },
+  { nome: "USA - Quality",         ticker: "IUQA", target_pct: 19   },
   { nome: "USA - Value",           ticker: "IUVL", target_pct: 12   },
   { nome: "Global Quality",        ticker: "IWQU", target_pct: 8    },
   { nome: "Global Value",          ticker: "IWVL", target_pct: 6    },
