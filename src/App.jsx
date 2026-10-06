@@ -20,6 +20,7 @@ import Noticias from "./pages/Noticias";
 import Relatorios from "./pages/Relatorios";
 import RebalanceIntl from "./pages/RebalanceIntl";
 import RebalanceBR from "./pages/RebalanceBR";
+import RebalanceUCITS from "./pages/RebalanceUCITS";
 import Metas from "./pages/Metas";
 import Contatos from "./pages/Contatos";
 import Presentes from "./pages/Presentes";
@@ -49,6 +50,7 @@ function AppRoutes() {
         <Route path="clients" element={<Clients />} />
         <Route path="clients/:slug" element={<ClientDetail />} />
         <Route path="clients/:slug/rebalanceamento" element={<RebalanceIntl />} />
+        <Route path="clients/:slug/rebalanceamento-ucits" element={<RebalanceUCITS />} />
         <Route path="clients/:slug/rebalanceamento-br" element={<RebalanceBR />} />
         <Route path="meetings" element={<Meetings />} />
         <Route path="contatos" element={<Contatos />} />

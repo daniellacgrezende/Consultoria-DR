@@ -351,8 +351,8 @@ export function DataProvider({ children }) {
   }, []);
 
   // ─── INTL PORTFOLIO (rebalanceamento internacional) ───
-  const getIntlPortfolio = useCallback(async (clientId) => {
-    const { data: portfolios } = await supabase.from("intl_portfolios").select("*").eq("client_id", clientId).limit(1);
+  const getIntlPortfolio = useCallback(async (clientId, tipo = "etf") => {
+    const { data: portfolios } = await supabase.from("intl_portfolios").select("*").eq("client_id", clientId).eq("tipo", tipo).limit(1);
     if (!portfolios?.length) return null;
     const portfolio = portfolios[0];
     const { data: classes } = await supabase.from("intl_classes").select("*").eq("portfolio_id", portfolio.id).order("ordem");
@@ -369,9 +369,9 @@ export function DataProvider({ children }) {
     };
   }, []);
 
-  const saveIntlPortfolio = useCallback(async (clientId, nome = "Carteira Internacional") => {
+  const saveIntlPortfolio = useCallback(async (clientId, nome = "Carteira Internacional", tipo = "etf") => {
     const id = huid();
-    const { data } = await supabase.from("intl_portfolios").insert({ id, client_id: clientId, nome }).select();
+    const { data } = await supabase.from("intl_portfolios").insert({ id, client_id: clientId, nome, tipo }).select();
     return data?.[0] || null;
   }, []);
 
