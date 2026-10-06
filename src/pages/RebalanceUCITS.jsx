@@ -179,6 +179,22 @@ export default function RebalanceUCITS() {
     setToast({ type: "success", text: "Template padrão carregado!" });
   };
 
+  const handleResetarTemplate = async () => {
+    if (!portfolio) return;
+    if (!confirm("Isso vai APAGAR todas as classes atuais e recriar com o template padrão.\n\nOs valores investidos serão perdidos. Continuar?")) return;
+    for (const cls of (portfolio.classes || [])) {
+      await deleteIntlClass(cls.id);
+    }
+    for (let i = 0; i < TEMPLATE_PADRAO.length; i++) {
+      const t = TEMPLATE_PADRAO[i];
+      const classId = huid();
+      await saveIntlClass({ id: classId, portfolio_id: portfolio.id, nome: t.nome, target_pct: t.target_pct, ordem: i }, true);
+      await saveIntlProduct({ id: huid(), class_id: classId, ticker: t.ticker, valor_atual: 0 }, true);
+    }
+    await load();
+    setToast({ type: "success", text: "Carteira resetada para o template padrão!" });
+  };
+
   const handleSaveClass = async () => {
     if (!classForm.nome.trim()) return;
     const isNew = !editingClass;
@@ -334,6 +350,12 @@ export default function RebalanceUCITS() {
                   <button onClick={handleCarregarTemplate}
                     style={{ background: "#f5f3ff", color: "#7c3aed", border: "1px solid #ddd6fe", borderRadius: 6, padding: "5px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                     ⚡ Carregar Template
+                  </button>
+                )}
+                {!!portfolio.classes?.length && (
+                  <button onClick={handleResetarTemplate}
+                    style={{ background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa", borderRadius: 6, padding: "5px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                    ↺ Resetar Template
                   </button>
                 )}
                 <button onClick={() => { setEditingClass(null); setClassForm({ nome: "", target_pct: "" }); setClassModal(true); }}
