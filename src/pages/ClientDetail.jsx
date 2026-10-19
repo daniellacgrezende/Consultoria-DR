@@ -25,7 +25,7 @@ function BirthdayInp({ label, value, onChange }) {
 export default function ClientDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { clients, history, aportes, reunioes, saveClient, deleteClient, saveReuniao, deleteReuniao, saveAporte, deleteAporte, incrementLiquidez, saveTodo, setToast } = useData();
+  const { clients, history, aportes, reunioes, saveClient, deleteClient, saveReuniao, deleteReuniao, saveAporte, deleteAporte, incrementLiquidez, incrementPL, saveTodo, setToast } = useData();
 
   const client = clients.find((c) => slugify(c.nome) === slug || c.id === slug);
   const id = client?.id;
@@ -221,6 +221,13 @@ export default function ClientDetail() {
     }
   };
 
+  // PGBL externo não entra no PL sob gestão (é só registro de controle, não é aporte/resgate real na conta).
+  const plImpacto = (a) => {
+    if (!a || a.tipo === "pgbl_externo") return 0;
+    const v = Number(a.valor || 0);
+    return a.tipo === "aporte" ? v : a.tipo === "resgate" ? -v : 0;
+  };
+
   const saveAptEntry = async () => {
     if (aptForm.is_externo) {
       if (!aptForm.data || !aptForm.valor_pgbl) { setToast({ type: "error", text: "Preencha data e valor do PGBL." }); return; }
@@ -243,11 +250,14 @@ export default function ClientDetail() {
       is_reserva: false,
       is_pgbl: aptForm.is_externo ? true : valorPgbl > 0,
     };
+    const oldEntry = !isNew ? aportes.find((a) => a.id === aptEditId) : null;
     await saveAporte(entry, isNew);
     if (isNew && valorReserva > 0) {
       const delta = entry.tipo === "aporte" ? valorReserva : -valorReserva;
       await incrementLiquidez(id, delta);
     }
+    const plDelta = plImpacto(entry) - plImpacto(oldEntry);
+    if (plDelta) await incrementPL(id, plDelta);
     setAptModal(false);
     setAptEditId(null);
     setToast({ type: "success", text: isNew ? "Registrado." : "Atualizado." });
@@ -275,6 +285,8 @@ export default function ClientDetail() {
       const delta = a.tipo === "aporte" ? -valorReserva : valorReserva;
       await incrementLiquidez(id, delta);
     }
+    const plDelta = -plImpacto(a);
+    if (plDelta) await incrementPL(id, plDelta);
     setToast({ type: "success", text: "Removido." });
   };
 

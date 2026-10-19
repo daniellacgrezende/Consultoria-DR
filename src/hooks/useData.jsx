@@ -172,6 +172,33 @@ export function DataProvider({ children }) {
     if (data) setClientsRaw((p) => p.map((c) => (c.id === clientId ? mapClientFromDB(data[0]) : c)));
   }, []);
 
+  // Soma/subtrai um aporte ou resgate ao PL atual do cliente (reflete direto no AUC total).
+  // Acumula no registro de "history" do dia; se não houver um para hoje, cria a partir do último PL conhecido.
+  const incrementPL = useCallback(async (clientId, delta) => {
+    if (!delta) return;
+    const dataHoje = today();
+    const { data: existingRows } = await supabase.from("history").select("id, patrimonio").eq("client_id", clientId).eq("data", dataHoje).order("created_at", { ascending: false }).limit(1);
+    const existing = existingRows && existingRows[0];
+    if (existing) {
+      const novoPL = Math.max(0, Number(existing.patrimonio || 0) + delta);
+      const { data } = await supabase.from("history").update({ patrimonio: novoPL }).eq("id", existing.id).select();
+      if (data) setHistoryRaw((p) => p.map((h) => (h.id === existing.id ? data[0] : h)));
+    } else {
+      const { data: lastHist } = await supabase.from("history").select("patrimonio").eq("client_id", clientId).order("data", { ascending: false }).limit(1);
+      let base;
+      if (lastHist && lastHist.length > 0) {
+        base = Number(lastHist[0].patrimonio || 0);
+      } else {
+        const { data: cur } = await supabase.from("clients").select("pl_inicial").eq("id", clientId).single();
+        base = Number(cur?.pl_inicial || 0);
+      }
+      const novoPL = Math.max(0, base + delta);
+      const row = { id: huid(), client_id: clientId, data: dataHoje, patrimonio: novoPL };
+      const { data } = await supabase.from("history").insert(row).select();
+      if (data) setHistoryRaw((p) => [...p, data[0]]);
+    }
+  }, []);
+
   // ─── REUNIÕES ───
   const setReunioes = useCallback((fn) => {
     setReunioesRaw((prev) => (typeof fn === "function" ? fn(prev) : fn));
@@ -487,7 +514,7 @@ export function DataProvider({ children }) {
     saveClient, deleteClient,
     addHistory, updateHistory, deleteHistory,
     saveRepasse, deleteRepasse,
-    saveAporte, deleteAporte, incrementLiquidez,
+    saveAporte, deleteAporte, incrementLiquidez, incrementPL,
     saveReuniao, deleteReuniao,
     saveTodo, deleteTodo, clearDoneTodos,
     saveLead, deleteLead,
