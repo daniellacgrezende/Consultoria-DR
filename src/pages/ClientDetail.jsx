@@ -900,7 +900,15 @@ export default function ClientDetail() {
                       ) : (
                         <div onClick={() => toggleRhExpand(r.id)} style={{ display: "flex", gap: 8, alignItems: "center", flex: 1, minWidth: 0, cursor: "pointer" }}>
                           <span style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap" }}>{r.data ? r.data.split("-").reverse().join("/") : "—"}</span>
-                          {r.titulo && <span style={{ fontSize: 11, fontWeight: 600, color: B.navy, background: "#e8eeff", borderRadius: 5, padding: "1px 7px", whiteSpace: "nowrap" }}>{r.titulo}</span>}
+                          {r.titulo && (() => {
+                            const t = (r.titulo || "").toLowerCase();
+                            const isContato = t.includes("contato") || t.includes("whatsapp") || t.includes("zap") || t.includes("wpp");
+                            const isKickoff = t.includes("kick") || t.includes("início") || t.includes("inicio");
+                            const isSeg = t.includes("seguro");
+                            const bg = isContato ? "#ecfdf5" : isKickoff ? "#f3e5ff" : isSeg ? "#fff7ed" : "#e8eeff";
+                            const cl = isContato ? "#16a34a" : isKickoff ? "#7c3aed" : isSeg ? "#c2410c" : B.navy;
+                            return <span style={{ fontSize: 11, fontWeight: 600, color: cl, background: bg, borderRadius: 5, padding: "1px 7px", whiteSpace: "nowrap" }}>{r.titulo}</span>;
+                          })()}
                           {r.texto && <span style={{ fontSize: 11, color: B.gray, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.texto.slice(0, 80)}{r.texto.length > 80 ? "…" : ""}</span>}
                         </div>
                       )}
@@ -1046,10 +1054,34 @@ export default function ClientDetail() {
         <div style={{ padding: "26px 30px" }}>
           <h3 style={{ margin: "0 0 20px", fontSize: 17, fontWeight: 700, color: B.navy }}>{rhEditId ? "Editar Registro" : "Novo Registro"}</h3>
           <Inp label="Data *" type="date" value={rhForm.data} onChange={(e) => setRhForm((f) => ({ ...f, data: e.target.value }))} />
-          <Inp label="Título" value={rhForm.titulo || ""} onChange={(e) => setRhForm((f) => ({ ...f, titulo: e.target.value }))} placeholder="Ex: Reunião de acompanhamento, Compra do imóvel…" />
+          <div style={{ marginBottom: 10 }}>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 6 }}>Tipo</label>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+              {[
+                { l: "Acompanhamento", bg: "#e8eeff", cl: B.navy, sel: "#4f46e5" },
+                { l: "Kick off", bg: "#f3e5ff", cl: "#7c3aed", sel: "#7c3aed" },
+                { l: "Contato Rápido", bg: "#ecfdf5", cl: "#16a34a", sel: "#16a34a" },
+                { l: "Seguro de vida", bg: "#fff7ed", cl: "#c2410c", sel: "#c2410c" },
+              ].map(({ l, bg, cl, sel }) => {
+                const active = rhForm.titulo === l;
+                return (
+                  <button key={l} onClick={() => setRhForm((f) => ({ ...f, titulo: active ? "" : l }))}
+                    style={{ padding: "5px 11px", borderRadius: 6, border: `1.5px solid ${active ? sel : B.border}`, background: active ? bg : "white", color: active ? cl : B.gray, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                    {l}
+                  </button>
+                );
+              })}
+            </div>
+            <Inp label="Ou escreva um título personalizado" value={rhForm.titulo || ""} onChange={(e) => setRhForm((f) => ({ ...f, titulo: e.target.value }))} placeholder="Ex: Compra do imóvel, Herança, WhatsApp…" />
+          </div>
           <div style={{ marginBottom: 18 }}>
-            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>Registro *</label>
-            <textarea value={rhForm.texto} onChange={(e) => setRhForm((f) => ({ ...f, texto: e.target.value }))} onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveRhEntry(); } }} rows={8} placeholder="O que foi discutido… (Enter = nova linha · Ctrl+Enter = salvar)" style={{ width: "100%", boxSizing: "border-box", background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 7, padding: "10px 13px", fontSize: 13, color: B.navy, outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.7 }} />
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 4 }}>
+              {(rhForm.titulo || "").toLowerCase().includes("contato") ? "Nota do contato *" : "Registro *"}
+            </label>
+            <textarea value={rhForm.texto} onChange={(e) => setRhForm((f) => ({ ...f, texto: e.target.value }))} onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveRhEntry(); } }}
+              rows={(rhForm.titulo || "").toLowerCase().includes("contato") ? 4 : 8}
+              placeholder={(rhForm.titulo || "").toLowerCase().includes("contato") ? "Ex: Bateu o carro, vai fazer FIV, viagem marcada…" : "O que foi discutido… (Enter = nova linha · Ctrl+Enter = salvar)"}
+              style={{ width: "100%", boxSizing: "border-box", background: "#f8faff", border: `1px solid ${B.border}`, borderRadius: 7, padding: "10px 13px", fontSize: 13, color: B.navy, outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.7 }} />
           </div>
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => setRhModal(false)} style={{ flex: 1, padding: "10px", background: "white", border: `1px solid ${B.border}`, color: B.gray, borderRadius: 7, cursor: "pointer" }}>Cancelar</button>
