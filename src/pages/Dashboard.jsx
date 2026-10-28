@@ -62,8 +62,15 @@ export default function Dashboard() {
   const PCOLS = ["#2563eb", "#7c3aed", "#0891b2", "#dc2626", "#9f1239", "#16a34a"];
 
   const origemMap = {};
-  active.forEach((c) => { const k = c.origem_cliente || "—"; origemMap[k] = (origemMap[k] || 0) + 1; });
-  const origemData = Object.entries(origemMap).sort((a, b) => b[1] - a[1]).map(([name, value]) => ({ name, value }));
+  active.forEach((c) => {
+    const k = c.origem_cliente || "—";
+    if (!origemMap[k]) origemMap[k] = { value: 0, pl: 0 };
+    origemMap[k].value += 1;
+    origemMap[k].pl += getPL(c);
+  });
+  const origemData = Object.entries(origemMap).sort((a, b) => b[1].value - a[1].value).map(([name, o]) => ({ name, ...o }));
+  const origemPLTotal = origemData.reduce((s, o) => s + o.pl, 0);
+  const fPLCompact = (v) => v >= 1e6 ? `R$ ${(v / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}M` : `R$ ${Math.round(v / 1e3)}k`;
   const OCOLS = ["#2563eb", "#7c3aed", "#0891b2", "#16a34a", "#f59e0b", "#dc2626", "#8b5cf6", "#06b6d4", "#ec4899", "#64748b"];
 
   const leadsAtivos = leads.filter((l) => !["Cliente", "Perdido", "Nutrição", "Desqualificado"].includes(l.etapa)).length;
@@ -222,13 +229,14 @@ export default function Dashboard() {
                       <Pie data={origemData} cx="50%" cy="50%" outerRadius={72} innerRadius={30} dataKey="value" paddingAngle={2}>
                         {origemData.map((_, i) => (<Cell key={i} fill={OCOLS[i % OCOLS.length]} />))}
                       </Pie>
-                      <Tooltip formatter={(v, n) => [`${v} clientes`, n]} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+                      <Tooltip formatter={(v, n, item) => [`${v} clientes · ${money(item.payload.pl)}`, n]} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
                 <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
-                  {origemData.map(({ name, value }, i) => {
+                  {origemData.map(({ name, value, pl }, i) => {
                     const pct = Math.round((value / active.length) * 100);
+                    const pctPL = origemPLTotal > 0 ? Math.round((pl / origemPLTotal) * 100) : 0;
                     const isOpen = origemDrill === name;
                     return (
                       <div key={name}>
@@ -237,7 +245,7 @@ export default function Dashboard() {
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
                               <span style={{ fontSize: 11, fontWeight: 600, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</span>
-                              <span style={{ fontSize: 10, color: B.gray, flexShrink: 0, marginLeft: 6 }}>{value}cl · {pct}%</span>
+                              <span style={{ fontSize: 10, color: B.gray, flexShrink: 0, marginLeft: 6 }}>{value}cl · {pct}% · <strong style={{ color: B.navy }}>{fPLCompact(pl)}</strong> ({pctPL}% PL)</span>
                             </div>
                             <div style={{ height: 3, background: "#e8eeff", borderRadius: 999 }}>
                               <div style={{ height: "100%", width: `${pct}%`, background: OCOLS[i % OCOLS.length], borderRadius: 999 }} />
