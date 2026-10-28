@@ -155,7 +155,7 @@ const CLIENT_DB_COLS = new Set([
   "email", "patrimonio_imobilizado", "financiamentos", "benchmark",
   "seguro_nao_aplica", "ips_nao_aplica", "prev_nao_aplica", "reuniao_agendada_em",
   "data_nascimento_parceiro", "email_parceiro", "atendimento_casal", "ultima_interacao",
-  "ultimo_presente", "presente_descricao",
+  "ultimo_presente", "presente_descricao", "presente_nao_aplica", "presente_motivo",
 ]);
 
 // Converte valor para número, retornando 0 se vazio/inválido
@@ -239,6 +239,8 @@ export const mapClientToDB = (c) => {
     ultima_interacao: toDate(c.ultima_interacao),
     ultimo_presente: toDate(c.ultimo_presente),
     presente_descricao: c.presente_descricao ?? "",
+    presente_nao_aplica: !!(c.presente_nao_aplica ?? false),
+    presente_motivo: c.presente_motivo ?? "",
   };
 
   return db;
