@@ -75,6 +75,23 @@ export function DataProvider({ children }) {
     setClientsRaw((prev) => (typeof fn === "function" ? fn(prev) : fn));
   }, []);
 
+  // Grava o PL informado como registro de "history" de hoje. O PL atual exibido vem do
+  // último registro de history, então sem isso uma edição do "PL Atual" na ficha (ou na
+  // importação mensal) seria ignorada depois que o cliente tivesse qualquer aporte/resgate.
+  const setPLHoje = async (clientId, pl) => {
+    const dataHoje = today();
+    const { data: existingRows } = await supabase.from("history").select("id").eq("client_id", clientId).eq("data", dataHoje).order("created_at", { ascending: false }).limit(1);
+    const existing = existingRows && existingRows[0];
+    if (existing) {
+      const { data } = await supabase.from("history").update({ patrimonio: pl }).eq("id", existing.id).select();
+      if (data) setHistoryRaw((p) => p.map((h) => (h.id === existing.id ? data[0] : h)));
+    } else {
+      const row = { id: huid(), client_id: clientId, data: dataHoje, patrimonio: pl };
+      const { data } = await supabase.from("history").insert(row).select();
+      if (data) setHistoryRaw((p) => [...p, data[0]]);
+    }
+  };
+
   const saveClient = useCallback(async (clientData, isNew = false) => {
     const dbData = mapClientToDB(clientData);
     if (isNew) {
@@ -86,9 +103,13 @@ export function DataProvider({ children }) {
         return data[0].id;
       }
     } else {
+      const { data: prev } = await supabase.from("clients").select("pl_inicial").eq("id", clientData.id).single();
       const { data, error } = await supabase.from("clients").update(dbData).eq("id", clientData.id).select();
       if (error) { console.error("saveClient update error:", error); return; }
       if (data) setClientsRaw((p) => p.map((c) => (c.id === clientData.id ? mapClientFromDB(data[0]) : c)));
+      if (prev && Number(prev.pl_inicial || 0) !== Number(dbData.pl_inicial || 0)) {
+        await setPLHoje(clientData.id, Number(dbData.pl_inicial || 0));
+      }
     }
     return clientData.id;
   }, []);
