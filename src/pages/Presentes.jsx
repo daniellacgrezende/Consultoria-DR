@@ -29,6 +29,8 @@ export default function Presentes() {
   const [pickDate, setPickDate]   = useState(today());
   const [pickDesc, setPickDesc]   = useState("");
   const [justSaved, setJustSaved] = useState(null);
+  const [naPicking, setNaPicking] = useState(null); // id do cliente com form "não se aplica" aberto
+  const [naMotivo, setNaMotivo]   = useState("");
 
   const active = useMemo(() => clients.filter((c) => c.status === "ativo"), [clients]);
 
@@ -36,10 +38,13 @@ export default function Presentes() {
     let r = active.map((c) => ({
       ...c,
       dias: daysSince(c.ultimo_presente),
+      naoAplica: !!c.presente_nao_aplica,
       curva: getCurva(getCurrentPL(c, history)),
     }));
     if (search.trim()) r = r.filter((c) => c.nome.toLowerCase().includes(search.toLowerCase()));
     r.sort((a, b) => {
+      // "Não se aplica" → final da lista
+      if (a.naoAplica !== b.naoAplica) return a.naoAplica ? 1 : -1;
       // Nunca enviado → topo
       if (a.dias === null && b.dias === null) return a.nome.localeCompare(b.nome);
       if (a.dias === null) return -1;
@@ -49,12 +54,15 @@ export default function Presentes() {
     return r;
   }, [active, history, search]);
 
-  const nunca    = rows.filter((c) => c.dias === null).length;
-  const maisAno  = rows.filter((c) => c.dias !== null && c.dias > 365).length;
-  const meiAno   = rows.filter((c) => c.dias !== null && c.dias > 180 && c.dias <= 365).length;
-  const recente  = rows.filter((c) => c.dias !== null && c.dias <= 180).length;
+  const aplicaveis = rows.filter((c) => !c.naoAplica);
+  const nunca    = aplicaveis.filter((c) => c.dias === null).length;
+  const maisAno  = aplicaveis.filter((c) => c.dias !== null && c.dias > 365).length;
+  const meiAno   = aplicaveis.filter((c) => c.dias !== null && c.dias > 180 && c.dias <= 365).length;
+  const recente  = aplicaveis.filter((c) => c.dias !== null && c.dias <= 180).length;
+  const naoAplicaCount = rows.length - aplicaveis.length;
 
   const abrirForm = (c) => {
+    setNaPicking(null);
     setPicking(c.id);
     setPickDate(today());
     setPickDesc(c.presente_descricao || "");
@@ -68,6 +76,23 @@ export default function Presentes() {
     setToast({ type: "success", text: `Presente para ${c.nome.split(" ")[0]} registrado em ${fmtDate(pickDate)}.` });
   };
 
+  const abrirNaoAplica = (c) => {
+    setPicking(null);
+    setNaPicking(c.id);
+    setNaMotivo(c.presente_motivo || "");
+  };
+
+  const salvarNaoAplica = async (c) => {
+    await saveClient({ ...c, presente_nao_aplica: true, presente_motivo: naMotivo }, false);
+    setNaPicking(null);
+    setToast({ type: "success", text: `${c.nome.split(" ")[0]} marcado como "não se aplica".` });
+  };
+
+  const reativar = async (c) => {
+    await saveClient({ ...c, presente_nao_aplica: false, presente_motivo: "" }, false);
+    setToast({ type: "success", text: `${c.nome.split(" ")[0]} voltou para a lista de presentes.` });
+  };
+
   return (
     <>
       <SecH eyebrow="Relacionamento" title="Presentes & Lembranças" desc="Registre quando enviou um presente ou lembrança para cada cliente." />
@@ -79,6 +104,7 @@ export default function Presentes() {
           { label: "Há mais de 1 ano", value: maisAno, color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
           { label: "6 meses – 1 ano", value: meiAno,  color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" },
           { label: "Últimos 6 meses", value: recente, color: "#16A34A", bg: "#F0FDF4", border: "#BBF7D0" },
+          { label: "Não se aplica", value: naoAplicaCount, color: "#94A3B8", bg: "#F8FAFC", border: "#E2E8F0" },
         ].map((item) => (
           <div key={item.label} style={{ flex: 1, background: item.bg, border: `1px solid ${item.border}`, borderRadius: 10, padding: "12px 16px", textAlign: "center" }}>
             <div style={{ fontSize: 9, fontWeight: 800, color: item.color, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>{item.label}</div>
@@ -113,7 +139,7 @@ export default function Presentes() {
               const u = urgencyColor(c.dias);
               const saved = justSaved === c.id;
               return (
-                <tr key={c.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#FAFBFF" }}>
+                <tr key={c.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#FAFBFF", opacity: c.naoAplica ? 0.6 : 1 }}>
                   {/* Nome */}
                   <td style={{ padding: "10px 16px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -133,7 +159,12 @@ export default function Presentes() {
 
                   {/* Último presente */}
                   <td style={{ padding: "10px 16px" }}>
-                    {c.ultimo_presente ? (
+                    {c.naoAplica ? (
+                      <div>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: "#64748B", background: "#F1F5F9", border: "1px solid #E2E8F0", borderRadius: 999, padding: "2px 8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Não se aplica</span>
+                        {c.presente_motivo && <div style={{ fontSize: 11, color: B.muted, marginTop: 4 }}>{c.presente_motivo}</div>}
+                      </div>
+                    ) : c.ultimo_presente ? (
                       <div>
                         <div style={{ fontSize: 12, color: B.gray }}>{fmtDate(c.ultimo_presente)}</div>
                         <div style={{ fontSize: 11, fontWeight: 700, color: u.text }}>
@@ -184,11 +215,40 @@ export default function Presentes() {
                           style={{ fontSize: 11, fontWeight: 700, background: "#16A34A", color: "white", border: "none", borderRadius: 6, padding: "6px 16px", cursor: "pointer", alignSelf: "flex-end" }}
                         >Salvar</button>
                       </div>
-                    ) : (
+                    ) : naPicking === c.id ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "flex-end" }}>
+                        <input
+                          type="text"
+                          value={naMotivo}
+                          onChange={(e) => setNaMotivo(e.target.value)}
+                          placeholder="Motivo (ex: grupo familiar)"
+                          style={{ fontSize: 12, padding: "5px 10px", border: `1.5px solid ${B.border}`, borderRadius: 6, outline: "none", fontFamily: "inherit", color: B.navy, width: 200, boxSizing: "border-box" }}
+                        />
+                        <button
+                          onClick={() => salvarNaoAplica(c)}
+                          style={{ fontSize: 11, fontWeight: 700, background: "#64748B", color: "white", border: "none", borderRadius: 6, padding: "6px 12px", cursor: "pointer" }}
+                        >Salvar</button>
+                        <button
+                          onClick={() => setNaPicking(null)}
+                          style={{ fontSize: 11, background: "white", color: B.muted, border: `1px solid ${B.border}`, borderRadius: 6, padding: "6px 10px", cursor: "pointer" }}>✕</button>
+                      </div>
+                    ) : c.naoAplica ? (
                       <button
-                        onClick={() => abrirForm(c)}
-                        style={{ fontSize: 11, fontWeight: 700, cursor: "pointer", borderRadius: 6, padding: "6px 14px", border: "none", background: "#061841", color: "white" }}
-                      >🎁 Registrar</button>
+                        onClick={() => reativar(c)}
+                        style={{ fontSize: 11, fontWeight: 600, cursor: "pointer", borderRadius: 6, padding: "6px 14px", border: `1px solid ${B.border}`, background: "white", color: B.navy }}
+                      >Reativar</button>
+                    ) : (
+                      <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                        <button
+                          onClick={() => abrirNaoAplica(c)}
+                          title="Marcar que não se aplica enviar presente para este cliente"
+                          style={{ fontSize: 11, fontWeight: 600, cursor: "pointer", borderRadius: 6, padding: "6px 10px", border: `1px solid ${B.border}`, background: "white", color: B.muted }}
+                        >Não se aplica</button>
+                        <button
+                          onClick={() => abrirForm(c)}
+                          style={{ fontSize: 11, fontWeight: 700, cursor: "pointer", borderRadius: 6, padding: "6px 14px", border: "none", background: "#061841", color: "white" }}
+                        >🎁 Registrar</button>
+                      </div>
                     )}
                   </td>
                 </tr>
