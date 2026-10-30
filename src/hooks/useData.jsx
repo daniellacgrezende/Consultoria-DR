@@ -198,16 +198,19 @@ export function DataProvider({ children }) {
   const incrementPL = useCallback(async (clientId, delta) => {
     if (!delta) return;
     const dataHoje = today();
-    const { data: existingRows } = await supabase.from("history").select("id, patrimonio").eq("client_id", clientId).eq("data", dataHoje).order("created_at", { ascending: false }).limit(1);
-    const existing = existingRows && existingRows[0];
+    const { data: existingRows, error: fetchErr } = await supabase.from("history").select("id, patrimonio").eq("client_id", clientId).eq("data", dataHoje).limit(1);
+    if (fetchErr) console.error("incrementPL fetch error:", fetchErr);
+    const existing = existingRows?.[0];
     if (existing) {
       const novoPL = Math.max(0, Number(existing.patrimonio || 0) + delta);
-      const { data } = await supabase.from("history").update({ patrimonio: novoPL }).eq("id", existing.id).select();
+      const { data, error } = await supabase.from("history").update({ patrimonio: novoPL }).eq("id", existing.id).select();
+      if (error) console.error("incrementPL update error:", error);
       if (data) setHistoryRaw((p) => p.map((h) => (h.id === existing.id ? data[0] : h)));
     } else {
-      const { data: lastHist } = await supabase.from("history").select("patrimonio").eq("client_id", clientId).order("data", { ascending: false }).limit(1);
+      const { data: lastHist, error: lastErr } = await supabase.from("history").select("patrimonio").eq("client_id", clientId).order("data", { ascending: false }).limit(1);
+      if (lastErr) console.error("incrementPL lastHist error:", lastErr);
       let base;
-      if (lastHist && lastHist.length > 0) {
+      if (lastHist?.length > 0) {
         base = Number(lastHist[0].patrimonio || 0);
       } else {
         const { data: cur } = await supabase.from("clients").select("pl_inicial").eq("id", clientId).single();
@@ -215,7 +218,8 @@ export function DataProvider({ children }) {
       }
       const novoPL = Math.max(0, base + delta);
       const row = { id: huid(), client_id: clientId, data: dataHoje, patrimonio: novoPL };
-      const { data } = await supabase.from("history").insert(row).select();
+      const { data, error } = await supabase.from("history").insert(row).select();
+      if (error) console.error("incrementPL insert error:", error);
       if (data) setHistoryRaw((p) => [...p, data[0]]);
     }
   }, []);
