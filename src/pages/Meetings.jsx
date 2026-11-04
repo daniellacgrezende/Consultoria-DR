@@ -58,7 +58,8 @@ function getStatus(c) {
     return            { key: "agendar",     label: "Agendar",     color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" };
   }
 
-  // Faltam 5 dias para o prazo → hora de agendar
+  // Faltam 5 dias para o prazo → hora de agendar (mas se já chamou, aguardando)
+  if (chameiAtivo) return { key: "aguardando", label: "Aguardando", color: "#0891B2", bg: "#ECFEFF", border: "#A5F3FC" };
   if (diasSem >= period - 5) return { key: "agendar", label: "Agendar", color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" };
 
   return { key: "emdia", label: "Em dia", color: "#16A34A", bg: "#F0FDF4", border: "#BBF7D0" };
