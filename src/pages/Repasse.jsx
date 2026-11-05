@@ -28,7 +28,7 @@ function totalRow(r) {
 }
 
 export default function Repasse() {
-  const { repasse, saveRepasse, deleteRepasse, setToast } = useData();
+  const { repasse, saveRepasse, deleteRepasse, metas, saveMeta, setToast } = useData();
   const [modal, setModal] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -113,6 +113,9 @@ export default function Repasse() {
     entry.repasse_final = soma || null;
     entry.receita_bruta = soma || null;
     await saveRepasse(entry, !editId);
+    // Espelha o total em metas_mensais.receita_real do mesmo mês
+    const metaRow = metas.find((m) => m.mes === form.competencia);
+    if (metaRow && soma > 0) await saveMeta({ ...metaRow, receita_real: soma }, false);
     setModal(false);
     if (!editId && form.competencia) setAnoFilter(form.competencia.slice(0, 4));
     setToast({ type: "success", text: editId ? "Atualizado." : "Adicionado." });
