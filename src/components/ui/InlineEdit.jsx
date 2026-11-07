@@ -112,7 +112,9 @@ export function InlineDate({ value, onSave, style = {} }) {
   const [val, setVal] = useState(value || "");
   useEffect(() => { if (!editing) setVal(value || ""); }, [value, editing]);
 
-  const commit = () => { if (val && val.length === 10) onSave(val); setEditing(false); };
+  const commit = () => {
+    if (val && val.length === 10) { onSave(val); setEditing(false); }
+  };
   const cancel = () => { setVal(value || ""); setEditing(false); };
 
   if (editing) return (
@@ -120,6 +122,7 @@ export function InlineDate({ value, onSave, style = {} }) {
       <input
         type="date"
         value={val}
+        autoFocus
         onChange={(e) => setVal(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") commit(); if (e.key === "Escape") cancel(); }}
         style={{ padding: "3px 8px", border: "1px solid #D30000", borderRadius: 6, fontSize: 12, fontFamily: "inherit", outline: "none", ...style }}
