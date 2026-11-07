@@ -781,7 +781,15 @@ export default function ClientDetail() {
           <div style={{ fontWeight: 700, fontSize: 12, color: B.navy, marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${B.border}` }}>Relatório</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Periodicidade</div><InlineSelect value={client.periodicidade_relatorio || ""} onSave={(v) => updateField("periodicidade_relatorio", v)} opts={[{ v: "", l: "—" }, ...PERIOD_OPTIONS.map((o) => ({ v: o, l: o }))]} /></div>
-            <div />
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Tipo de Relatório</div>
+              <InlineSelect value={client.tipo_relatorio || ""} onSave={(v) => updateField("tipo_relatorio", v)} opts={[{ v: "", l: "—" }, { v: "Portfel com GBI", l: "Portfel com GBI" }, { v: "PDF Dani", l: "PDF Dani" }]} />
+              {client.tipo_relatorio && (
+                <span style={{ display: "inline-block", marginTop: 4, fontSize: 10, fontWeight: 700, color: client.tipo_relatorio === "PDF Dani" ? "#c2410c" : "#2563eb", background: client.tipo_relatorio === "PDF Dani" ? "#fff7ed" : "#eff6ff", border: `1px solid ${client.tipo_relatorio === "PDF Dani" ? "#fed7aa" : "#bfdbfe"}`, borderRadius: 5, padding: "2px 8px" }}>
+                  {client.tipo_relatorio}
+                </span>
+              )}
+            </div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Último Relatório</div><InlineDate value={client.ultimo_relatorio} onSave={(v) => updateField("ultimo_relatorio", v)} /></div>
             <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Próximo Relatório</div><InlineDate value={client.proximo_relatorio} onSave={(v) => updateField("proximo_relatorio", v)} /></div>
           </div>
@@ -1022,6 +1030,7 @@ export default function ClientDetail() {
             <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Reuniões e Relatórios</div>
             <Sel label="Periodicidade Reunião" value={editForm.periodicidade_reuniao || editForm.periodicidadeReuniao || "Trimestral"} onChange={EF("periodicidade_reuniao")} opts={PERIOD_OPTIONS.map((o) => ({ v: o, l: o }))} />
             <Sel label="Periodicidade Relatório" value={editForm.periodicidade_relatorio || editForm.periodicidadeRelatorio || ""} onChange={EF("periodicidade_relatorio")} opts={[{ v: "", l: "—" }, ...PERIOD_OPTIONS.map((o) => ({ v: o, l: o }))]} />
+            <Sel label="Tipo de Relatório" value={editForm.tipo_relatorio || editForm.tipoRelatorio || ""} onChange={EF("tipo_relatorio")} opts={[{ v: "", l: "—" }, { v: "Portfel com GBI", l: "Portfel com GBI" }, { v: "PDF Dani", l: "PDF Dani" }]} />
 
             <div style={{ gridColumn: "1/-1", fontWeight: 700, fontSize: 11, color: B.muted, textTransform: "uppercase", marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${B.border}`, marginTop: 6 }}>Atributos</div>
             <div style={{ gridColumn: "1/-1", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0 16px" }}>

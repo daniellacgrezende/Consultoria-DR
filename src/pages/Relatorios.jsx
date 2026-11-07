@@ -360,7 +360,10 @@ export default function Relatorios() {
                       <Avatar nome={c.nome} size={28} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
-                        <div style={{ fontSize: 10, color: B.gray }}>{c.profissao || "—"}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 10, color: B.gray }}>{c.profissao || "—"}</span>
+                          {c.tipo_relatorio && <span style={{ fontSize: 9, fontWeight: 700, color: c.tipo_relatorio === "PDF Dani" ? "#c2410c" : "#2563eb", background: c.tipo_relatorio === "PDF Dani" ? "#fff7ed" : "#eff6ff", border: `1px solid ${c.tipo_relatorio === "PDF Dani" ? "#fed7aa" : "#bfdbfe"}`, borderRadius: 4, padding: "1px 5px", whiteSpace: "nowrap" }}>{c.tipo_relatorio}</span>}
+                        </div>
                       </div>
                       <CBadge curva={curva} />
                       <button onClick={(e) => { e.stopPropagation(); toggleCheck(c.id); }}
@@ -479,6 +482,7 @@ export default function Relatorios() {
                     <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                       <div style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
                       <CBadge curva={curva} />
+                      {c.tipo_relatorio && <span style={{ fontSize: 9, fontWeight: 700, color: c.tipo_relatorio === "PDF Dani" ? "#c2410c" : "#2563eb", background: c.tipo_relatorio === "PDF Dani" ? "#fff7ed" : "#eff6ff", border: `1px solid ${c.tipo_relatorio === "PDF Dani" ? "#fed7aa" : "#bfdbfe"}`, borderRadius: 4, padding: "1px 5px", whiteSpace: "nowrap" }}>{c.tipo_relatorio}</span>}
                     </div>
                     <div style={{ fontSize: 10, color: "#dc2626", fontWeight: 600 }}>
                       {c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal"} · {c.diasSem !== null ? `${c.diasSem - c.periodDays}d de atraso` : "Nunca enviado"}
@@ -536,6 +540,7 @@ export default function Relatorios() {
                     <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                       <div style={{ fontSize: 12, fontWeight: 700, color: B.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
                       <CBadge curva={curva} />
+                      {c.tipo_relatorio && <span style={{ fontSize: 9, fontWeight: 700, color: c.tipo_relatorio === "PDF Dani" ? "#c2410c" : "#2563eb", background: c.tipo_relatorio === "PDF Dani" ? "#fff7ed" : "#eff6ff", border: `1px solid ${c.tipo_relatorio === "PDF Dani" ? "#fed7aa" : "#bfdbfe"}`, borderRadius: 4, padding: "1px 5px", whiteSpace: "nowrap" }}>{c.tipo_relatorio}</span>}
                     </div>
                     <div style={{ fontSize: 10, color: "#c2410c", fontWeight: 600 }}>
                       {c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal"} · {c.diasSem > c.periodDays ? `${c.diasSem - c.periodDays}d de atraso` : `vence em ${c.periodDays - c.diasSem}d`}
@@ -623,6 +628,9 @@ export default function Relatorios() {
                         <div>
                           <div style={{ fontWeight: 600, color: B.navy, fontSize: 13 }}>{c.nome}</div>
                           <div style={{ fontSize: 11, color: B.gray }}>{c.profissao}</div>
+                          {c.tipo_relatorio && (
+                            <span style={{ fontSize: 10, fontWeight: 700, color: c.tipo_relatorio === "PDF Dani" ? "#c2410c" : "#2563eb", background: c.tipo_relatorio === "PDF Dani" ? "#fff7ed" : "#eff6ff", border: `1px solid ${c.tipo_relatorio === "PDF Dani" ? "#fed7aa" : "#bfdbfe"}`, borderRadius: 4, padding: "1px 6px", whiteSpace: "nowrap", display: "inline-block", marginTop: 2 }}>{c.tipo_relatorio}</span>
+                          )}
                         </div>
                       </div>
                     </td>

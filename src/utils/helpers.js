@@ -138,6 +138,7 @@ export const mapClientFromDB = (c) => ({
   dataNascimentoParceiro: c.data_nascimento_parceiro,
   email_parceiro: c.email_parceiro || "",
   atendimento_casal: c.atendimento_casal ?? false,
+  tipoRelatorio: c.tipo_relatorio ?? "",
 });
 
 // Colunas válidas da tabela clients no Supabase
@@ -156,6 +157,7 @@ const CLIENT_DB_COLS = new Set([
   "seguro_nao_aplica", "ips_nao_aplica", "prev_nao_aplica", "reuniao_agendada_em",
   "data_nascimento_parceiro", "email_parceiro", "atendimento_casal", "ultima_interacao",
   "ultimo_presente", "presente_descricao", "presente_nao_aplica", "presente_motivo",
+  "tipo_relatorio",
 ]);
 
 // Converte valor para número, retornando 0 se vazio/inválido
@@ -241,6 +243,7 @@ export const mapClientToDB = (c) => {
     presente_descricao: c.presente_descricao ?? "",
     presente_nao_aplica: !!(c.presente_nao_aplica ?? false),
     presente_motivo: c.presente_motivo ?? "",
+    tipo_relatorio: c.tipo_relatorio ?? c.tipoRelatorio ?? "",
   };
 
   return db;
