@@ -207,14 +207,25 @@ export function DataProvider({ children }) {
       if (error) console.error("incrementPL update error:", error);
       if (data) setHistoryRaw((p) => p.map((h) => (h.id === existing.id ? data[0] : h)));
     } else {
-      const { data: lastHist, error: lastErr } = await supabase.from("history").select("patrimonio").eq("client_id", clientId).order("data", { ascending: false }).limit(1);
+      const { data: lastHist, error: lastErr } = await supabase.from("history").select("patrimonio, data").eq("client_id", clientId).order("data", { ascending: false }).limit(1);
       if (lastErr) console.error("incrementPL lastHist error:", lastErr);
       let base;
+      let baseDate = null;
       if (lastHist?.length > 0) {
         base = Number(lastHist[0].patrimonio || 0);
+        baseDate = lastHist[0].data;
       } else {
         const { data: cur } = await supabase.from("clients").select("pl_inicial").eq("id", clientId).single();
         base = Number(cur?.pl_inicial || 0);
+      }
+      // Recupera aportes entre o último snapshot e hoje (não-incluído) que possam não ter sido capturados
+      if (baseDate) {
+        const { data: missed } = await supabase.from("aportes")
+          .select("valor, tipo").eq("client_id", clientId)
+          .gt("data", baseDate).lt("data", dataHoje).neq("tipo", "pgbl_externo");
+        if (missed?.length) {
+          base += missed.reduce((s, a) => s + (a.tipo === "aporte" ? Number(a.valor || 0) : a.tipo === "resgate" ? -Number(a.valor || 0) : 0), 0);
+        }
       }
       const novoPL = Math.max(0, base + delta);
       const row = { id: huid(), client_id: clientId, data: dataHoje, patrimonio: novoPL };

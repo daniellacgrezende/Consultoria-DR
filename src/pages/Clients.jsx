@@ -14,7 +14,7 @@ import { Inp, Sel, Tarea, SecH } from "../components/ui/FormFields";
 
 export default function Clients() {
   const navigate = useNavigate();
-  const { clients, history, saveClient, deleteClient, setToast } = useData();
+  const { clients, history, aportes, saveClient, deleteClient, setToast } = useData();
   const [modal, setModal] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(EMPTY_CLIENT);
@@ -34,7 +34,7 @@ export default function Clients() {
 
   const active   = useMemo(() => clients.filter((c) => c.status === "ativo"),   [clients]);
   const archived = useMemo(() => clients.filter((c) => c.status === "inativo"), [clients]);
-  const getPL = (c) => getCurrentPL(c, history);
+  const getPL = (c) => getCurrentPL(c, history, aportes);
   const totalAUM = useMemo(() => active.reduce((s, c) => s + getPL(c), 0), [active, history]);
   const PDAYS = { mensal: 30, bimestral: 60, trimestral: 90, quadrimestral: 120, semestral: 180, anual: 365 };
   const isLate = (c) => {

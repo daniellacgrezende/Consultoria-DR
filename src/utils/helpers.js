@@ -24,9 +24,26 @@ export const getCurva = (p) => {
   return "D";
 };
 
-export const getCurrentPL = (client, history) => {
-  const e = history.filter((h) => h.client_id === client.id).sort((a, b) => new Date(b.data) - new Date(a.data));
-  return e.length > 0 ? Number(e[0].patrimonio) : Number(client.pl_inicial || 0);
+export const getCurrentPL = (client, history, aportes = []) => {
+  const clientHistory = history.filter((h) => h.client_id === client.id).sort((a, b) => new Date(b.data) - new Date(a.data));
+  const lastEntry = clientHistory[0];
+  const basePL = lastEntry ? Number(lastEntry.patrimonio) : Number(client.pl_inicial || 0);
+  const baseDate = lastEntry?.data || null;
+
+  // Soma aportes/resgates após o último snapshot de history (captura movimentações não refletidas)
+  const afterAportes = aportes.filter((a) => {
+    if (a.client_id !== client.id) return false;
+    if (a.tipo === "pgbl_externo") return false;
+    if (!baseDate) return true;
+    return a.data > baseDate;
+  });
+
+  const delta = afterAportes.reduce((sum, a) => {
+    const v = Number(a.valor || 0);
+    return sum + (a.tipo === "aporte" ? v : a.tipo === "resgate" ? -v : 0);
+  }, 0);
+
+  return Math.max(0, basePL + delta);
 };
 
 export const calcIdade = (dataNasc) => {

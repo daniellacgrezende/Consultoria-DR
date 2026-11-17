@@ -23,7 +23,7 @@ export default function Dashboard() {
   const [seguroDrill, setSeguroDrill] = useState(null);
 
   const active = useMemo(() => clients.filter((c) => c.status === "ativo"), [clients]);
-  const getPL = (c) => getCurrentPL(c, history);
+  const getPL = (c) => getCurrentPL(c, history, aportes);
   const totalAUM = useMemo(() => active.reduce((s, c) => s + getPL(c), 0), [active, history]);
   const aumMedio = active.length ? totalAUM / active.length : 0;
   const totalSeguro = active.filter((c) => c.seguro_vida || c.seguroVida).length;

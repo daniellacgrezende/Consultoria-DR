@@ -81,7 +81,7 @@ function StatusBadge({ st }) {
 /* ═══════════════════════════════════════════ */
 export default function Meetings() {
   const navigate  = useNavigate();
-  const { clients, history, reunioes, todos, saveClient, saveTodo, setToast } = useData();
+  const { clients, history, aportes, reunioes, todos, saveClient, saveTodo, setToast } = useData();
   const [sortCol, setSortCol]     = useState("status");
   const [sortDir, setSortDir]     = useState("asc");
   const [statusFilter, setStatusFilter] = useState(null); // filtro por status ao clicar no badge
@@ -119,7 +119,7 @@ export default function Meetings() {
       diasAte:    daysUntil(c.proxima_reuniao || c.proximaReuniao),
       periodDays: getPeriodDays(c.periodicidade_reuniao || c.periodicidadeReuniao),
       st:         getStatus(c),
-      curva:      getCurva(getCurrentPL(c, history)),
+      curva:      getCurva(getCurrentPL(c, history, aportes)),
     }));
     const dir = sortDir === "asc" ? 1 : -1;
     enriched.sort((a, b) => {
@@ -579,7 +579,7 @@ export default function Meetings() {
               {filteredRows.map((c, i) => {
                 const dAv     = daysSince(c.avisado_em || c.avisadoEm);
                 const chameiRecentemente = dAv !== null && dAv <= c.periodDays;
-                const curva = getCurva(getCurrentPL(c, history));
+                const curva = getCurva(getCurrentPL(c, history, aportes));
                 return (
                   <tr key={c.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#FAFBFF" }}>
 

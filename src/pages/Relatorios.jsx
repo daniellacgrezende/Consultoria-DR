@@ -39,7 +39,7 @@ const TH = { padding: "10px 14px", textAlign: "left", fontSize: 10, fontWeight: 
 
 export default function Relatorios() {
   const navigate = useNavigate();
-  const { clients, history, saveClient, saveTodo, setToast } = useData();
+  const { clients, history, aportes, saveClient, saveTodo, setToast } = useData();
   const [sortCol, setSortCol] = useState("diasSem");
   const [sortDir, setSortDir] = useState("desc");
   const [search, setSearch] = useState("");
@@ -213,7 +213,7 @@ export default function Relatorios() {
     let r = active.filter((c) => !naoAplicaRel(c)).map((c) => {
       const diasSem = daysSince(c.ultimo_relatorio || c.ultimoRelatorio);
       const periodDays = getPeriodDays(c.periodicidade_relatorio || c.periodicidadeRelatorio || "Mensal");
-      const pl = getCurrentPL(c, history);
+      const pl = getCurrentPL(c, history, aportes);
       const curva = getCurva(pl);
       const statusKey = getRelStatus(diasSem, periodDays).key;
       return { ...c, diasSem, periodDays, pl, curva, statusKey };
@@ -350,7 +350,7 @@ export default function Relatorios() {
               {pendingMonthly.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: completedMonthly.length > 0 ? 10 : 0 }}>
                   {pendingMonthly.map((c) => {
-                    const curva = getCurva(getCurrentPL(c, history));
+                    const curva = getCurva(getCurrentPL(c, history, aportes));
                     return (
                     <div key={c.id}
                       style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, border: `1px solid ${B.border}`, background: "white", cursor: "pointer", transition: "all 0.15s" }}
@@ -474,7 +474,7 @@ export default function Relatorios() {
           {atrasadoOpen && (
             <div style={{ padding: "0 16px 14px", display: "flex", flexDirection: "column", gap: 8, maxHeight: 420, overflowY: "auto" }}>
               {pendentesAtrasado.map((c) => {
-                const curva = getCurva(getCurrentPL(c, history));
+                const curva = getCurva(getCurrentPL(c, history, aportes));
                 return (
                 <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 7, background: "white", border: "1px solid #fecaca" }}>
                   <Avatar nome={c.nome} size={26} />
@@ -532,7 +532,7 @@ export default function Relatorios() {
           {atencaoOpen && (
             <div style={{ padding: "0 16px 14px", display: "flex", flexDirection: "column", gap: 8, maxHeight: 360, overflowY: "auto" }}>
               {pendentesAtencao.map((c) => {
-                const curva = getCurva(getCurrentPL(c, history));
+                const curva = getCurva(getCurrentPL(c, history, aportes));
                 return (
                 <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 7, background: "white", border: "1px solid #fed7aa" }}>
                   <Avatar nome={c.nome} size={26} />
@@ -618,7 +618,7 @@ export default function Relatorios() {
                 const st = c._naoAplica
                   ? { label: "N/A", bg: "#f3f4f6", color: "#6b7280" }
                   : getRelStatus(c.diasSem, c.periodDays);
-                const curva = c.curva ?? getCurva(getCurrentPL(c, history));
+                const curva = c.curva ?? getCurva(getCurrentPL(c, history, aportes));
                 const diasColor = c._naoAplica ? "#9ca3af" : c.diasSem === null ? "#dc2626" : c.diasSem > c.periodDays + ATRASADO_DAYS ? "#dc2626" : c.diasSem > c.periodDays ? "#c2410c" : "#16a34a";
                 return (
                   <tr key={c.id} style={{ borderBottom: `1px solid ${B.border}`, background: i % 2 === 0 ? "white" : "#fafbff" }}>

@@ -152,7 +152,7 @@ export default function ClientDetail() {
     if (toastMsg) setToast({ type: "success", text: toastMsg });
   };
 
-  const pl = getCurrentPL(client, history);
+  const pl = getCurrentPL(client, history, aportes);
   const curva = getCurva(pl);
   const idade = calcIdade(client.data_nascimento || client.dataNascimento);
   const dR = daysSince(client.ultima_reuniao || client.ultimaReuniao);
