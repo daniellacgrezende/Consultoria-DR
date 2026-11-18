@@ -22,6 +22,13 @@ export const PERFIL_MAP = {
   agressivo: { label: "Agressivo", color: "#D30000" },
 };
 
+// Repasse de clientes para outra consultora
+export const REPASSE_OPTIONS = [
+  { v: "", l: "—" },
+  { v: "Repasse para Poliana – pendente", l: "Repasse para Poliana – pendente" },
+  { v: "Repassado para Poliana", l: "Repassado para Poliana" },
+];
+
 export const CURVA_MAP = {
   A: { label: "Curva A", color: "#D30000", bg: "#FDE8E8" },
   B: { label: "Curva B", color: "#2A7DE1", bg: "#E8F0FE" },
