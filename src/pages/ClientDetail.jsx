@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useData } from "../hooks/useData";
-import { B, PERFIL_MAP, EMPTY_CLIENT, LEAD_ORIGENS, PERIOD_OPTIONS, STATUS_MAP } from "../utils/constants";
+import { B, PERFIL_MAP, EMPTY_CLIENT, LEAD_ORIGENS, PERIOD_OPTIONS, STATUS_MAP, REPASSE_OPTIONS } from "../utils/constants";
 import { money, fmtDate, fmtBirthday, parseBirthday } from "../utils/formatters";
 import { getCurva, getCurrentPL, calcIdade, daysSince, getPeriodDays, getReuniaoStatusDynamic, getLiquidezAtual, huid, today, slugify, addDays } from "../utils/helpers";
 import Card from "../components/ui/Card";
@@ -413,6 +413,10 @@ export default function ClientDetail() {
                       <InlineSelect value={client.indicado_por || ""} onSave={(v) => updateField("indicado_por", v)} opts={[{ v: "", l: "—" }, ...clients.filter((c) => c.id !== id).sort((a, b) => a.nome.localeCompare(b.nome)).map((c) => ({ v: c.nome, l: c.nome }))]} />
                     </div>
                   )}
+                </div>
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Repasse</div>
+                  <InlineSelect value={client.repasse_status || ""} onSave={(v) => updateField("repasse_status", v)} opts={REPASSE_OPTIONS} />
                 </div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Início Carteira</div><InlineDate value={client.inicio_carteira} onSave={(v) => updateField("inicio_carteira", v)} /></div>
                 <div>
