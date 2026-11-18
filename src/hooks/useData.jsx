@@ -114,6 +114,16 @@ export function DataProvider({ children }) {
     return clientData.id;
   }, []);
 
+  // Atualiza só o PL de um cliente (importação mensal). Não regrava a ficha inteira, para não
+  // sobrescrever com dados antigos campos alterados em outra tela/aba (ex.: "Chamei", reunião agendada).
+  const saveClientPL = useCallback(async (clientId, pl) => {
+    const { data, error } = await supabase.from("clients").update({ pl_inicial: pl }).eq("id", clientId).select();
+    if (error) { console.error("saveClientPL error:", error); return false; }
+    if (data) setClientsRaw((p) => p.map((c) => (c.id === clientId ? mapClientFromDB(data[0]) : c)));
+    await setPLHoje(clientId, pl);
+    return true;
+  }, []);
+
   const deleteClient = useCallback(async (id) => {
     await supabase.from("clients").delete().eq("id", id);
     setClientsRaw((p) => p.filter((c) => c.id !== id));
@@ -547,7 +557,7 @@ export function DataProvider({ children }) {
     // Setters
     setClients, setHistory, setRepasse, setAportes, setReunioes, setTodos, setLeads, setRadar,
     // CRUD operations
-    saveClient, deleteClient,
+    saveClient, saveClientPL, deleteClient,
     addHistory, updateHistory, deleteHistory,
     saveRepasse, deleteRepasse,
     saveAporte, deleteAporte, incrementLiquidez, incrementPL,
