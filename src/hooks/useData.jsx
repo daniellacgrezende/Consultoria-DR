@@ -124,6 +124,14 @@ export function DataProvider({ children }) {
     return true;
   }, []);
 
+  // Atualiza só os campos informados, sem regravar a ficha inteira (evita sobrescrever com dados antigos).
+  const updateClientFields = useCallback(async (clientId, fields) => {
+    const { data, error } = await supabase.from("clients").update(fields).eq("id", clientId).select();
+    if (error) { console.error("updateClientFields error:", error); return false; }
+    if (data) setClientsRaw((p) => p.map((c) => (c.id === clientId ? mapClientFromDB(data[0]) : c)));
+    return true;
+  }, []);
+
   const deleteClient = useCallback(async (id) => {
     await supabase.from("clients").delete().eq("id", id);
     setClientsRaw((p) => p.filter((c) => c.id !== id));
@@ -557,7 +565,7 @@ export function DataProvider({ children }) {
     // Setters
     setClients, setHistory, setRepasse, setAportes, setReunioes, setTodos, setLeads, setRadar,
     // CRUD operations
-    saveClient, saveClientPL, deleteClient,
+    saveClient, saveClientPL, updateClientFields, deleteClient,
     addHistory, updateHistory, deleteHistory,
     saveRepasse, deleteRepasse,
     saveAporte, deleteAporte, incrementLiquidez, incrementPL,

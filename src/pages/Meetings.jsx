@@ -26,6 +26,9 @@ const RETRY_DAYS  = 45; // dias após "chamei" antes de virar "Retentativa"
 
 /* ─── Status logic ─── */
 function getStatus(c) {
+  if (c.reuniao_nao_chamar) {
+    return { key: "nao_chamar", label: "Não precisa chamar", color: "#64748B", bg: "#F1F5F9", border: "#CBD5E1" };
+  }
   const periodicidade = (c.periodicidade_reuniao || c.periodicidadeReuniao || "").toLowerCase();
   if (periodicidade === "não se aplica") {
     return { key: "nao_aplica", label: "N/A", color: "#6B7280", bg: "#F3F4F6", border: "#D1D5DB" };
@@ -81,7 +84,7 @@ function StatusBadge({ st }) {
 /* ═══════════════════════════════════════════ */
 export default function Meetings() {
   const navigate  = useNavigate();
-  const { clients, history, aportes, reunioes, todos, saveClient, saveTodo, setToast } = useData();
+  const { clients, history, aportes, reunioes, todos, saveClient, updateClientFields, saveTodo, setToast } = useData();
   const [sortCol, setSortCol]     = useState("status");
   const [sortDir, setSortDir]     = useState("asc");
   const [statusFilter, setStatusFilter] = useState(null); // filtro por status ao clicar no badge
@@ -112,7 +115,7 @@ export default function Meetings() {
   const CURVA_ORDER = { A: 0, B: 1, C: 2, D: 3 };
 
   const rows = useMemo(() => {
-    const STATUS_ORDER = { atrasado: 0, sem_resposta: 1, retentativa: 2, agendar: 3, aguardando: 4, emdia: 5, pendente: 6, nao_aplica: 7 };
+    const STATUS_ORDER = { atrasado: 0, sem_resposta: 1, retentativa: 2, agendar: 3, aguardando: 4, emdia: 5, pendente: 6, nao_chamar: 7, nao_aplica: 8 };
     const enriched = active.map((c) => ({
       ...c,
       diasSem:    daysSince(c.ultima_reuniao || c.ultimaReuniao),
@@ -140,7 +143,13 @@ export default function Meetings() {
     aguardando:  rows.filter((r) => r.st.key === "aguardando").length,
     emdia:       rows.filter((r) => r.st.key === "emdia").length,
     nao_aplica:  rows.filter((r) => r.st.key === "nao_aplica").length,
+    nao_chamar:  rows.filter((r) => r.st.key === "nao_chamar").length,
   }), [rows]);
+
+  const toggleNaoChamar = async (c, valor) => {
+    const ok = await updateClientFields(c.id, { reuniao_nao_chamar: valor });
+    if (ok) setToast({ type: "success", text: valor ? `${c.nome.split(" ")[0]}: não precisa chamar.` : `${c.nome.split(" ")[0]} voltou para os alertas de reunião.` });
+  };
 
   // Tabela filtrada pelo badge clicado
   const filteredRows = useMemo(() => {
@@ -259,6 +268,7 @@ export default function Meetings() {
           { key: "agendar",     label: "Agendar",     value: counts.agendar,     color: "#D97706" },
           { key: "aguardando",  label: "Aguardando",  value: counts.aguardando,  color: "#0891B2" },
           { key: "emdia",       label: "Em dia",      value: counts.emdia,       color: "#16A34A" },
+          { key: "nao_chamar",  label: "Não chamar",  value: counts.nao_chamar,  color: "#64748B" },
           { key: "nao_aplica",  label: "N/A",         value: counts.nao_aplica,  color: "#6B7280" },
         ].map((item, i, arr) => {
           const active = statusFilter === item.key;
@@ -330,6 +340,8 @@ export default function Meetings() {
                           style={{ fontSize: 9.5, fontWeight: 700, background: "#ECFEFF", color: "#0891B2", border: "1px solid #A5F3FC", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>Chamei</button>
                         <button onClick={() => setTaskModal({ texto: `Enviar mensagem para ${c.nome} — reunião de acompanhamento`, data: today() })}
                           style={{ fontSize: 9.5, fontWeight: 700, background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>+ Tarefa</button>
+                        <button onClick={() => toggleNaoChamar(c, true)} title="Tirar dos alertas de reunião"
+                          style={{ fontSize: 9.5, fontWeight: 700, background: "white", color: "#6B7280", border: "1px solid #D1D5DB", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>Não precisa</button>
                       </div>
                       <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "", incluirParceiro: false, emailParceiro: c.email_parceiro || "" }); }}
                         style={{ fontSize: 9.5, fontWeight: 700, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>✓ Agendou</button>
@@ -369,6 +381,8 @@ export default function Meetings() {
                           style={{ fontSize: 9.5, fontWeight: 700, background: "#ECFEFF", color: "#0891B2", border: "1px solid #A5F3FC", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>Chamei</button>
                         <button onClick={() => { setRetAgModal({ client: c }); setRetAgForm({ data: today(), horaInicio: "10:00", horaFim: "11:00", email: c.email || "", incluirParceiro: false, emailParceiro: c.email_parceiro || "" }); }}
                           style={{ fontSize: 9.5, fontWeight: 700, background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>✓ Agendar</button>
+                        <button onClick={() => toggleNaoChamar(c, true)} title="Tirar dos alertas de reunião"
+                          style={{ fontSize: 9.5, fontWeight: 700, background: "white", color: "#6B7280", border: "1px solid #D1D5DB", borderRadius: 5, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>Não precisa</button>
                       </div>
                     </div>
                   ))}
@@ -672,6 +686,14 @@ export default function Meetings() {
                             onClick={() => openAction("recusou", c)}
                             style={{ fontSize: 10, fontWeight: 600, background: "#FFF1F2", color: "#BE123C", border: "1px solid #FECDD3", borderRadius: 5, padding: "4px 9px", cursor: "pointer" }}
                           >Não quis</button>
+                        )}
+
+                        {c.st.key === "nao_chamar" ? (
+                          <button onClick={() => toggleNaoChamar(c, false)}
+                            style={{ fontSize: 10, fontWeight: 600, background: "white", color: B.navy, border: `1px solid ${B.border}`, borderRadius: 5, padding: "4px 9px", cursor: "pointer" }}>Reativar</button>
+                        ) : c.st.key !== "emdia" && c.st.key !== "nao_aplica" && (
+                          <button onClick={() => toggleNaoChamar(c, true)} title="Tirar dos alertas de reunião"
+                            style={{ fontSize: 10, fontWeight: 600, background: "white", color: "#6B7280", border: "1px solid #D1D5DB", borderRadius: 5, padding: "4px 9px", cursor: "pointer" }}>Não precisa</button>
                         )}
                       </div>
                     </td>

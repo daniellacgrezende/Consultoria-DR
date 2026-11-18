@@ -40,6 +40,7 @@ export default function Clients() {
   const isLate = (c) => {
     const p = (c.periodicidade_reuniao || c.periodicidadeReuniao || "").toLowerCase();
     if (p === "não se aplica") return false;
+    if (c.reuniao_nao_chamar) return false;
     const proxima = c.proxima_reuniao || c.proximaReuniao;
     if (!proxima) return false; // sem data → sem pendência (exibe "?")
     return new Date(proxima) < new Date();
