@@ -14,7 +14,7 @@ import { Inp, Sel, Tarea, SecH } from "../components/ui/FormFields";
 
 export default function Clients() {
   const navigate = useNavigate();
-  const { clients, history, aportes, saveClient, deleteClient, setToast } = useData();
+  const { clients, history, aportes, saveClient, saveClientPL, deleteClient, setToast } = useData();
   const [modal, setModal] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(EMPTY_CLIENT);
@@ -260,8 +260,7 @@ export default function Clients() {
           const pl = Number(row[plIdx]) || 0;
           const found = clients.find((c) => (c.nome || "").trim().toLowerCase() === nomePlanilha);
           if (!found) { notFound.push(row[nomeIdx]); continue; }
-          await saveClient({ ...found, pl_inicial: pl }, false);
-          updated++;
+          if (await saveClientPL(found.id, pl)) updated++;
         }
         const nfMsg = notFound.length > 0 ? ` Não encontrados (${notFound.length}): ${notFound.slice(0, 5).join(", ")}${notFound.length > 5 ? "…" : ""}.` : "";
         setToast({ type: updated > 0 ? "success" : "error", text: `${updated} PL(s) atualizados.${nfMsg}` });
