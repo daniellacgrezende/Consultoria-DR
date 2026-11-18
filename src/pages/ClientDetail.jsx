@@ -25,7 +25,7 @@ function BirthdayInp({ label, value, onChange }) {
 export default function ClientDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { clients, history, aportes, reunioes, saveClient, deleteClient, saveReuniao, deleteReuniao, saveAporte, deleteAporte, incrementLiquidez, incrementPL, saveTodo, setToast } = useData();
+  const { clients, history, aportes, reunioes, saveClient, deleteClient, saveReuniao, deleteReuniao, saveAporte, deleteAporte, incrementLiquidez, incrementPL, addHistory, updateHistory, saveTodo, setToast } = useData();
 
   const client = clients.find((c) => slugify(c.nome) === slug || c.id === slug);
   const id = client?.id;
@@ -489,7 +489,14 @@ export default function ClientDetail() {
                   }} opts={Object.entries(PERFIL_MAP).map(([k, v]) => ({ v: k, l: v.label }))} /></div>
                   <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Benchmark</div><InlineSelect value={client.benchmark || ({ conservador: "IPCA+4%", moderado: "IPCA+5%", arrojado: "IPCA+6%", agressivo: "IPCA+8%" }[client.perfil] || "")} onSave={(v) => updateField("benchmark", v)} opts={[{ v: "", l: "—" }, { v: "IPCA+4%", l: "IPCA+4%" }, { v: "IPCA+5%", l: "IPCA+5%" }, { v: "IPCA+6%", l: "IPCA+6%" }, { v: "IPCA+8%", l: "IPCA+8%" }]} /></div>
                 </div>
-                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>PL Atual</div><InlineMoney value={client.pl_inicial} onSave={(v) => updateField("pl_inicial", v)} /></div>
+                <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>PL Atual</div><InlineMoney value={pl} onSave={async (v) => {
+                  const newPL = Number(v);
+                  await saveClient({ ...client, pl_inicial: newPL }, false);
+                  const dataHoje = today();
+                  const existing = history.find((h) => h.client_id === client.id && h.data === dataHoje);
+                  if (existing) { await updateHistory(existing.id, { patrimonio: newPL }); }
+                  else { await addHistory({ client_id: client.id, data: dataHoje, patrimonio: newPL }); }
+                }} /></div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Liquidez Desejada</div><InlineMoney value={client.liquidez_desejada} onSave={(v) => updateField("liquidez_desejada", v)} /></div>
                 <div>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Liquidez Atual</div>

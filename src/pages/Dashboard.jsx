@@ -24,7 +24,7 @@ export default function Dashboard() {
 
   const active = useMemo(() => clients.filter((c) => c.status === "ativo"), [clients]);
   const getPL = (c) => getCurrentPL(c, history, aportes);
-  const totalAUM = useMemo(() => active.reduce((s, c) => s + getPL(c), 0), [active, history]);
+  const totalAUM = useMemo(() => active.reduce((s, c) => s + getPL(c), 0), [active, history, aportes]);
   const aumMedio = active.length ? totalAUM / active.length : 0;
   const totalSeguro = active.filter((c) => c.seguro_vida || c.seguroVida).length;
   const alertas = active.filter((c) => {
@@ -36,7 +36,7 @@ export default function Dashboard() {
   const totalAlertas = alertas + outdatedIps;
   const ufs = [...new Set(active.map((c) => c.uf).filter(Boolean))].length;
 
-  const top10 = useMemo(() => [...active].sort((a, b) => getPL(b) - getPL(a)).slice(0, 10), [active, history]);
+  const top10 = useMemo(() => [...active].sort((a, b) => getPL(b) - getPL(a)).slice(0, 10), [active, history, aportes]);
 
   // Top Indicadores: agrupa clientes por "indicado_por", soma PL, ordena desc
   const topIndicadores = useMemo(() => {
@@ -49,7 +49,7 @@ export default function Dashboard() {
       map[ind].pl += getPL(c);
     });
     return Object.values(map).sort((a, b) => b.pl - a.pl);
-  }, [active, history]);
+  }, [active, history, aportes]);
   const curvaSummary = ["A", "B", "C", "D"].map((k) => ({
     k, ...CURVA_MAP[k],
     count: active.filter((c) => getCurva(getPL(c)) === k).length,

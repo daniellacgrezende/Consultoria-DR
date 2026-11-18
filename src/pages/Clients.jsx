@@ -35,7 +35,7 @@ export default function Clients() {
   const active   = useMemo(() => clients.filter((c) => c.status === "ativo"),   [clients]);
   const archived = useMemo(() => clients.filter((c) => c.status === "inativo"), [clients]);
   const getPL = (c) => getCurrentPL(c, history, aportes);
-  const totalAUM = useMemo(() => active.reduce((s, c) => s + getPL(c), 0), [active, history]);
+  const totalAUM = useMemo(() => active.reduce((s, c) => s + getPL(c), 0), [active, history, aportes]);
   const PDAYS = { mensal: 30, bimestral: 60, trimestral: 90, quadrimestral: 120, semestral: 180, anual: 365 };
   const isLate = (c) => {
     const p = (c.periodicidade_reuniao || c.periodicidadeReuniao || "").toLowerCase();
@@ -80,7 +80,7 @@ export default function Clients() {
       return 0;
     });
     return r;
-  }, [active, history, filterCurva, filterPerfil, filterSeguro, ufFilter, plMin, plMax, query, sortCol, sortDir]);
+  }, [active, history, aportes, filterCurva, filterPerfil, filterSeguro, ufFilter, plMin, plMax, query, sortCol, sortDir]);
 
   const F = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
   const toggleSort = (col) => { if (sortCol === col) setSortDir((d) => (d === "asc" ? "desc" : "asc")); else { setSortCol(col); setSortDir("asc"); } };
