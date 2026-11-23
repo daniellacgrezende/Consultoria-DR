@@ -173,7 +173,7 @@ const CLIENT_DB_COLS = new Set([
   "email", "patrimonio_imobilizado", "financiamentos", "benchmark",
   "seguro_nao_aplica", "ips_nao_aplica", "prev_nao_aplica", "reuniao_agendada_em",
   "data_nascimento_parceiro", "email_parceiro", "atendimento_casal", "ultima_interacao",
-  "ultimo_presente", "presente_descricao", "presente_nao_aplica", "presente_motivo", "reuniao_nao_chamar", "repasse_status",
+  "ultimo_presente", "presente_descricao", "presente_nao_aplica", "presente_motivo", "reuniao_nao_chamar", "repasse_status", "contato_sempre_em_dia",
   "tipo_relatorio",
 ]);
 
@@ -262,6 +262,7 @@ export const mapClientToDB = (c) => {
     presente_motivo: c.presente_motivo ?? "",
     reuniao_nao_chamar: !!(c.reuniao_nao_chamar ?? false),
     repasse_status: c.repasse_status ?? "",
+    contato_sempre_em_dia: !!(c.contato_sempre_em_dia ?? false),
     tipo_relatorio: c.tipo_relatorio ?? c.tipoRelatorio ?? "",
   };
 

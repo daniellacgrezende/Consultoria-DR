@@ -21,7 +21,7 @@ function urgencyColor(dias) {
 
 export default function Contatos() {
   const navigate = useNavigate();
-  const { clients, history, saveClient, setToast } = useData();
+  const { clients, history, updateClientFields, setToast } = useData();
   const [search, setSearch] = useState("");
   const [justSaved, setJustSaved] = useState(null);
   const [picking, setPicking] = useState(null); // id do cliente com date picker aberto
@@ -32,7 +32,9 @@ export default function Contatos() {
   const rows = useMemo(() => {
     let r = active.map((c) => ({
       ...c,
-      dias: daysSince(c.ultima_interacao),
+      // Contas marcadas como "sempre em dia" (ex.: contas próprias/família) não entram na cobrança de contato
+      fixo: !!c.contato_sempre_em_dia,
+      dias: c.contato_sempre_em_dia ? 0 : daysSince(c.ultima_interacao),
       curva: getCurva(getCurrentPL(c, history)),
     }));
     if (search.trim()) r = r.filter((c) => c.nome.toLowerCase().includes(search.toLowerCase()));
@@ -55,12 +57,18 @@ export default function Contatos() {
     setPickDate(today());
   };
 
+  // Registra a interação no cliente e nos demais clientes ativos do mesmo grupo familiar
+  // (ex.: Marcelo + MC Performance + Giovanna; Denise + Edvaldo). Grava só a data, sem regravar a ficha.
   const registrar = async (c, data) => {
-    await saveClient({ ...c, ultima_interacao: data }, false);
+    const grupo = (c.grupo_nome || "").trim();
+    const doGrupo = grupo ? active.filter((x) => x.id !== c.id && (x.grupo_nome || "").trim() === grupo) : [];
+    await updateClientFields(c.id, { ultima_interacao: data });
+    for (const x of doGrupo) await updateClientFields(x.id, { ultima_interacao: data });
     setPicking(null);
     setJustSaved(c.id);
     setTimeout(() => setJustSaved(null), 2500);
-    setToast({ type: "success", text: `Interação com ${c.nome.split(" ")[0]} registrada em ${fmtDate(data)}.` });
+    const extra = doGrupo.length ? ` (e também ${doGrupo.map((x) => x.nome.split(" ")[0]).join(", ")})` : "";
+    setToast({ type: "success", text: `Interação com ${c.nome.split(" ")[0]}${extra} registrada em ${fmtDate(data)}.` });
   };
 
   return (
@@ -127,7 +135,9 @@ export default function Contatos() {
 
                   {/* Última interação */}
                   <td style={{ padding: "10px 16px" }}>
-                    {c.ultima_interacao ? (
+                    {c.fixo ? (
+                      <span style={{ fontSize: 12, color: B.gray }}>Não precisa acompanhar</span>
+                    ) : c.ultima_interacao ? (
                       <div>
                         <div style={{ fontSize: 12, color: B.gray }}>{fmtDate(c.ultima_interacao)}</div>
                         <div style={{ fontSize: 11, fontWeight: 700, color: u.text }}>há {c.dias}d</div>
@@ -144,7 +154,7 @@ export default function Contatos() {
                       color: u.badge, background: u.bg, border: `1px solid ${u.border}`,
                       borderRadius: 999, padding: "3px 10px",
                     }}>
-                      {c.dias === null ? "Sem registro" : c.dias > 30 ? `${c.dias}d sem contato` : c.dias > 14 ? "Atenção" : "Em dia"}
+                      {c.fixo ? "Sempre em dia" : c.dias === null ? "Sem registro" : c.dias > 30 ? `${c.dias}d sem contato` : c.dias > 14 ? "Atenção" : "Em dia"}
                     </span>
                   </td>
 
