@@ -32,7 +32,9 @@ export default function Contatos() {
   const rows = useMemo(() => {
     let r = active.map((c) => ({
       ...c,
-      dias: daysSince(c.ultima_interacao),
+      // Contas marcadas como "sempre em dia" (ex.: contas próprias/família) não entram na cobrança de contato
+      fixo: !!c.contato_sempre_em_dia,
+      dias: c.contato_sempre_em_dia ? 0 : daysSince(c.ultima_interacao),
       curva: getCurva(getCurrentPL(c, history)),
     }));
     if (search.trim()) r = r.filter((c) => c.nome.toLowerCase().includes(search.toLowerCase()));
@@ -133,7 +135,9 @@ export default function Contatos() {
 
                   {/* Última interação */}
                   <td style={{ padding: "10px 16px" }}>
-                    {c.ultima_interacao ? (
+                    {c.fixo ? (
+                      <span style={{ fontSize: 12, color: B.gray }}>Não precisa acompanhar</span>
+                    ) : c.ultima_interacao ? (
                       <div>
                         <div style={{ fontSize: 12, color: B.gray }}>{fmtDate(c.ultima_interacao)}</div>
                         <div style={{ fontSize: 11, fontWeight: 700, color: u.text }}>há {c.dias}d</div>
@@ -150,7 +154,7 @@ export default function Contatos() {
                       color: u.badge, background: u.bg, border: `1px solid ${u.border}`,
                       borderRadius: 999, padding: "3px 10px",
                     }}>
-                      {c.dias === null ? "Sem registro" : c.dias > 30 ? `${c.dias}d sem contato` : c.dias > 14 ? "Atenção" : "Em dia"}
+                      {c.fixo ? "Sempre em dia" : c.dias === null ? "Sem registro" : c.dias > 30 ? `${c.dias}d sem contato` : c.dias > 14 ? "Atenção" : "Em dia"}
                     </span>
                   </td>
 
