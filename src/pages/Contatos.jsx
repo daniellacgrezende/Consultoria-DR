@@ -21,7 +21,7 @@ function urgencyColor(dias) {
 
 export default function Contatos() {
   const navigate = useNavigate();
-  const { clients, history, saveClient, setToast } = useData();
+  const { clients, history, updateClientFields, setToast } = useData();
   const [search, setSearch] = useState("");
   const [justSaved, setJustSaved] = useState(null);
   const [picking, setPicking] = useState(null); // id do cliente com date picker aberto
@@ -55,12 +55,18 @@ export default function Contatos() {
     setPickDate(today());
   };
 
+  // Registra a interação no cliente e nos demais clientes ativos do mesmo grupo familiar
+  // (ex.: Marcelo + MC Performance + Giovanna; Denise + Edvaldo). Grava só a data, sem regravar a ficha.
   const registrar = async (c, data) => {
-    await saveClient({ ...c, ultima_interacao: data }, false);
+    const grupo = (c.grupo_nome || "").trim();
+    const doGrupo = grupo ? active.filter((x) => x.id !== c.id && (x.grupo_nome || "").trim() === grupo) : [];
+    await updateClientFields(c.id, { ultima_interacao: data });
+    for (const x of doGrupo) await updateClientFields(x.id, { ultima_interacao: data });
     setPicking(null);
     setJustSaved(c.id);
     setTimeout(() => setJustSaved(null), 2500);
-    setToast({ type: "success", text: `Interação com ${c.nome.split(" ")[0]} registrada em ${fmtDate(data)}.` });
+    const extra = doGrupo.length ? ` (e também ${doGrupo.map((x) => x.nome.split(" ")[0]).join(", ")})` : "";
+    setToast({ type: "success", text: `Interação com ${c.nome.split(" ")[0]}${extra} registrada em ${fmtDate(data)}.` });
   };
 
   return (
