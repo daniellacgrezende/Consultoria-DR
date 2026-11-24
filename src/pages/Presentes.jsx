@@ -69,7 +69,12 @@ export default function Presentes() {
   };
 
   const registrar = async (c) => {
-    await saveClient({ ...c, ultimo_presente: pickDate, presente_descricao: pickDesc }, false);
+    const novoItem = { data: pickDate, desc: pickDesc.trim() };
+    const hist = Array.isArray(c.presentes_hist) ? c.presentes_hist : [];
+    // Insere na posição correta por data (mais recente primeiro)
+    const novoHist = [novoItem, ...hist.filter((h) => h.data !== pickDate)].sort((a, b) => b.data.localeCompare(a.data));
+    const ultimaData = novoHist[0].data;
+    await saveClient({ ...c, ultimo_presente: ultimaData, presente_descricao: novoHist[0].desc, presentes_hist: novoHist }, false);
     setPicking(null);
     setJustSaved(c.id);
     setTimeout(() => setJustSaved(null), 2500);
@@ -176,9 +181,18 @@ export default function Presentes() {
                     )}
                   </td>
 
-                  {/* Descrição */}
-                  <td style={{ padding: "10px 16px", maxWidth: 260 }}>
-                    {c.presente_descricao ? (
+                  {/* Histórico */}
+                  <td style={{ padding: "10px 16px", maxWidth: 300 }}>
+                    {c.presentes_hist && c.presentes_hist.length > 0 ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                        {c.presentes_hist.map((h, idx) => (
+                          <div key={idx} style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                            <span style={{ fontSize: 11, color: B.muted, whiteSpace: "nowrap" }}>{fmtDate(h.data)}</span>
+                            {h.desc && <span style={{ fontSize: 12, color: B.gray, fontStyle: "italic" }}>"{h.desc}"</span>}
+                          </div>
+                        ))}
+                      </div>
+                    ) : c.presente_descricao ? (
                       <span style={{ fontSize: 12, color: B.gray, fontStyle: "italic" }}>"{c.presente_descricao}"</span>
                     ) : (
                       <span style={{ fontSize: 12, color: "#d1d5db" }}>—</span>
