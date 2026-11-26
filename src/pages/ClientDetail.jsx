@@ -418,6 +418,10 @@ export default function ClientDetail() {
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Repasse</div>
                   <InlineSelect value={client.repasse_status || ""} onSave={(v) => updateField("repasse_status", v)} opts={REPASSE_OPTIONS} />
                 </div>
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#b91c1c", textTransform: "uppercase", marginBottom: 3 }}>Distrato previsto</div>
+                  <InlineDate value={client.distrato_previsto} onSave={(v) => updateField("distrato_previsto", v)} />
+                </div>
                 <div><div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Início Carteira</div><InlineDate value={client.inicio_carteira} onSave={(v) => updateField("inicio_carteira", v)} /></div>
                 <div>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#8899bb", textTransform: "uppercase", marginBottom: 3 }}>Seguro / Prev. / Suc.</div>

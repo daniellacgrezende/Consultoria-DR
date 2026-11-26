@@ -33,8 +33,8 @@ export default function Contatos() {
     let r = active.map((c) => ({
       ...c,
       // Contas marcadas como "sempre em dia" (ex.: contas próprias/família) não entram na cobrança de contato
-      fixo: !!c.contato_sempre_em_dia,
-      dias: c.contato_sempre_em_dia ? 0 : daysSince(c.ultima_interacao),
+      fixo: !!c.contato_sempre_em_dia || !!c.distrato_previsto,
+      dias: c.contato_sempre_em_dia || c.distrato_previsto ? 0 : daysSince(c.ultima_interacao),
       curva: getCurva(getCurrentPL(c, history)),
     }));
     if (search.trim()) r = r.filter((c) => c.nome.toLowerCase().includes(search.toLowerCase()));
@@ -136,7 +136,7 @@ export default function Contatos() {
                   {/* Última interação */}
                   <td style={{ padding: "10px 16px" }}>
                     {c.fixo ? (
-                      <span style={{ fontSize: 12, color: B.gray }}>Não precisa acompanhar</span>
+                      <span style={{ fontSize: 12, color: B.gray }}>{c.distrato_previsto ? `Distrato previsto ${fmtDate(c.distrato_previsto)}` : "Não precisa acompanhar"}</span>
                     ) : c.ultima_interacao ? (
                       <div>
                         <div style={{ fontSize: 12, color: B.gray }}>{fmtDate(c.ultima_interacao)}</div>

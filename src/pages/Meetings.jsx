@@ -26,6 +26,9 @@ const RETRY_DAYS  = 45; // dias após "chamei" antes de virar "Retentativa"
 
 /* ─── Status logic ─── */
 function getStatus(c) {
+  if (c.distrato_previsto) {
+    return { key: "nao_chamar", label: `Distrato ${fmtDate(c.distrato_previsto)}`, color: "#B91C1C", bg: "#FEF2F2", border: "#FECACA" };
+  }
   if (c.reuniao_nao_chamar) {
     return { key: "nao_chamar", label: "Não precisa chamar", color: "#64748B", bg: "#F1F5F9", border: "#CBD5E1" };
   }
