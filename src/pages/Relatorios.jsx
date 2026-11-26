@@ -205,7 +205,8 @@ export default function Relatorios() {
     setToast({ type: "success", text: `Reunião de ${c.nome.split(" ")[0]} contou como relatório. Próximo: ${proximo ? proximo.split("-").reverse().join("/") : "—"}` });
   };
 
-  const naoAplicaRel = (c) => (c.periodicidade_relatorio || c.periodicidadeRelatorio || "").toLowerCase() === "não se aplica";
+  // Sem relatório: periodicidade "Não se aplica" ou distrato previsto
+  const naoAplicaRel = (c) => !!c.distrato_previsto || (c.periodicidade_relatorio || c.periodicidadeRelatorio || "").toLowerCase() === "não se aplica";
 
   const rows = useMemo(() => {
     const CURVA_ORDER = { A: 1, B: 2, C: 3, D: 4 };

@@ -40,7 +40,7 @@ export default function Clients() {
   const isLate = (c) => {
     const p = (c.periodicidade_reuniao || c.periodicidadeReuniao || "").toLowerCase();
     if (p === "não se aplica") return false;
-    if (c.reuniao_nao_chamar) return false;
+    if (c.reuniao_nao_chamar || c.distrato_previsto) return false;
     const proxima = c.proxima_reuniao || c.proximaReuniao;
     if (!proxima) return false; // sem data → sem pendência (exibe "?")
     return new Date(proxima) < new Date();
@@ -448,6 +448,9 @@ export default function Clients() {
                               <span style={{ fontSize: 10, color: "#7c3aed", fontWeight: 600, background: "#f5f3ff", border: "1px solid #ddd6fe", borderRadius: 999, padding: "0px 6px" }}>+ {c.conjuge.split(" ")[0]}</span>
                             )}
                             {grupoNome && <span style={{ fontSize: 10, color: "#8b5cf6", fontWeight: 600 }}>{grupoNome}</span>}
+                            {c.distrato_previsto && (
+                              <span style={{ fontSize: 10, fontWeight: 600, color: "#b91c1c", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 999, padding: "0px 6px" }}>Distrato {fmtDate(c.distrato_previsto)}</span>
+                            )}
                             {c.repasse_status && (
                               <span style={{ fontSize: 10, fontWeight: 600, borderRadius: 999, padding: "0px 6px", ...(c.repasse_status.startsWith("Repassado") ? { color: "#64748b", background: "#f1f5f9", border: "1px solid #cbd5e1" } : { color: "#b45309", background: "#fffbeb", border: "1px solid #fde68a" }) }}>{c.repasse_status}</span>
                             )}
